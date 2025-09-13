@@ -28,7 +28,10 @@ export function RequestTask() {
     setLoading(true);
 
     const requestData = {
-      ...formData,
+      title: formData.title,
+      description: formData.description,
+      justification: formData.justification,
+      priority: formData.priority as 'low' | 'medium' | 'high' | 'urgent',
       requested_by: userProfile.user_id,
     };
 

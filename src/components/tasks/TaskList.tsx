@@ -69,7 +69,7 @@ export function TaskList({ userRole }: TaskListProps) {
   const updateTaskStatus = async (taskId: string, newStatus: string) => {
     const { error } = await supabase
       .from('tasks')
-      .update({ status: newStatus })
+      .update({ status: newStatus as 'pending' | 'in_progress' | 'completed' | 'approved' | 'rejected' })
       .eq('id', taskId);
 
     if (!error) {

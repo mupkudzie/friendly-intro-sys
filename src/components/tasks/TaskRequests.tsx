@@ -87,7 +87,7 @@ export function TaskRequests() {
         description: request.description,
         assigned_by: userProfile.user_id,
         assigned_to: request.requested_by,
-        priority: request.priority,
+        priority: request.priority as 'low' | 'medium' | 'high' | 'urgent',
         instructions: `Created from task request: ${request.justification}`,
       });
 

@@ -57,10 +57,15 @@ export function TaskAssignment() {
     setLoading(true);
 
     const taskData = {
-      ...formData,
+      title: formData.title,
+      description: formData.description,
+      assigned_to: formData.assigned_to,
       assigned_by: userProfile.user_id,
-      estimated_hours: formData.estimated_hours ? parseFloat(formData.estimated_hours) : null,
+      priority: formData.priority as 'low' | 'medium' | 'high' | 'urgent',
       due_date: formData.due_date || null,
+      estimated_hours: formData.estimated_hours ? parseFloat(formData.estimated_hours) : null,
+      location: formData.location || null,
+      instructions: formData.instructions || null,
     };
 
     const { error } = await supabase

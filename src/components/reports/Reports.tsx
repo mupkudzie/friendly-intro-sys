@@ -37,7 +37,7 @@ export function Reports({ userRole }: ReportsProps) {
       .order('submitted_at', { ascending: false });
 
     if (!error && data) {
-      setReports(data);
+      setReports(data as any[]);
     }
     setLoading(false);
   };
