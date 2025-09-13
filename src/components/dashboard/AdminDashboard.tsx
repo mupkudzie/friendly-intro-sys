@@ -10,6 +10,10 @@ import { TaskList } from '@/components/tasks/TaskList';
 import { UserManagement } from '@/components/users/UserManagement';
 import { TimeTracking } from '@/components/time/TimeTracking';
 import { Reports } from '@/components/reports/Reports';
+import { AdminAnalytics } from '@/components/analytics/AdminAnalytics';
+import { TaskOverview } from '@/components/tasks/TaskOverview';
+import { WorkerActivityTracker } from '@/components/workers/WorkerActivityTracker';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 
 export function AdminDashboard() {
   const { userProfile, signOut } = useAuth();
@@ -123,66 +127,38 @@ export function AdminDashboard() {
         </div>
 
         {/* Main Tabs */}
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="tasks">Tasks</TabsTrigger>
+        <Tabs defaultValue="analytics" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="overview">Task Overview</TabsTrigger>
+            <TabsTrigger value="activity">Worker Activity</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="time">Time Tracking</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview">
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Activity</CardTitle>
-                  <CardDescription>Latest garden activities and updates</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">System initialized</span>
-                      <span className="text-xs text-muted-foreground">Just now</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>System Status</CardTitle>
-                  <CardDescription>Current system health and performance</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Database</span>
-                      <Badge variant="secondary" className="bg-green-100 text-green-800">Healthy</Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Authentication</span>
-                      <Badge variant="secondary" className="bg-green-100 text-green-800">Active</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+          <TabsContent value="analytics">
+            <AdminAnalytics />
           </TabsContent>
 
-          <TabsContent value="tasks">
-            <TaskList userRole="admin" />
+          <TabsContent value="overview">
+            <TaskOverview userRole="admin" />
+          </TabsContent>
+
+          <TabsContent value="activity">
+            <WorkerActivityTracker userRole="admin" />
           </TabsContent>
 
           <TabsContent value="users">
             <UserManagement />
           </TabsContent>
 
-          <TabsContent value="time">
-            <TimeTracking userRole="admin" />
-          </TabsContent>
-
           <TabsContent value="reports">
             <Reports userRole="admin" />
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <NotificationCenter />
           </TabsContent>
         </Tabs>
       </div>

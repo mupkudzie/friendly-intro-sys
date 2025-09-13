@@ -10,6 +10,10 @@ import { TaskList } from '@/components/tasks/TaskList';
 import { TaskAssignment } from '@/components/tasks/TaskAssignment';
 import { TimeTracking } from '@/components/time/TimeTracking';
 import { TaskRequests } from '@/components/tasks/TaskRequests';
+import { PerformanceEvaluation } from '@/components/performance/PerformanceEvaluation';
+import { TaskOverview } from '@/components/tasks/TaskOverview';
+import { WorkerActivityTracker } from '@/components/workers/WorkerActivityTracker';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 
 export function SupervisorDashboard() {
   const { userProfile, signOut } = useAuth();
@@ -113,13 +117,19 @@ export function SupervisorDashboard() {
         </div>
 
         {/* Main Tabs */}
-        <Tabs defaultValue="tasks" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="tasks">My Tasks</TabsTrigger>
-            <TabsTrigger value="assign">Assign Tasks</TabsTrigger>
-            <TabsTrigger value="requests">Task Requests</TabsTrigger>
-            <TabsTrigger value="time">Time Tracking</TabsTrigger>
+        <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="tasks">Tasks</TabsTrigger>
+            <TabsTrigger value="assign">Assign</TabsTrigger>
+            <TabsTrigger value="performance">Performance</TabsTrigger>
+            <TabsTrigger value="activity">Activity</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="overview">
+            <TaskOverview userRole="supervisor" />
+          </TabsContent>
 
           <TabsContent value="tasks">
             <TaskList userRole="supervisor" />
@@ -129,12 +139,16 @@ export function SupervisorDashboard() {
             <TaskAssignment />
           </TabsContent>
 
-          <TabsContent value="requests">
-            <TaskRequests />
+          <TabsContent value="performance">
+            <PerformanceEvaluation userRole="supervisor" />
           </TabsContent>
 
-          <TabsContent value="time">
-            <TimeTracking userRole="supervisor" />
+          <TabsContent value="activity">
+            <WorkerActivityTracker userRole="supervisor" />
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <NotificationCenter />
           </TabsContent>
         </Tabs>
       </div>

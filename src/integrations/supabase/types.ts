@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          recipient_id: string
+          sender_id: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          read?: boolean
+          recipient_id: string
+          sender_id?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          recipient_id?: string
+          sender_id?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      performance_evaluations: {
+        Row: {
+          created_at: string
+          feedback: string | null
+          id: string
+          score: number
+          supervisor_id: string
+          task_id: string
+          updated_at: string
+          worker_id: string
+        }
+        Insert: {
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          score: number
+          supervisor_id: string
+          task_id: string
+          updated_at?: string
+          worker_id: string
+        }
+        Update: {
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          score?: number
+          supervisor_id?: string
+          task_id?: string
+          updated_at?: string
+          worker_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           contact_number: string | null
@@ -290,6 +356,39 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      worker_analytics: {
+        Row: {
+          created_at: string
+          hours_accumulated: number
+          id: string
+          productivity_score: number | null
+          tasks_completed: number
+          updated_at: string
+          week_start: string
+          worker_id: string
+        }
+        Insert: {
+          created_at?: string
+          hours_accumulated?: number
+          id?: string
+          productivity_score?: number | null
+          tasks_completed?: number
+          updated_at?: string
+          week_start: string
+          worker_id: string
+        }
+        Update: {
+          created_at?: string
+          hours_accumulated?: number
+          id?: string
+          productivity_score?: number | null
+          tasks_completed?: number
+          updated_at?: string
+          week_start?: string
+          worker_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

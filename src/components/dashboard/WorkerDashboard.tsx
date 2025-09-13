@@ -10,6 +10,9 @@ import { TaskList } from '@/components/tasks/TaskList';
 import { TimeLogger } from '@/components/time/TimeLogger';
 import { ReportSubmission } from '@/components/reports/ReportSubmission';
 import { RequestTask } from '@/components/tasks/RequestTask';
+import { WeeklyDashboard } from '@/components/analytics/WeeklyDashboard';
+import { PerformanceEvaluation } from '@/components/performance/PerformanceEvaluation';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 
 export function WorkerDashboard() {
   const { userProfile, signOut } = useAuth();
@@ -125,13 +128,22 @@ export function WorkerDashboard() {
         </div>
 
         {/* Main Tabs */}
-        <Tabs defaultValue="tasks" className="space-y-4">
-          <TabsList>
+        <Tabs defaultValue="dashboard" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="tasks">My Tasks</TabsTrigger>
             <TabsTrigger value="time">Time Tracking</TabsTrigger>
             <TabsTrigger value="reports">Submit Reports</TabsTrigger>
             <TabsTrigger value="request">Request Task</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="dashboard">
+            <div className="space-y-6">
+              <WeeklyDashboard />
+              <PerformanceEvaluation userRole={userProfile?.role || 'student'} />
+            </div>
+          </TabsContent>
 
           <TabsContent value="tasks">
             <TaskList userRole={userProfile?.role || 'student'} />
@@ -147,6 +159,10 @@ export function WorkerDashboard() {
 
           <TabsContent value="request">
             <RequestTask />
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <NotificationCenter />
           </TabsContent>
         </Tabs>
       </div>
