@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,19 +7,49 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Send, FileText } from 'lucide-react';
+import { Send, FileText, Lightbulb, Clock } from 'lucide-react';
+
+interface TaskTemplate {
+  id: string;
+  title: string;
+  description: string;
+  category: string | null;
+  estimated_hours: number | null;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  requirements: string | null;
+}
 
 export function RequestTask() {
   const { userProfile } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(true);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     justification: '',
     priority: 'medium',
   });
+
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
+
+  const fetchTemplates = async () => {
+    const { data, error } = await supabase
+      .from('task_templates')
+      .select('*')
+      .eq('active', true)
+      .order('title');
+
+    if (!error && data) {
+      setTemplates(data);
+    }
+    setTemplatesLoading(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,12 +97,78 @@ export function RequestTask() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const useTemplate = (template: TaskTemplate) => {
+    setFormData({
+      title: template.title,
+      description: template.description,
+      justification: template.requirements || `I would like to work on ${template.title.toLowerCase()} as it aligns with my skills and the garden's needs.`,
+      priority: template.priority,
+    });
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'bg-red-100 text-red-800 border-red-200';
+      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'medium': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'low': return 'bg-gray-100 text-gray-800 border-gray-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      <Card>
+    <div className="space-y-6 mobile-optimized">
+      {/* Available Templates */}
+      {!templatesLoading && templates.length > 0 && (
+        <Card className="fade-in">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lightbulb className="w-5 h-5 text-primary" />
+              Available Garden Tasks
+            </CardTitle>
+            <CardDescription>
+              Choose from pre-defined tasks or create your own custom request
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="mobile-grid">
+              {templates.map((template) => (
+                <Card key={template.id} className="p-4 hover:shadow-md transition-all duration-200 cursor-pointer" onClick={() => useTemplate(template)}>
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm truncate">{template.title}</h4>
+                        {template.category && (
+                          <Badge variant="secondary" className="text-xs mt-1">
+                            {template.category}
+                          </Badge>
+                        )}
+                      </div>
+                      <Badge className={`ml-2 text-xs ${getPriorityColor(template.priority)}`}>
+                        {template.priority}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      {template.description}
+                    </p>
+                    {template.estimated_hours && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="w-3 h-3" />
+                        {template.estimated_hours} hours
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className="slide-up">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Send className="w-5 h-5" />
+            <Send className="w-5 h-5 text-primary" />
             Request Additional Task
           </CardTitle>
           <CardDescription>
@@ -81,63 +177,68 @@ export function RequestTask() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Task Title *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => handleInputChange('title', e.target.value)}
-                placeholder="e.g., Install new irrigation system"
-                required
-              />
-            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <Label htmlFor="title">Task Title *</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  placeholder="e.g., Install new irrigation system"
+                  required
+                  className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Task Description *</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                placeholder="Describe the task you would like to work on..."
-                required
-                rows={3}
-              />
-            </div>
+              <div className="sm:col-span-2">
+                <Label htmlFor="description">Task Description *</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  placeholder="Describe the task you would like to work on..."
+                  required
+                  rows={3}
+                  className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="justification">Justification *</Label>
-              <Textarea
-                id="justification"
-                value={formData.justification}
-                onChange={(e) => handleInputChange('justification', e.target.value)}
-                placeholder="Explain why this task is needed and why you're suitable for it..."
-                required
-                rows={4}
-              />
-            </div>
+              <div className="sm:col-span-2">
+                <Label htmlFor="justification">Justification *</Label>
+                <Textarea
+                  id="justification"
+                  value={formData.justification}
+                  onChange={(e) => handleInputChange('justification', e.target.value)}
+                  placeholder="Explain why this task is needed and why you're suitable for it..."
+                  required
+                  rows={4}
+                  className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="priority">Priority Level</Label>
-              <Select 
-                value={formData.priority} 
-                onValueChange={(value) => handleInputChange('priority', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low Priority</SelectItem>
-                  <SelectItem value="medium">Medium Priority</SelectItem>
-                  <SelectItem value="high">High Priority</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="sm:col-span-2">
+                <Label htmlFor="priority">Priority Level</Label>
+                <Select 
+                  value={formData.priority} 
+                  onValueChange={(value) => handleInputChange('priority', value)}
+                >
+                  <SelectTrigger className="transition-all duration-200 focus:ring-2 focus:ring-primary/20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low Priority</SelectItem>
+                    <SelectItem value="medium">Medium Priority</SelectItem>
+                    <SelectItem value="high">High Priority</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <Button 
               type="submit" 
               disabled={loading || !formData.title || !formData.description || !formData.justification}
-              className="w-full"
+              className="w-full gradient-green text-white hover:shadow-lg transition-all duration-200"
             >
               {loading ? 'Submitting...' : 'Submit Request'}
             </Button>
@@ -146,18 +247,18 @@ export function RequestTask() {
       </Card>
 
       {/* Guidelines */}
-      <Card>
+      <Card className="fade-in">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
+            <FileText className="w-5 h-5 text-primary" />
             Request Guidelines
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h4 className="font-medium text-foreground">When to request tasks:</h4>
-              <ul className="list-disc list-inside text-muted-foreground mt-1 space-y-1">
+              <h4 className="font-medium text-foreground mb-2">When to request tasks:</h4>
+              <ul className="list-disc list-inside text-muted-foreground space-y-1 text-sm">
                 <li>You've completed your assigned tasks and want more work</li>
                 <li>You've identified an improvement opportunity in the garden</li>
                 <li>You have specialized skills that could benefit a particular project</li>
@@ -166,8 +267,8 @@ export function RequestTask() {
             </div>
             
             <div>
-              <h4 className="font-medium text-foreground">Tips for good requests:</h4>
-              <ul className="list-disc list-inside text-muted-foreground mt-1 space-y-1">
+              <h4 className="font-medium text-foreground mb-2">Tips for good requests:</h4>
+              <ul className="list-disc list-inside text-muted-foreground space-y-1 text-sm">
                 <li>Be specific about what you want to do</li>
                 <li>Explain the benefits to the garden</li>
                 <li>Mention your relevant experience or interest</li>

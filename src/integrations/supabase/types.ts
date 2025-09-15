@@ -243,6 +243,48 @@ export type Database = {
           },
         ]
       }
+      task_templates: {
+        Row: {
+          active: boolean
+          category: string | null
+          created_at: string
+          created_by: string
+          description: string
+          estimated_hours: number | null
+          id: string
+          priority: Database["public"]["Enums"]["task_priority"]
+          requirements: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category?: string | null
+          created_at?: string
+          created_by: string
+          description: string
+          estimated_hours?: number | null
+          id?: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          requirements?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string
+          estimated_hours?: number | null
+          id?: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          requirements?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           assigned_by: string

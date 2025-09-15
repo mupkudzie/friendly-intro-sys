@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, Play, AlertTriangle, Calendar, MapPin, User } from 'lucide-react';
+import { CheckCircle, Clock, Play, AlertTriangle, Calendar, MapPin, User, CheckSquare } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Task {
@@ -32,6 +32,7 @@ export function TaskList({ userRole }: TaskListProps) {
   const { userProfile } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCompleted, setShowCompleted] = useState(false);
 
   useEffect(() => {
     fetchTasks();
@@ -133,24 +134,41 @@ export function TaskList({ userRole }: TaskListProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">
+    <div className="space-y-4 mobile-optimized">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <CheckSquare className="w-5 h-5 text-primary" />
+          </div>
           {userRole === 'admin' ? 'All Tasks' : userRole === 'supervisor' ? 'Managed Tasks' : 'My Tasks'}
         </h2>
-        <Badge variant="secondary">{tasks.length} tasks</Badge>
+        <div className="flex items-center gap-3">
+          <Badge variant="secondary">{tasks.length} tasks</Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCompleted(!showCompleted)}
+            className="text-xs"
+          >
+            {showCompleted ? 'Hide Completed' : 'Show Completed'}
+          </Button>
+        </div>
       </div>
 
       {tasks.length === 0 ? (
-        <Card>
+        <Card className="fade-in">
           <CardContent className="p-6 text-center">
-            <div className="text-muted-foreground">No tasks found</div>
+            <CheckSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">No tasks found</h3>
+            <p className="text-muted-foreground">
+              {showCompleted ? 'No completed tasks yet.' : 'No active tasks at the moment.'}
+            </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4">
+        <div className="mobile-grid">
           {tasks.map((task) => (
-            <Card key={task.id} className="hover:shadow-md transition-shadow">
+            <Card key={task.id} className="mobile-card slide-up hover:shadow-lg transition-all duration-200">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
