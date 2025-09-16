@@ -128,21 +128,24 @@ export function NotificationCenter() {
                 }`}
               >
                 <div className="flex items-start justify-between">
-                  <div className="flex gap-3 flex-1">
-                    <span className="text-xl">
+                  <div className="flex gap-3 flex-1 min-w-0">
+                    <span className="text-xl flex-shrink-0">
                       {getNotificationIcon(notification.type)}
                     </span>
-                    <div className="flex-1">
-                      <h4 className="font-medium">{notification.title}</h4>
-                      <p className="text-sm text-muted-foreground mt-1">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-sm md:text-base truncate">{notification.title}</h4>
+                      <p className="text-sm text-muted-foreground mt-1 break-words">
                         {notification.message}
                       </p>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mt-2 text-xs text-muted-foreground">
                         <span>
                           {format(new Date(notification.created_at), 'MMM dd, yyyy HH:mm')}
                         </span>
                         {notification.sender && (
-                          <span>• from {notification.sender.full_name}</span>
+                          <span className="hidden sm:inline">• from {notification.sender.full_name}</span>
+                        )}
+                        {notification.sender && (
+                          <span className="sm:hidden">from {notification.sender.full_name}</span>
                         )}
                       </div>
                     </div>
@@ -152,6 +155,7 @@ export function NotificationCenter() {
                       size="sm"
                       variant="ghost"
                       onClick={() => markAsRead(notification.id)}
+                      className="flex-shrink-0 ml-2"
                     >
                       <Check className="w-4 h-4" />
                     </Button>

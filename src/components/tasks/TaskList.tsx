@@ -74,6 +74,15 @@ export function TaskList({ userRole }: TaskListProps) {
       .eq('id', taskId);
 
     if (!error) {
+      if (newStatus === 'completed') {
+        // Show message about automatic 8-hour addition
+        const { useToast } = await import('@/hooks/use-toast');
+        const { toast } = useToast();
+        toast({
+          title: "Task Completed",
+          description: "Task marked as completed! Your supervisor will review it and you'll receive 8 hours upon approval.",
+        });
+      }
       fetchTasks();
     }
   };

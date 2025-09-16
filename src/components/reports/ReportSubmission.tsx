@@ -34,7 +34,7 @@ export function ReportSubmission() {
       .from('tasks')
       .select('*')
       .eq('assigned_to', userProfile.user_id)
-      .eq('status', 'completed')
+      .in('status', ['completed', 'approved'])
       .order('created_at', { ascending: false });
 
     if (!error && data) {
@@ -75,8 +75,8 @@ export function ReportSubmission() {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
+    <div className="space-y-6 p-4 lg:p-6">
+      <Card className="w-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Send className="w-5 h-5" />
@@ -122,7 +122,7 @@ export function ReportSubmission() {
             <Button 
               onClick={submitReport}
               disabled={!selectedTaskId || !report.trim() || loading}
-              className="w-full"
+              className="w-full bg-primary hover:bg-primary/90"
             >
               {loading ? 'Submitting...' : 'Submit Report'}
             </Button>
@@ -130,29 +130,6 @@ export function ReportSubmission() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            Report Guidelines
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3 text-sm">
-            <div>
-              <h4 className="font-medium">What to include in your report:</h4>
-              <ul className="list-disc list-inside text-muted-foreground mt-1 space-y-1">
-                <li>Tasks completed and their status</li>
-                <li>Time spent and effort involved</li>
-                <li>Any challenges or obstacles encountered</li>
-                <li>Tools, materials, or resources used</li>
-                <li>Observations about the garden area worked on</li>
-                <li>Suggestions for future improvements</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

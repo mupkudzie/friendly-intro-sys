@@ -9,6 +9,7 @@ import { CheckCircle, Clock, Users, Leaf, LogOut, Plus } from 'lucide-react';
 import { TaskList } from '@/components/tasks/TaskList';
 import { TaskAssignment } from '@/components/tasks/TaskAssignment';
 import { TaskRequests } from '@/components/tasks/TaskRequests';
+import { TaskApproval } from '@/components/tasks/TaskApproval';
 import { TaskTemplates } from '@/components/tasks/TaskTemplates';
 import { PerformanceEvaluation } from '@/components/performance/PerformanceEvaluation';
 import { TaskOverview } from '@/components/tasks/TaskOverview';
@@ -131,9 +132,10 @@ export function SupervisorDashboard() {
 
         {/* Main Tabs */}
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 lg:grid-cols-7 p-1">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-7 lg:grid-cols-8 p-1">
             <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
-            <TabsTrigger value="tasks" className="text-xs sm:text-sm">Tasks</TabsTrigger>
+            <TabsTrigger value="requests" className="text-xs sm:text-sm">Requests</TabsTrigger>
+            <TabsTrigger value="approval" className="text-xs sm:text-sm">Review</TabsTrigger>
             <TabsTrigger value="assign" className="text-xs sm:text-sm">Assign</TabsTrigger>
             <TabsTrigger value="templates" className="text-xs sm:text-sm">Templates</TabsTrigger>
             <TabsTrigger value="performance" className="text-xs sm:text-sm">Performance</TabsTrigger>
@@ -145,8 +147,12 @@ export function SupervisorDashboard() {
             <TaskOverview userRole="supervisor" />
           </TabsContent>
 
-          <TabsContent value="tasks">
-            <TaskList userRole="supervisor" />
+          <TabsContent value="requests">
+            <TaskRequests />
+          </TabsContent>
+
+          <TabsContent value="approval">
+            <TaskApproval />
           </TabsContent>
 
           <TabsContent value="assign">
