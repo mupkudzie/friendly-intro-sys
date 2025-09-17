@@ -36,7 +36,7 @@ export function TaskList({ userRole }: TaskListProps) {
 
   useEffect(() => {
     fetchTasks();
-  }, [userProfile, userRole]);
+  }, [userProfile, userRole, showCompleted]);
 
   const fetchTasks = async () => {
     if (!userProfile) return;
@@ -59,6 +59,13 @@ export function TaskList({ userRole }: TaskListProps) {
       query = query.eq('assigned_to', userProfile.user_id);
     }
 
+    // Filter by completion status
+    if (!showCompleted) {
+      query = query.in('status', ['pending', 'in_progress']);
+    } else {
+      query = query.in('status', ['completed', 'approved', 'rejected']);
+    }
+
     const { data, error } = await query.order('created_at', { ascending: false });
     
     if (!error && data) {
@@ -74,15 +81,26 @@ export function TaskList({ userRole }: TaskListProps) {
       .eq('id', taskId);
 
     if (!error) {
+      // Import toast here to avoid async import issues
+      const { toast } = await import('@/hooks/use-toast').then(module => module);
+      
       if (newStatus === 'completed') {
-        // Show message about automatic 8-hour addition
-        const { useToast } = await import('@/hooks/use-toast');
-        const { toast } = useToast();
         toast({
-          title: "Task Completed",
+          title: "Work Completed!",
           description: "Task marked as completed! Your supervisor will review it and you'll receive 8 hours upon approval.",
         });
+      } else if (newStatus === 'approved') {
+        toast({
+          title: "Task Approved!",
+          description: "Task has been approved. 8 hours have been added to the worker's time log.",
+        });
+      } else if (newStatus === 'rejected') {
+        toast({
+          title: "Task Rejected",
+          description: "Task has been rejected. Please review and reassign if needed.",
+        });
       }
+      
       fetchTasks();
     }
   };
@@ -241,17 +259,20 @@ export function TaskList({ userRole }: TaskListProps) {
                       <Button 
                         size="sm" 
                         onClick={() => updateTaskStatus(task.id, 'in_progress')}
+                        className="bg-blue-600 hover:bg-blue-700"
                       >
-                        Start Task
+                        <Play className="w-4 h-4 mr-2" />
+                        Start Work
                       </Button>
                     )}
                     {task.status === 'in_progress' && (
                       <Button 
                         size="sm" 
-                        variant="outline"
                         onClick={() => updateTaskStatus(task.id, 'completed')}
+                        className="bg-green-600 hover:bg-green-700"
                       >
-                        Mark Complete
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Work Completed
                       </Button>
                     )}
                   </div>
@@ -263,14 +284,18 @@ export function TaskList({ userRole }: TaskListProps) {
                     <Button 
                       size="sm" 
                       onClick={() => updateTaskStatus(task.id, 'approved')}
+                      className="bg-green-600 hover:bg-green-700"
                     >
-                      Approve
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Approve Work
                     </Button>
                     <Button 
                       size="sm" 
                       variant="outline"
                       onClick={() => updateTaskStatus(task.id, 'rejected')}
+                      className="border-red-200 text-red-600 hover:bg-red-50"
                     >
+                      <AlertTriangle className="w-4 h-4 mr-2" />
                       Reject
                     </Button>
                   </div>
