@@ -61,9 +61,9 @@ export function TaskList({ userRole }: TaskListProps) {
 
     // Filter by completion status
     if (!showCompleted) {
-      query = query.in('status', ['pending', 'in_progress']);
+      query = query.in('status', ['pending', 'in_progress', 'pending_approval']);
     } else {
-      query = query.in('status', ['completed', 'approved', 'rejected']);
+      query = query.in('status', ['approved', 'rejected']);
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
@@ -80,7 +80,7 @@ export function TaskList({ userRole }: TaskListProps) {
     try {
       const { error } = await supabase
         .from('tasks')
-        .update({ status: newStatus as 'pending' | 'in_progress' | 'completed' | 'approved' | 'rejected' })
+        .update({ status: newStatus as 'pending' | 'in_progress' | 'completed' | 'approved' | 'rejected' | 'pending_approval' })
         .eq('id', taskId);
 
       if (error) {
@@ -93,20 +93,25 @@ export function TaskList({ userRole }: TaskListProps) {
       // Import toast here to avoid async import issues
       const { toast } = await import('@/hooks/use-toast').then(module => module);
       
-      if (newStatus === 'completed') {
+      if (newStatus === 'pending_approval') {
         toast({
-          title: "Work Completed!",
-          description: "Task marked as completed! Your supervisor will review it and you'll receive 8 hours upon approval.",
+          title: "Work Submitted!",
+          description: "Task has been submitted for supervisor review. You'll receive 8 hours upon approval.",
         });
       } else if (newStatus === 'approved') {
         toast({
           title: "Task Approved!",
-          description: "Task has been approved. 8 hours have been added to the worker's time log.",
+          description: "Task has been approved. 8 hours have been added to your time log.",
         });
       } else if (newStatus === 'rejected') {
         toast({
-          title: "Task Rejected",
-          description: "Task has been rejected. Please review and reassign if needed.",
+          title: "Task Requires Rework",
+          description: "Task has been rejected. Please review the feedback and resubmit.",
+        });
+      } else if (newStatus === 'in_progress') {
+        toast({
+          title: "Task In Progress",
+          description: "Task status updated to in progress.",
         });
       }
       
@@ -120,6 +125,7 @@ export function TaskList({ userRole }: TaskListProps) {
     const statusStyles = {
       pending: 'bg-yellow-100 text-yellow-800',
       in_progress: 'bg-blue-100 text-blue-800',
+      pending_approval: 'bg-orange-100 text-orange-800',
       completed: 'bg-green-100 text-green-800',
       approved: 'bg-emerald-100 text-emerald-800',
       rejected: 'bg-red-100 text-red-800',
@@ -149,9 +155,10 @@ export function TaskList({ userRole }: TaskListProps) {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed':
       case 'approved':
         return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'pending_approval':
+        return <Clock className="w-4 h-4 text-orange-600" />;
       case 'in_progress':
         return <Play className="w-4 h-4 text-blue-600" />;
       case 'rejected':
@@ -281,7 +288,7 @@ export function TaskList({ userRole }: TaskListProps) {
                         size="sm" 
                         onClick={() => {
                           console.log('🎯 Work Completed button clicked for task:', task.id, task.title);
-                          updateTaskStatus(task.id, 'completed');
+                          updateTaskStatus(task.id, 'pending_approval');
                         }}
                         className="bg-green-600 hover:bg-green-700"
                       >
@@ -293,7 +300,7 @@ export function TaskList({ userRole }: TaskListProps) {
                 )}
 
                 {/* Action buttons for supervisors */}
-                {userRole === 'supervisor' && task.status === 'completed' && (
+                {(userRole === 'supervisor' || userRole === 'admin') && task.status === 'pending_approval' && (
                   <div className="mt-4 flex gap-2">
                     <Button 
                       size="sm" 
@@ -306,11 +313,11 @@ export function TaskList({ userRole }: TaskListProps) {
                     <Button 
                       size="sm" 
                       variant="outline"
-                      onClick={() => updateTaskStatus(task.id, 'rejected')}
+                      onClick={() => updateTaskStatus(task.id, 'in_progress')}
                       className="border-red-200 text-red-600 hover:bg-red-50"
                     >
                       <AlertTriangle className="w-4 h-4 mr-2" />
-                      Reject
+                      Request Rework
                     </Button>
                   </div>
                 )}

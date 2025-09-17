@@ -116,6 +116,39 @@ export type Database = {
         }
         Relationships: []
       }
+      task_history: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          new_status: Database["public"]["Enums"]["task_status"] | null
+          notes: string | null
+          old_status: Database["public"]["Enums"]["task_status"] | null
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          new_status?: Database["public"]["Enums"]["task_status"] | null
+          notes?: string | null
+          old_status?: Database["public"]["Enums"]["task_status"] | null
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          new_status?: Database["public"]["Enums"]["task_status"] | null
+          notes?: string | null
+          old_status?: Database["public"]["Enums"]["task_status"] | null
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       task_reports: {
         Row: {
           ai_feedback: string | null
@@ -450,6 +483,7 @@ export type Database = {
         | "completed"
         | "approved"
         | "rejected"
+        | "pending_approval"
       user_role: "admin" | "supervisor" | "student" | "garden_worker"
     }
     CompositeTypes: {
@@ -585,6 +619,7 @@ export const Constants = {
         "completed",
         "approved",
         "rejected",
+        "pending_approval",
       ],
       user_role: ["admin", "supervisor", "student", "garden_worker"],
     },
