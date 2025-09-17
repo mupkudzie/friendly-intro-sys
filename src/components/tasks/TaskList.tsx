@@ -75,12 +75,21 @@ export function TaskList({ userRole }: TaskListProps) {
   };
 
   const updateTaskStatus = async (taskId: string, newStatus: string) => {
-    const { error } = await supabase
-      .from('tasks')
-      .update({ status: newStatus as 'pending' | 'in_progress' | 'completed' | 'approved' | 'rejected' })
-      .eq('id', taskId);
+    console.log('🔄 Updating task status:', taskId, 'to', newStatus);
+    
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ status: newStatus as 'pending' | 'in_progress' | 'completed' | 'approved' | 'rejected' })
+        .eq('id', taskId);
 
-    if (!error) {
+      if (error) {
+        console.error('❌ Error updating task status:', error);
+        return;
+      }
+
+      console.log('✅ Task status updated successfully');
+      
       // Import toast here to avoid async import issues
       const { toast } = await import('@/hooks/use-toast').then(module => module);
       
@@ -102,6 +111,8 @@ export function TaskList({ userRole }: TaskListProps) {
       }
       
       fetchTasks();
+    } catch (err) {
+      console.error('❌ Exception in updateTaskStatus:', err);
     }
   };
 
@@ -268,7 +279,10 @@ export function TaskList({ userRole }: TaskListProps) {
                     {task.status === 'in_progress' && (
                       <Button 
                         size="sm" 
-                        onClick={() => updateTaskStatus(task.id, 'completed')}
+                        onClick={() => {
+                          console.log('🎯 Work Completed button clicked for task:', task.id, task.title);
+                          updateTaskStatus(task.id, 'completed');
+                        }}
                         className="bg-green-600 hover:bg-green-700"
                       >
                         <CheckCircle className="w-4 h-4 mr-2" />
