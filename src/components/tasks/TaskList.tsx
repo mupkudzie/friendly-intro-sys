@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Clock, Play, AlertTriangle, Calendar, MapPin, User, CheckSquare } from 'lucide-react';
 import { format } from 'date-fns';
+import { MobileTaskStart } from '@/components/mobile/MobileTaskStart';
+import { ActivityTracker } from '@/components/mobile/ActivityTracker';
 
 interface Task {
   id: string;
@@ -33,6 +35,9 @@ export function TaskList({ userRole }: TaskListProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isStartDialogOpen, setIsStartDialogOpen] = useState(false);
+  const [activeTaskLog, setActiveTaskLog] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTasks();
@@ -271,12 +276,15 @@ export function TaskList({ userRole }: TaskListProps) {
 
                 {/* Action buttons for workers */}
                 {(userRole === 'student' || userRole === 'garden_worker') && 
-                 task.assigned_to === userProfile?.user_id && (
+                  task.assigned_to === userProfile?.user_id && (
                   <div className="mt-4 flex gap-2">
                     {task.status === 'pending' && (
                       <Button 
                         size="sm" 
-                        onClick={() => updateTaskStatus(task.id, 'in_progress')}
+                        onClick={() => {
+                          setSelectedTask(task);
+                          setIsStartDialogOpen(true);
+                        }}
                         className="bg-blue-600 hover:bg-blue-700"
                       >
                         <Play className="w-4 h-4 mr-2" />
@@ -325,6 +333,32 @@ export function TaskList({ userRole }: TaskListProps) {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Activity Tracker for active task */}
+      {activeTaskLog && selectedTask && (
+        <ActivityTracker
+          taskId={selectedTask.id}
+          userId={userProfile?.user_id || ''}
+          isTracking={true}
+        />
+      )}
+
+      {/* Mobile Task Start Dialog */}
+      {selectedTask && (
+        <MobileTaskStart
+          task={selectedTask}
+          userId={userProfile?.user_id || ''}
+          isOpen={isStartDialogOpen}
+          onClose={() => {
+            setIsStartDialogOpen(false);
+            setSelectedTask(null);
+          }}
+          onTaskStarted={(logId, photos) => {
+            setActiveTaskLog(logId);
+            fetchTasks();
+          }}
+        />
       )}
     </div>
   );

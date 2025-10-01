@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          activity_data_json: Json | null
+          created_at: string
+          end_time: string | null
+          final_photos: Json | null
+          id: string
+          initial_photos: Json | null
+          start_time: string | null
+          status: string | null
+          task_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_data_json?: Json | null
+          created_at?: string
+          end_time?: string | null
+          final_photos?: Json | null
+          id?: string
+          initial_photos?: Json | null
+          start_time?: string | null
+          status?: string | null
+          task_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_data_json?: Json | null
+          created_at?: string
+          end_time?: string | null
+          final_photos?: Json | null
+          id?: string
+          initial_photos?: Json | null
+          start_time?: string | null
+          status?: string | null
+          task_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_logs_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -326,6 +376,9 @@ export type Database = {
           description: string
           due_date: string | null
           estimated_hours: number | null
+          geofence_lat: number | null
+          geofence_lon: number | null
+          geofence_radius: number | null
           id: string
           instructions: string | null
           location: string | null
@@ -341,6 +394,9 @@ export type Database = {
           description: string
           due_date?: string | null
           estimated_hours?: number | null
+          geofence_lat?: number | null
+          geofence_lon?: number | null
+          geofence_radius?: number | null
           id?: string
           instructions?: string | null
           location?: string | null
@@ -356,6 +412,9 @@ export type Database = {
           description?: string
           due_date?: string | null
           estimated_hours?: number | null
+          geofence_lat?: number | null
+          geofence_lon?: number | null
+          geofence_radius?: number | null
           id?: string
           instructions?: string | null
           location?: string | null

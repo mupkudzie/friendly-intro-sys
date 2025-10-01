@@ -61,9 +61,9 @@ export function ActivityTracker({ taskId, userId, isTracking }: ActivityTrackerP
         await supabase.from('activity_logs').insert({
           user_id: userId,
           task_id: taskId,
-          activity_data_json: activitySummary,
+          activity_data_json: activitySummary as any,
           status: activityLevel,
-        });
+        } as any);
 
         setActivityData([]);
       }
