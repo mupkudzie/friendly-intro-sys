@@ -1,7 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { AdminDashboard } from '@/components/dashboard/AdminDashboard';
 import { SupervisorDashboard } from '@/components/dashboard/SupervisorDashboard';
-import { WorkerDashboard } from '@/components/dashboard/WorkerDashboard';
+import { MobileWorkerDashboard } from '@/components/mobile/MobileWorkerDashboard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 
@@ -44,7 +44,7 @@ export default function Dashboard() {
         return <SupervisorDashboard />;
       case 'student':
       case 'garden_worker':
-        return <WorkerDashboard />;
+        return <MobileWorkerDashboard userId={userProfile.user_id} userRole={userProfile.role} />;
       default:
         return (
           <Card>
