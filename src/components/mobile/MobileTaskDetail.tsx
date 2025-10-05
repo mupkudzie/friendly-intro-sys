@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TaskComments } from './TaskComments';
 import { MobileTaskStart } from './MobileTaskStart';
+import { PhotoCapture } from './PhotoCapture';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { 
@@ -14,7 +15,8 @@ import {
   AlertCircle,
   CheckCircle2,
   XCircle,
-  PlayCircle
+  PlayCircle,
+  Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -44,6 +46,7 @@ interface MobileTaskDetailProps {
 export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }: MobileTaskDetailProps) {
   const [showStartWorkflow, setShowStartWorkflow] = useState(false);
   const [activeTimeLogId, setActiveTimeLogId] = useState<string | null>(null);
+  const [showPhotoCapture, setShowPhotoCapture] = useState(false);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -75,7 +78,13 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
     onTaskUpdate();
   };
 
-  const handleCompleteTask = async () => {
+  const handleCompleteTask = () => {
+    setShowPhotoCapture(true);
+  };
+
+  const handlePhotosCapture = async (photos: string[]) => {
+    setShowPhotoCapture(false);
+    
     try {
       // Update task status to pending_approval
       const { error: taskError } = await supabase
@@ -84,6 +93,19 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
         .eq('id', task.id);
 
       if (taskError) throw taskError;
+
+      // Store photos in activity_logs
+      const { error: activityError } = await supabase
+        .from('activity_logs')
+        .insert({
+          user_id: userId,
+          task_id: task.id,
+          status: 'completed',
+          final_photos: photos,
+          end_time: new Date().toISOString()
+        });
+
+      if (activityError) throw activityError;
 
       // End the time log
       if (activeTimeLogId) {
@@ -99,7 +121,7 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
 
       toast({
         title: "Task completed",
-        description: "Task submitted for supervisor review",
+        description: "Waiting for supervisor approval. Your supervisor has been notified.",
       });
 
       onTaskUpdate();
@@ -187,19 +209,33 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
 
             <TaskComments taskId={task.id} userId={userId} />
 
-            <div className="flex gap-2">
+            <div className="space-y-2">
               {task.status === 'pending' && (
-                <Button onClick={handleStartTask} className="flex-1">
+                <Button onClick={handleStartTask} className="w-full">
                   <PlayCircle className="mr-2 h-4 w-4" />
                   Start Task
                 </Button>
               )}
 
               {task.status === 'in_progress' && (
-                <Button onClick={handleCompleteTask} className="flex-1">
+                <Button onClick={handleCompleteTask} className="w-full">
                   <CheckCircle2 className="mr-2 h-4 w-4" />
-                  Complete Task
+                  End Task
                 </Button>
+              )}
+
+              {task.status === 'pending_approval' && (
+                <Badge variant="outline" className="w-full py-3 justify-center text-sm">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Pending - Waiting for Supervisor Approval
+                </Badge>
+              )}
+
+              {task.status === 'approved' && (
+                <Badge className="w-full py-3 justify-center text-sm bg-green-600 hover:bg-green-700">
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Work Done
+                </Badge>
               )}
             </div>
           </div>
@@ -215,6 +251,20 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
           onTaskStarted={handleTaskStarted}
         />
       )}
+
+      <Dialog open={showPhotoCapture} onOpenChange={setShowPhotoCapture}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Capture Completion Photos</DialogTitle>
+          </DialogHeader>
+          <PhotoCapture
+            title="Work Completed"
+            minPhotos={2}
+            maxPhotos={5}
+            onPhotosCapture={handlePhotosCapture}
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
