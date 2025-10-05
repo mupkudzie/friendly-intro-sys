@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { Geolocation } from '@capacitor/geolocation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, User } from 'lucide-react';
+import { Plus, User, MapPin } from 'lucide-react';
 
 interface Profile {
   user_id: string;
@@ -32,6 +33,9 @@ export function TaskAssignment() {
     estimated_hours: '',
     location: '',
     instructions: '',
+    geofence_lat: '',
+    geofence_lon: '',
+    geofence_radius: '100',
   });
 
   useEffect(() => {
@@ -66,6 +70,9 @@ export function TaskAssignment() {
       estimated_hours: formData.estimated_hours ? parseFloat(formData.estimated_hours) : null,
       location: formData.location || null,
       instructions: formData.instructions || null,
+      geofence_lat: formData.geofence_lat ? parseFloat(formData.geofence_lat) : null,
+      geofence_lon: formData.geofence_lon ? parseFloat(formData.geofence_lon) : null,
+      geofence_radius: formData.geofence_radius ? parseFloat(formData.geofence_radius) : 100,
     };
 
     const { error } = await supabase
@@ -94,6 +101,9 @@ export function TaskAssignment() {
         estimated_hours: '',
         location: '',
         instructions: '',
+        geofence_lat: '',
+        geofence_lon: '',
+        geofence_radius: '100',
       });
     }
 
@@ -102,6 +112,32 @@ export function TaskAssignment() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleUseCurrentLocation = async () => {
+    try {
+      const position = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 10000,
+      });
+
+      setFormData(prev => ({
+        ...prev,
+        geofence_lat: position.coords.latitude.toString(),
+        geofence_lon: position.coords.longitude.toString(),
+      }));
+
+      toast({
+        title: "Location captured",
+        description: `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Location error",
+        description: "Failed to get current location. Please enable GPS.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -219,6 +255,60 @@ export function TaskAssignment() {
                 onChange={(e) => handleInputChange('location', e.target.value)}
                 placeholder="e.g., Greenhouse A, Main Garden, Nursery"
               />
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>Geofence Location (for mobile verification)</Label>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleUseCurrentLocation}
+                >
+                  <MapPin className="w-4 h-4 mr-2" />
+                  Use Current Location
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="geofence_lat">Latitude</Label>
+                  <Input
+                    id="geofence_lat"
+                    type="number"
+                    step="any"
+                    value={formData.geofence_lat}
+                    onChange={(e) => handleInputChange('geofence_lat', e.target.value)}
+                    placeholder="e.g., 33.6425"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="geofence_lon">Longitude</Label>
+                  <Input
+                    id="geofence_lon"
+                    type="number"
+                    step="any"
+                    value={formData.geofence_lon}
+                    onChange={(e) => handleInputChange('geofence_lon', e.target.value)}
+                    placeholder="e.g., 73.0657"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="geofence_radius">Radius (meters)</Label>
+                  <Input
+                    id="geofence_radius"
+                    type="number"
+                    step="1"
+                    min="10"
+                    value={formData.geofence_radius}
+                    onChange={(e) => handleInputChange('geofence_radius', e.target.value)}
+                    placeholder="100"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">
