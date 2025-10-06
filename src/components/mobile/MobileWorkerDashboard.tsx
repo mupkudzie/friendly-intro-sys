@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +12,8 @@ import {
   CheckCircle2, 
   TrendingUp, 
   Plus,
-  AlertCircle
+  AlertCircle,
+  LogOut
 } from 'lucide-react';
 
 interface Task {
@@ -35,6 +37,7 @@ interface MobileWorkerDashboardProps {
 }
 
 export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboardProps) {
+  const { signOut } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [stats, setStats] = useState({
     totalHours: 0,
@@ -118,10 +121,15 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
             {userRole === 'student' ? 'Student Dashboard' : 'Worker Dashboard'}
           </p>
         </div>
-        <Button onClick={() => setShowRequestTask(true)} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          Request Task
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowRequestTask(true)} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Request Task
+          </Button>
+          <Button onClick={() => signOut()} size="sm" variant="outline">
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3">

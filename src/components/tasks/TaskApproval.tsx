@@ -53,7 +53,7 @@ export function TaskApproval() {
         *,
         workerProfile:profiles!assigned_to(full_name, role)
       `)
-      .eq('status', 'completed')
+      .eq('status', 'pending_approval')
       .order('created_at', { ascending: false });
 
     if (!error && data) {
