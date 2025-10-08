@@ -10,6 +10,12 @@ interface GeofenceCheckProps {
   onLocationVerified: (location: { latitude: number; longitude: number }) => void;
 }
 
+const GARDEN_LOCATION = {
+  latitude: -20.164235,
+  longitude: 28.641425,
+  name: 'Bulawayo North Garden'
+};
+
 export function GeofenceCheck({ taskLocation, onLocationVerified }: GeofenceCheckProps) {
   const [checking, setChecking] = useState(false);
   const [verified, setVerified] = useState<boolean | null>(null);
@@ -75,6 +81,39 @@ export function GeofenceCheck({ taskLocation, onLocationVerified }: GeofenceChec
     }
   };
 
+  const useGardenLocation = () => {
+    setChecking(true);
+    
+    const distance = calculateDistance(
+      GARDEN_LOCATION.latitude,
+      GARDEN_LOCATION.longitude,
+      taskLocation.latitude,
+      taskLocation.longitude
+    );
+
+    const isWithinGeofence = distance <= taskLocation.radius;
+    setVerified(isWithinGeofence);
+
+    if (isWithinGeofence) {
+      toast({
+        title: "Location verified",
+        description: `Using ${GARDEN_LOCATION.name} location`,
+      });
+      onLocationVerified({
+        latitude: GARDEN_LOCATION.latitude,
+        longitude: GARDEN_LOCATION.longitude,
+      });
+    } else {
+      toast({
+        title: "Location error",
+        description: `${GARDEN_LOCATION.name} is ${Math.round(distance)}m away from the work site. Required: within ${taskLocation.radius}m`,
+        variant: "destructive",
+      });
+    }
+
+    setChecking(false);
+  };
+
   return (
     <Card className="p-6">
       <div className="flex items-center gap-2 mb-4">
@@ -86,13 +125,25 @@ export function GeofenceCheck({ taskLocation, onLocationVerified }: GeofenceChec
         Verify you're at the work site (within {taskLocation.radius}m radius)
       </p>
 
-      <Button
-        onClick={checkLocation}
-        disabled={checking}
-        className="w-full"
-      >
-        {checking ? 'Checking Location...' : 'Verify Location'}
-      </Button>
+      <div className="space-y-2">
+        <Button
+          onClick={checkLocation}
+          disabled={checking}
+          className="w-full"
+        >
+          {checking ? 'Checking Location...' : 'Use GPS Location'}
+        </Button>
+
+        <Button
+          onClick={useGardenLocation}
+          disabled={checking}
+          variant="outline"
+          className="w-full"
+        >
+          <MapPin className="h-4 w-4 mr-2" />
+          Use {GARDEN_LOCATION.name}
+        </Button>
+      </div>
 
       {verified !== null && (
         <div className={`mt-4 flex items-center gap-2 p-3 rounded ${verified ? 'bg-green-500/10' : 'bg-destructive/10'}`}>
