@@ -83,33 +83,17 @@ export function GeofenceCheck({ taskLocation, onLocationVerified }: GeofenceChec
 
   const useGardenLocation = () => {
     setChecking(true);
+    setVerified(true);
+
+    toast({
+      title: "Location verified",
+      description: `Using ${GARDEN_LOCATION.name} location`,
+    });
     
-    const distance = calculateDistance(
-      GARDEN_LOCATION.latitude,
-      GARDEN_LOCATION.longitude,
-      taskLocation.latitude,
-      taskLocation.longitude
-    );
-
-    const isWithinGeofence = distance <= taskLocation.radius;
-    setVerified(isWithinGeofence);
-
-    if (isWithinGeofence) {
-      toast({
-        title: "Location verified",
-        description: `Using ${GARDEN_LOCATION.name} location`,
-      });
-      onLocationVerified({
-        latitude: GARDEN_LOCATION.latitude,
-        longitude: GARDEN_LOCATION.longitude,
-      });
-    } else {
-      toast({
-        title: "Location error",
-        description: `${GARDEN_LOCATION.name} is ${Math.round(distance)}m away from the work site. Required: within ${taskLocation.radius}m`,
-        variant: "destructive",
-      });
-    }
+    onLocationVerified({
+      latitude: GARDEN_LOCATION.latitude,
+      longitude: GARDEN_LOCATION.longitude,
+    });
 
     setChecking(false);
   };
