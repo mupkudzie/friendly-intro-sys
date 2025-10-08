@@ -140,6 +140,20 @@ export function TaskAssignment() {
     }
   };
 
+  const handleUseGardenLocation = () => {
+    setFormData(prev => ({
+      ...prev,
+      geofence_lat: '-20.164235',
+      geofence_lon: '28.641425',
+      location: 'Bulawayo North Garden',
+    }));
+
+    toast({
+      title: "Garden location set",
+      description: "Bulawayo North Garden (-20.164235, 28.641425)",
+    });
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -260,15 +274,26 @@ export function TaskAssignment() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label>Geofence Location (for mobile verification)</Label>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm"
-                  onClick={handleUseCurrentLocation}
-                >
-                  <MapPin className="w-4 h-4 mr-2" />
-                  Use Current Location
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleUseGardenLocation}
+                  >
+                    <MapPin className="w-4 h-4 mr-2" />
+                    Use Garden Location
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleUseCurrentLocation}
+                  >
+                    <MapPin className="w-4 h-4 mr-2" />
+                    Use Current Location
+                  </Button>
+                </div>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
