@@ -68,38 +68,36 @@ export function ClockInOutView() {
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Clock In/Out</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex gap-4 mb-6">
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold mb-6">Clock In/Out</h2>
+        
+        <div className="flex gap-4 mb-6 items-end">
           <div className="flex-1">
-            <label className="text-sm text-muted-foreground mb-2 block">Search Member</label>
+            <label className="text-sm font-medium mb-2 block">Search Member</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search by member name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-11"
               />
             </div>
           </div>
           
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">Date</label>
+            <label className="text-sm font-medium mb-2 block">Date</label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-[200px] justify-start text-left font-normal",
-                    !selectedDate && "text-muted-foreground"
+                    "w-[180px] h-11 justify-start text-left font-normal"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, "MM/dd/yyyy") : <span>Pick a date</span>}
+                  {format(selectedDate, "MM/dd/yyyy")}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -114,65 +112,73 @@ export function ClockInOutView() {
             </Popover>
           </div>
 
-          <div className="flex items-end">
-            <Button className="bg-primary hover:bg-primary/90">
-              See Today's Report
-            </Button>
-          </div>
+          <Button className="h-11 px-6 bg-teal-500 hover:bg-teal-600 text-white">
+            See Today's Report
+          </Button>
         </div>
 
-        <div className="border rounded-lg overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="text-left p-4 font-medium">Member Name</th>
-                <th className="text-center p-4 font-medium border-l">Clock In</th>
-                <th className="text-center p-4 font-medium border-l">Clock Out</th>
-                <th className="text-center p-4 font-medium border-l">Time Worked</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={4} className="text-center p-8 text-muted-foreground">
-                    Loading...
-                  </td>
+        <Card className="border shadow-sm">
+          <div className="overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-muted/30">
+                  <th className="text-left p-4 font-medium text-sm">Member Name</th>
+                  <th className="text-center p-4 font-medium text-sm border-l border-red-300 bg-red-50/50">
+                    <div className="flex items-center justify-center gap-2">
+                      Clock In
+                    </div>
+                  </th>
+                  <th className="text-center p-4 font-medium text-sm border-l border-red-300 bg-red-50/50">
+                    <div className="flex items-center justify-center gap-2">
+                      Clock Out
+                    </div>
+                  </th>
+                  <th className="text-center p-4 font-medium text-sm border-l">Time Worked</th>
                 </tr>
-              ) : filteredEntries.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="text-center p-8 text-muted-foreground">
-                    No time entries found for this date
-                  </td>
-                </tr>
-              ) : (
-                filteredEntries.map((entry) => (
-                  <tr key={entry.id} className="border-t hover:bg-muted/30">
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            {entry.full_name.split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{entry.full_name}</span>
-                      </div>
-                    </td>
-                    <td className="text-center p-4 border-l">
-                      {entry.clock_in || '-'}
-                    </td>
-                    <td className="text-center p-4 border-l">
-                      {entry.clock_out || '-'}
-                    </td>
-                    <td className="text-center p-4 border-l font-medium">
-                      {entry.time_worked}
+              </thead>
+              <tbody className="bg-white">
+                {loading ? (
+                  <tr>
+                    <td colSpan={4} className="text-center p-12 text-muted-foreground">
+                      Loading...
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
+                ) : filteredEntries.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="text-center p-12 text-muted-foreground">
+                      No time entries found for this date
+                    </td>
+                  </tr>
+                ) : (
+                  filteredEntries.map((entry) => (
+                    <tr key={entry.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                              {entry.full_name.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium text-foreground">{entry.full_name}</span>
+                        </div>
+                      </td>
+                      <td className="text-center p-4 border-l">
+                        <span className="text-sm">{entry.clock_in || '-'}</span>
+                      </td>
+                      <td className="text-center p-4 border-l">
+                        <span className="text-sm">{entry.clock_out || '-'}</span>
+                      </td>
+                      <td className="text-center p-4 border-l">
+                        <span className="text-sm font-medium">{entry.time_worked}</span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
+    </div>
   );
 }
