@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Clock, Users, Leaf, LogOut, Plus } from 'lucide-react';
-import { TaskList } from '@/components/tasks/TaskList';
 import { TaskAssignment } from '@/components/tasks/TaskAssignment';
 import { TaskRequests } from '@/components/tasks/TaskRequests';
 import { TaskApproval } from '@/components/tasks/TaskApproval';
@@ -15,6 +14,8 @@ import { PerformanceEvaluation } from '@/components/performance/PerformanceEvalu
 import { TaskOverview } from '@/components/tasks/TaskOverview';
 import { WorkerActivityTracker } from '@/components/workers/WorkerActivityTracker';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
+import { ClockInOutView } from '@/components/time/ClockInOutView';
+import { WeeklyTimesheetView } from '@/components/time/WeeklyTimesheetView';
 
 export function SupervisorDashboard() {
   const { userProfile, signOut } = useAuth();
@@ -132,7 +133,7 @@ export function SupervisorDashboard() {
 
         {/* Main Tabs */}
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-7 lg:grid-cols-8 p-1">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 p-1">
             <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
             <TabsTrigger value="requests" className="text-xs sm:text-sm">Requests</TabsTrigger>
             <TabsTrigger value="approval" className="text-xs sm:text-sm">Review</TabsTrigger>
@@ -140,6 +141,8 @@ export function SupervisorDashboard() {
             <TabsTrigger value="templates" className="text-xs sm:text-sm">Templates</TabsTrigger>
             <TabsTrigger value="performance" className="text-xs sm:text-sm">Performance</TabsTrigger>
             <TabsTrigger value="activity" className="text-xs sm:text-sm">Activity</TabsTrigger>
+            <TabsTrigger value="clockinout" className="text-xs sm:text-sm">Clock In/Out</TabsTrigger>
+            <TabsTrigger value="timesheet" className="text-xs sm:text-sm">Timesheet</TabsTrigger>
             <TabsTrigger value="notifications" className="text-xs sm:text-sm">Notifications</TabsTrigger>
           </TabsList>
 
@@ -169,6 +172,14 @@ export function SupervisorDashboard() {
 
           <TabsContent value="activity">
             <WorkerActivityTracker userRole="supervisor" />
+          </TabsContent>
+
+          <TabsContent value="clockinout">
+            <ClockInOutView />
+          </TabsContent>
+
+          <TabsContent value="timesheet">
+            <WeeklyTimesheetView />
           </TabsContent>
 
           <TabsContent value="notifications">

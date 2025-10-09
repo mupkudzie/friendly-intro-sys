@@ -6,14 +6,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Users, CheckCircle, Clock, AlertTriangle, BarChart3, Leaf, LogOut } from 'lucide-react';
-import { TaskList } from '@/components/tasks/TaskList';
 import { UserManagement } from '@/components/users/UserManagement';
-import { TimeTracking } from '@/components/time/TimeTracking';
 import { Reports } from '@/components/reports/Reports';
 import { AdminAnalytics } from '@/components/analytics/AdminAnalytics';
 import { TaskOverview } from '@/components/tasks/TaskOverview';
 import { WorkerActivityTracker } from '@/components/workers/WorkerActivityTracker';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
+import { ClockInOutView } from '@/components/time/ClockInOutView';
+import { WeeklyTimesheetView } from '@/components/time/WeeklyTimesheetView';
 
 export function AdminDashboard() {
   const { userProfile, signOut } = useAuth();
@@ -128,10 +128,12 @@ export function AdminDashboard() {
 
         {/* Main Tabs */}
         <Tabs defaultValue="analytics" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="overview">Task Overview</TabsTrigger>
             <TabsTrigger value="activity">Worker Activity</TabsTrigger>
+            <TabsTrigger value="clockinout">Clock In/Out</TabsTrigger>
+            <TabsTrigger value="timesheet">Weekly Timesheet</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
@@ -147,6 +149,14 @@ export function AdminDashboard() {
 
           <TabsContent value="activity">
             <WorkerActivityTracker userRole="admin" />
+          </TabsContent>
+
+          <TabsContent value="clockinout">
+            <ClockInOutView />
+          </TabsContent>
+
+          <TabsContent value="timesheet">
+            <WeeklyTimesheetView />
           </TabsContent>
 
           <TabsContent value="users">
