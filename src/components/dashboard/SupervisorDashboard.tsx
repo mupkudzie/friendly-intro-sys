@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, Users, Leaf, LogOut, Plus } from 'lucide-react';
+import { CheckCircle, Clock, Users, Leaf, LogOut, Plus, LayoutDashboard, ClipboardList, CheckSquare, UserPlus, FileText, TrendingUp, Activity, Bell } from 'lucide-react';
 import { TaskAssignment } from '@/components/tasks/TaskAssignment';
 import { TaskRequests } from '@/components/tasks/TaskRequests';
 import { TaskApproval } from '@/components/tasks/TaskApproval';
@@ -16,9 +15,24 @@ import { WorkerActivityTracker } from '@/components/workers/WorkerActivityTracke
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { ClockInOutView } from '@/components/time/ClockInOutView';
 import { WeeklyTimesheetView } from '@/components/time/WeeklyTimesheetView';
+import { cn } from '@/lib/utils';
+
+const menuItems = [
+  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'requests', label: 'Requests', icon: ClipboardList },
+  { id: 'approval', label: 'Review', icon: CheckSquare },
+  { id: 'assign', label: 'Assign', icon: UserPlus },
+  { id: 'templates', label: 'Templates', icon: FileText },
+  { id: 'performance', label: 'Performance', icon: TrendingUp },
+  { id: 'activity', label: 'Activity', icon: Activity },
+  { id: 'clockinout', label: 'Clock In/Out', icon: Clock },
+  { id: 'timesheet', label: 'Timesheet', icon: CheckCircle },
+  { id: 'notifications', label: 'Notifications', icon: Bell },
+];
 
 export function SupervisorDashboard() {
   const { userProfile, signOut } = useAuth();
+  const [activeView, setActiveView] = useState('overview');
   const [stats, setStats] = useState({
     assignedTasks: 0,
     completedTasks: 0,
@@ -53,11 +67,38 @@ export function SupervisorDashboard() {
     });
   };
 
+  const renderContent = () => {
+    switch (activeView) {
+      case 'overview':
+        return <TaskOverview userRole="supervisor" />;
+      case 'requests':
+        return <TaskRequests />;
+      case 'approval':
+        return <TaskApproval />;
+      case 'assign':
+        return <TaskAssignment />;
+      case 'templates':
+        return <TaskTemplates />;
+      case 'performance':
+        return <PerformanceEvaluation userRole="supervisor" />;
+      case 'activity':
+        return <WorkerActivityTracker userRole="supervisor" />;
+      case 'clockinout':
+        return <ClockInOutView />;
+      case 'timesheet':
+        return <WeeklyTimesheetView />;
+      case 'notifications':
+        return <NotificationCenter />;
+      default:
+        return <TaskOverview userRole="supervisor" />;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b bg-card shadow-sm">
-        <div className="flex h-16 items-center mobile-optimized">
+        <div className="flex h-16 items-center px-6">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-lg gradient-green">
               <Leaf className="w-5 h-5 text-white" />
@@ -67,125 +108,99 @@ export function SupervisorDashboard() {
               <p className="text-xs text-muted-foreground hidden sm:block">Supervisor Dashboard</p>
             </div>
           </div>
-          <div className="ml-auto flex items-center gap-2 sm:gap-4">
-            <div className="text-xs sm:text-sm text-muted-foreground hidden md:block">
+          <div className="ml-auto flex items-center gap-4">
+            <div className="text-sm text-muted-foreground hidden md:block">
               Welcome, {userProfile?.full_name}
             </div>
             <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
               Supervisor
             </Badge>
-            <Button variant="outline" size="sm" onClick={signOut} className="h-8 w-8 sm:w-auto sm:h-9">
-              <LogOut className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Sign Out</span>
+            <Button variant="outline" size="sm" onClick={signOut}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="mobile-optimized">
-        {/* Stats Cards */}
-        <div className="mobile-grid mb-6">
-          <Card className="mobile-card fade-in hover:shadow-md transition-all duration-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Assigned Tasks</CardTitle>
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Plus className="h-4 w-4 text-primary" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">{stats.assignedTasks}</div>
-            </CardContent>
-          </Card>
-          <Card className="mobile-card fade-in hover:shadow-md transition-all duration-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completed</CardTitle>
-              <div className="p-2 rounded-lg bg-success/10">
-                <CheckCircle className="h-4 w-4 text-success" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-success">{stats.completedTasks}</div>
-            </CardContent>
-          </Card>
-          <Card className="mobile-card fade-in hover:shadow-md transition-all duration-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
-              <div className="p-2 rounded-lg bg-warning/10">
-                <Clock className="h-4 w-4 text-warning" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-warning">{stats.pendingApprovals}</div>
-            </CardContent>
-          </Card>
-          <Card className="mobile-card fade-in hover:shadow-md transition-all duration-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Workers</CardTitle>
-              <div className="p-2 rounded-lg bg-info/10">
-                <Users className="h-4 w-4 text-info" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-info">{stats.activeWorkers}</div>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="flex min-h-[calc(100vh-64px)]">
+        {/* Sidebar */}
+        <aside className="w-64 border-r bg-card">
+          <nav className="p-4 space-y-1">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveView(item.id)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
+                    activeView === item.id
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
 
-        {/* Main Tabs */}
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 p-1">
-            <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
-            <TabsTrigger value="requests" className="text-xs sm:text-sm">Requests</TabsTrigger>
-            <TabsTrigger value="approval" className="text-xs sm:text-sm">Review</TabsTrigger>
-            <TabsTrigger value="assign" className="text-xs sm:text-sm">Assign</TabsTrigger>
-            <TabsTrigger value="templates" className="text-xs sm:text-sm">Templates</TabsTrigger>
-            <TabsTrigger value="performance" className="text-xs sm:text-sm">Performance</TabsTrigger>
-            <TabsTrigger value="activity" className="text-xs sm:text-sm">Activity</TabsTrigger>
-            <TabsTrigger value="clockinout" className="text-xs sm:text-sm">Clock In/Out</TabsTrigger>
-            <TabsTrigger value="timesheet" className="text-xs sm:text-sm">Timesheet</TabsTrigger>
-            <TabsTrigger value="notifications" className="text-xs sm:text-sm">Notifications</TabsTrigger>
-          </TabsList>
+        {/* Main Content */}
+        <main className="flex-1 p-6 overflow-auto">
+          {/* Stats Cards */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+            <Card className="fade-in hover:shadow-md transition-all duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Assigned Tasks</CardTitle>
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Plus className="h-4 w-4 text-primary" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-primary">{stats.assignedTasks}</div>
+              </CardContent>
+            </Card>
+            <Card className="fade-in hover:shadow-md transition-all duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Completed</CardTitle>
+                <div className="p-2 rounded-lg bg-green-100">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">{stats.completedTasks}</div>
+              </CardContent>
+            </Card>
+            <Card className="fade-in hover:shadow-md transition-all duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
+                <div className="p-2 rounded-lg bg-orange-100">
+                  <Clock className="h-4 w-4 text-orange-600" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">{stats.pendingApprovals}</div>
+              </CardContent>
+            </Card>
+            <Card className="fade-in hover:shadow-md transition-all duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Active Workers</CardTitle>
+                <div className="p-2 rounded-lg bg-blue-100">
+                  <Users className="h-4 w-4 text-blue-600" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">{stats.activeWorkers}</div>
+              </CardContent>
+            </Card>
+          </div>
 
-          <TabsContent value="overview">
-            <TaskOverview userRole="supervisor" />
-          </TabsContent>
-
-          <TabsContent value="requests">
-            <TaskRequests />
-          </TabsContent>
-
-          <TabsContent value="approval">
-            <TaskApproval />
-          </TabsContent>
-
-          <TabsContent value="assign">
-            <TaskAssignment />
-          </TabsContent>
-
-          <TabsContent value="templates">
-            <TaskTemplates />
-          </TabsContent>
-
-          <TabsContent value="performance">
-            <PerformanceEvaluation userRole="supervisor" />
-          </TabsContent>
-
-          <TabsContent value="activity">
-            <WorkerActivityTracker userRole="supervisor" />
-          </TabsContent>
-
-          <TabsContent value="clockinout">
-            <ClockInOutView />
-          </TabsContent>
-
-          <TabsContent value="timesheet">
-            <WeeklyTimesheetView />
-          </TabsContent>
-
-          <TabsContent value="notifications">
-            <NotificationCenter />
-          </TabsContent>
-        </Tabs>
+          {/* Dynamic Content */}
+          {renderContent()}
+        </main>
       </div>
     </div>
   );

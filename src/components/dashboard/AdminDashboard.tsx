@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, CheckCircle, Clock, AlertTriangle, BarChart3, Leaf, LogOut } from 'lucide-react';
+import { Users, CheckCircle, Clock, BarChart3, Leaf, LogOut, LayoutDashboard, Activity, FileText, Bell } from 'lucide-react';
 import { UserManagement } from '@/components/users/UserManagement';
 import { Reports } from '@/components/reports/Reports';
 import { AdminAnalytics } from '@/components/analytics/AdminAnalytics';
@@ -14,9 +13,22 @@ import { WorkerActivityTracker } from '@/components/workers/WorkerActivityTracke
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { ClockInOutView } from '@/components/time/ClockInOutView';
 import { WeeklyTimesheetView } from '@/components/time/WeeklyTimesheetView';
+import { cn } from '@/lib/utils';
+
+const menuItems = [
+  { id: 'analytics', label: 'Overview', icon: LayoutDashboard },
+  { id: 'tasks', label: 'Task Overview', icon: CheckCircle },
+  { id: 'activity', label: 'Activity', icon: Activity },
+  { id: 'clockinout', label: 'Clock In/Out', icon: Clock },
+  { id: 'timesheet', label: 'Timesheet', icon: BarChart3 },
+  { id: 'users', label: 'Users', icon: Users },
+  { id: 'reports', label: 'Reports', icon: FileText },
+  { id: 'notifications', label: 'Notifications', icon: Bell },
+];
 
 export function AdminDashboard() {
   const { userProfile, signOut } = useAuth();
+  const [activeView, setActiveView] = useState('analytics');
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalTasks: 0,
@@ -52,6 +64,29 @@ export function AdminDashboard() {
     });
   };
 
+  const renderContent = () => {
+    switch (activeView) {
+      case 'analytics':
+        return <AdminAnalytics />;
+      case 'tasks':
+        return <TaskOverview userRole="admin" />;
+      case 'activity':
+        return <WorkerActivityTracker userRole="admin" />;
+      case 'clockinout':
+        return <ClockInOutView />;
+      case 'timesheet':
+        return <WeeklyTimesheetView />;
+      case 'users':
+        return <UserManagement />;
+      case 'reports':
+        return <Reports userRole="admin" />;
+      case 'notifications':
+        return <NotificationCenter />;
+      default:
+        return <AdminAnalytics />;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -76,101 +111,85 @@ export function AdminDashboard() {
         </div>
       </div>
 
-      <div className="p-6">
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mb-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalTasks}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completed</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.completedTasks}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending</CardTitle>
-              <Clock className="h-4 w-4 text-orange-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600">{stats.pendingTasks}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Hours</CardTitle>
-              <Clock className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{stats.totalHours.toFixed(1)}</div>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="flex min-h-[calc(100vh-64px)]">
+        {/* Sidebar */}
+        <aside className="w-64 border-r bg-card">
+          <nav className="p-4 space-y-1">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveView(item.id)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
+                    activeView === item.id
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
 
-        {/* Main Tabs */}
-        <Tabs defaultValue="analytics" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-8">
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="overview">Task Overview</TabsTrigger>
-            <TabsTrigger value="activity">Worker Activity</TabsTrigger>
-            <TabsTrigger value="clockinout">Clock In/Out</TabsTrigger>
-            <TabsTrigger value="timesheet">Weekly Timesheet</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          </TabsList>
+        {/* Main Content */}
+        <main className="flex-1 p-6 overflow-auto">
+          {/* Stats Cards */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mb-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalUsers}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalTasks}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Completed</CardTitle>
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">{stats.completedTasks}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Pending</CardTitle>
+                <Clock className="h-4 w-4 text-orange-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">{stats.pendingTasks}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Hours</CardTitle>
+                <Clock className="h-4 w-4 text-blue-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">{stats.totalHours.toFixed(1)}</div>
+              </CardContent>
+            </Card>
+          </div>
 
-          <TabsContent value="analytics">
-            <AdminAnalytics />
-          </TabsContent>
-
-          <TabsContent value="overview">
-            <TaskOverview userRole="admin" />
-          </TabsContent>
-
-          <TabsContent value="activity">
-            <WorkerActivityTracker userRole="admin" />
-          </TabsContent>
-
-          <TabsContent value="clockinout">
-            <ClockInOutView />
-          </TabsContent>
-
-          <TabsContent value="timesheet">
-            <WeeklyTimesheetView />
-          </TabsContent>
-
-          <TabsContent value="users">
-            <UserManagement />
-          </TabsContent>
-
-          <TabsContent value="reports">
-            <Reports userRole="admin" />
-          </TabsContent>
-
-          <TabsContent value="notifications">
-            <NotificationCenter />
-          </TabsContent>
-        </Tabs>
+          {/* Dynamic Content */}
+          {renderContent()}
+        </main>
       </div>
     </div>
   );
