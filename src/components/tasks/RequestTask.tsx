@@ -246,38 +246,6 @@ export function RequestTask() {
         </CardContent>
       </Card>
 
-      {/* Guidelines */}
-      <Card className="fade-in">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-primary" />
-            Request Guidelines
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-medium text-foreground mb-2">When to request tasks:</h4>
-              <ul className="list-disc list-inside text-muted-foreground space-y-1 text-sm">
-                <li>You've completed your assigned tasks and want more work</li>
-                <li>You've identified an improvement opportunity in the garden</li>
-                <li>You have specialized skills that could benefit a particular project</li>
-                <li>You notice maintenance issues that need attention</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-medium text-foreground mb-2">Tips for good requests:</h4>
-              <ul className="list-disc list-inside text-muted-foreground space-y-1 text-sm">
-                <li>Be specific about what you want to do</li>
-                <li>Explain the benefits to the garden</li>
-                <li>Mention your relevant experience or interest</li>
-                <li>Suggest a realistic timeframe</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

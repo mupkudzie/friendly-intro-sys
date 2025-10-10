@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, Users, Leaf, LogOut, Plus, LayoutDashboard, ClipboardList, CheckSquare, UserPlus, FileText, TrendingUp, Activity, Bell } from 'lucide-react';
+import { CheckCircle, Clock, Users, Leaf, LogOut, Plus, LayoutDashboard, ClipboardList, CheckSquare, UserPlus, FileText, TrendingUp, Activity, Bell, Images } from 'lucide-react';
 import { TaskAssignment } from '@/components/tasks/TaskAssignment';
 import { TaskRequests } from '@/components/tasks/TaskRequests';
 import { TaskApproval } from '@/components/tasks/TaskApproval';
@@ -15,6 +15,7 @@ import { WorkerActivityTracker } from '@/components/workers/WorkerActivityTracke
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { ClockInOutView } from '@/components/time/ClockInOutView';
 import { WeeklyTimesheetView } from '@/components/time/WeeklyTimesheetView';
+import { PhotoGallery } from '@/components/gallery/PhotoGallery';
 import { cn } from '@/lib/utils';
 
 const menuItems = [
@@ -25,6 +26,7 @@ const menuItems = [
   { id: 'templates', label: 'Templates', icon: FileText },
   { id: 'performance', label: 'Performance', icon: TrendingUp },
   { id: 'activity', label: 'Activity', icon: Activity },
+  { id: 'photos', label: 'Photo Gallery', icon: Images },
   { id: 'clockinout', label: 'Clock In/Out', icon: Clock },
   { id: 'timesheet', label: 'Timesheet', icon: CheckCircle },
   { id: 'notifications', label: 'Notifications', icon: Bell },
@@ -83,6 +85,8 @@ export function SupervisorDashboard() {
         return <PerformanceEvaluation userRole="supervisor" />;
       case 'activity':
         return <WorkerActivityTracker userRole="supervisor" />;
+      case 'photos':
+        return <PhotoGallery />;
       case 'clockinout':
         return <ClockInOutView />;
       case 'timesheet':

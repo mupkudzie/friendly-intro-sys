@@ -293,38 +293,6 @@ export function TimeLogger() {
         </Card>
       )}
 
-      {/* Instructions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            Time Tracking Guidelines
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3 text-sm">
-            <div>
-              <h4 className="font-medium text-foreground">How to track time:</h4>
-              <ul className="list-disc list-inside text-muted-foreground mt-1 space-y-1">
-                <li>Select a task from your assigned tasks</li>
-                <li>Click "Start Tracking" when you begin work</li>
-                <li>Enter any break time you took during the session</li>
-                <li>Click "End Session" when you finish working</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-medium text-foreground">Tips:</h4>
-              <ul className="list-disc list-inside text-muted-foreground mt-1 space-y-1">
-                <li>Only track time when actively working on the task</li>
-                <li>Include lunch breaks and other significant breaks in break time</li>
-                <li>Short bathroom breaks don't need to be tracked</li>
-                <li>Be honest and accurate with your time tracking</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

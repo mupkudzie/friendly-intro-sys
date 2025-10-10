@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, CheckCircle, Clock, BarChart3, Leaf, LogOut, LayoutDashboard, Activity, FileText, Bell } from 'lucide-react';
+import { Users, CheckCircle, Clock, BarChart3, Leaf, LogOut, LayoutDashboard, Activity, FileText, Bell, Images } from 'lucide-react';
 import { UserManagement } from '@/components/users/UserManagement';
 import { Reports } from '@/components/reports/Reports';
 import { AdminAnalytics } from '@/components/analytics/AdminAnalytics';
@@ -13,12 +13,14 @@ import { WorkerActivityTracker } from '@/components/workers/WorkerActivityTracke
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { ClockInOutView } from '@/components/time/ClockInOutView';
 import { WeeklyTimesheetView } from '@/components/time/WeeklyTimesheetView';
+import { PhotoGallery } from '@/components/gallery/PhotoGallery';
 import { cn } from '@/lib/utils';
 
 const menuItems = [
   { id: 'analytics', label: 'Overview', icon: LayoutDashboard },
   { id: 'tasks', label: 'Task Overview', icon: CheckCircle },
   { id: 'activity', label: 'Activity', icon: Activity },
+  { id: 'photos', label: 'Photo Gallery', icon: Images },
   { id: 'clockinout', label: 'Clock In/Out', icon: Clock },
   { id: 'timesheet', label: 'Timesheet', icon: BarChart3 },
   { id: 'users', label: 'Users', icon: Users },
@@ -72,6 +74,8 @@ export function AdminDashboard() {
         return <TaskOverview userRole="admin" />;
       case 'activity':
         return <WorkerActivityTracker userRole="admin" />;
+      case 'photos':
+        return <PhotoGallery />;
       case 'clockinout':
         return <ClockInOutView />;
       case 'timesheet':
