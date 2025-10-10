@@ -82,6 +82,18 @@ export function PhotoGallery() {
     }
   };
 
+  // Group photos by user
+  const photosByUser = photoLogs.reduce((acc, log) => {
+    if (!acc[log.user_id]) {
+      acc[log.user_id] = {
+        user_name: log.user_name,
+        logs: []
+      };
+    }
+    acc[log.user_id].logs.push(log);
+    return acc;
+  }, {} as Record<string, { user_name: string; logs: PhotoLog[] }>);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -102,7 +114,7 @@ export function PhotoGallery() {
         </Button>
       </div>
 
-      <div className="grid gap-4">
+      <div className="space-y-8">
         {photoLogs.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
@@ -111,103 +123,111 @@ export function PhotoGallery() {
             </CardContent>
           </Card>
         ) : (
-          photoLogs.map((log) => (
-            <Card key={log.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg">{log.task_title}</CardTitle>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <User className="w-4 h-4" />
-                        {log.user_name}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {format(new Date(log.start_time), 'MMM dd, yyyy HH:mm')}
-                      </div>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className={getStatusColor(log.status)}>
-                    {log.status.replace('_', ' ')}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Initial Photos */}
-                  <div>
-                    <h4 className="font-medium mb-2 flex items-center gap-2 text-foreground">
-                      <Clock className="w-4 h-4" />
-                      Before Work ({log.initial_photos.length} photos)
-                    </h4>
-                    <div className="grid grid-cols-3 gap-2">
-                      {log.initial_photos.slice(0, 6).map((photo, index) => (
-                        <div
-                          key={index}
-                          className="relative aspect-square rounded cursor-pointer overflow-hidden border border-border hover:border-primary transition-colors"
-                          onClick={() => {
-                            setSelectedLog(log);
-                            setViewMode('initial');
-                            setSelectedPhoto(photo);
-                          }}
-                        >
-                          <img
-                            src={photo}
-                            alt={`Before ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+          Object.entries(photosByUser).map(([userId, { user_name, logs }]) => (
+            <div key={userId} className="space-y-4">
+              <div className="flex items-center gap-3 pb-3 border-b-2 border-primary">
+                <User className="w-6 h-6 text-primary" />
+                <h3 className="text-xl font-bold text-foreground">{user_name}</h3>
+                <Badge variant="secondary" className="ml-2">
+                  {logs.length} task{logs.length !== 1 ? 's' : ''}
+                </Badge>
+              </div>
 
-                  {/* Final Photos */}
-                  <div>
-                    <h4 className="font-medium mb-2 flex items-center gap-2 text-foreground">
-                      <CheckCircle className="w-4 h-4" />
-                      After Work ({log.final_photos.length} photos)
-                    </h4>
-                    <div className="grid grid-cols-3 gap-2">
-                      {log.final_photos.length > 0 ? (
-                        log.final_photos.slice(0, 6).map((photo, index) => (
-                          <div
-                            key={index}
-                            className="relative aspect-square rounded cursor-pointer overflow-hidden border border-border hover:border-primary transition-colors"
-                            onClick={() => {
-                              setSelectedLog(log);
-                              setViewMode('final');
-                              setSelectedPhoto(photo);
-                            }}
-                          >
-                            <img
-                              src={photo}
-                              alt={`After ${index + 1}`}
-                              className="w-full h-full object-cover"
-                            />
+              <div className="grid gap-4 ml-4">
+                {logs.map((log) => (
+                  <Card key={log.id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <CardTitle className="text-lg">{log.task_title}</CardTitle>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Calendar className="w-4 h-4" />
+                            {format(new Date(log.start_time), 'MMM dd, yyyy HH:mm')}
                           </div>
-                        ))
-                      ) : (
-                        <div className="col-span-3 text-center text-muted-foreground text-sm py-4">
-                          No final photos yet
                         </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                        <Badge variant="outline" className={getStatusColor(log.status)}>
+                          {log.status.replace('_', ' ')}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Initial Photos */}
+                        <div>
+                          <h4 className="font-medium mb-2 flex items-center gap-2 text-foreground">
+                            <Clock className="w-4 h-4" />
+                            Before Work ({log.initial_photos.length} photos)
+                          </h4>
+                          <div className="grid grid-cols-3 gap-2">
+                            {log.initial_photos.slice(0, 6).map((photo, index) => (
+                              <div
+                                key={index}
+                                className="relative aspect-square rounded cursor-pointer overflow-hidden border border-border hover:border-primary transition-colors"
+                                onClick={() => {
+                                  setSelectedLog(log);
+                                  setViewMode('initial');
+                                  setSelectedPhoto(photo);
+                                }}
+                              >
+                                <img
+                                  src={photo}
+                                  alt={`Before ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
 
-                <Button
-                  variant="outline"
-                  className="w-full mt-4"
-                  onClick={() => {
-                    setSelectedLog(log);
-                    setViewMode('initial');
-                  }}
-                >
-                  View All Photos
-                </Button>
-              </CardContent>
-            </Card>
+                        {/* Final Photos */}
+                        <div>
+                          <h4 className="font-medium mb-2 flex items-center gap-2 text-foreground">
+                            <CheckCircle className="w-4 h-4" />
+                            After Work ({log.final_photos.length} photos)
+                          </h4>
+                          <div className="grid grid-cols-3 gap-2">
+                            {log.final_photos.length > 0 ? (
+                              log.final_photos.slice(0, 6).map((photo, index) => (
+                                <div
+                                  key={index}
+                                  className="relative aspect-square rounded cursor-pointer overflow-hidden border border-border hover:border-primary transition-colors"
+                                  onClick={() => {
+                                    setSelectedLog(log);
+                                    setViewMode('final');
+                                    setSelectedPhoto(photo);
+                                  }}
+                                >
+                                  <img
+                                    src={photo}
+                                    alt={`After ${index + 1}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              ))
+                            ) : (
+                              <div className="col-span-3 text-center text-muted-foreground text-sm py-4">
+                                No final photos yet
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        className="w-full mt-4"
+                        onClick={() => {
+                          setSelectedLog(log);
+                          setViewMode('initial');
+                        }}
+                      >
+                        View All Photos
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
           ))
         )}
       </div>
