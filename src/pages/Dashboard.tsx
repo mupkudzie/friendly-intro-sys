@@ -36,6 +36,23 @@ export default function Dashboard() {
     );
   }
 
+  if (userProfile.isNotApproved) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card>
+          <CardHeader>
+            <CardTitle>Account Pending Approval</CardTitle>
+            <CardDescription>
+              {userProfile.approval_status === 'pending' 
+                ? 'Your account is awaiting admin approval. You will receive an email once your account is approved.'
+                : 'Your account registration was not approved. Please contact the administrator for more information.'}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
   const renderDashboard = () => {
     switch (userProfile.role) {
       case 'admin':

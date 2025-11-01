@@ -14,23 +14,28 @@ import { NotificationCenter } from '@/components/notifications/NotificationCente
 import { ClockInOutView } from '@/components/time/ClockInOutView';
 import { WeeklyTimesheetView } from '@/components/time/WeeklyTimesheetView';
 import { PhotoGallery } from '@/components/gallery/PhotoGallery';
+import { UserApproval } from '@/components/admin/UserApproval';
+import { FarmZones } from '@/components/admin/FarmZones';
+import { AuditLogs } from '@/components/admin/AuditLogs';
 import { cn } from '@/lib/utils';
 
 const menuItems = [
-  { id: 'analytics', label: 'Overview', icon: LayoutDashboard },
+  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'approvals', label: 'Pending Approvals', icon: Users },
+  { id: 'users', label: 'User Management', icon: Users },
   { id: 'tasks', label: 'Task Overview', icon: CheckCircle },
-  { id: 'activity', label: 'Activity', icon: Activity },
+  { id: 'zones', label: 'Farm Zones', icon: Activity },
   { id: 'photos', label: 'Photo Gallery', icon: Images },
   { id: 'clockinout', label: 'Clock In/Out', icon: Clock },
   { id: 'timesheet', label: 'Timesheet', icon: BarChart3 },
-  { id: 'users', label: 'Users', icon: Users },
   { id: 'reports', label: 'Reports', icon: FileText },
   { id: 'notifications', label: 'Notifications', icon: Bell },
+  { id: 'audit', label: 'Audit Logs', icon: FileText },
 ];
 
 export function AdminDashboard() {
   const { userProfile, signOut } = useAuth();
-  const [activeView, setActiveView] = useState('analytics');
+  const [activeView, setActiveView] = useState('overview');
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalTasks: 0,
@@ -68,24 +73,28 @@ export function AdminDashboard() {
 
   const renderContent = () => {
     switch (activeView) {
-      case 'analytics':
+      case 'overview':
         return <AdminAnalytics />;
+      case 'approvals':
+        return <UserApproval />;
+      case 'users':
+        return <UserManagement />;
       case 'tasks':
         return <TaskOverview userRole="admin" />;
-      case 'activity':
-        return <WorkerActivityTracker userRole="admin" />;
+      case 'zones':
+        return <FarmZones />;
       case 'photos':
         return <PhotoGallery />;
       case 'clockinout':
         return <ClockInOutView />;
       case 'timesheet':
         return <WeeklyTimesheetView />;
-      case 'users':
-        return <UserManagement />;
       case 'reports':
         return <Reports userRole="admin" />;
       case 'notifications':
         return <NotificationCenter />;
+      case 'audit':
+        return <AuditLogs />;
       default:
         return <AdminAnalytics />;
     }
