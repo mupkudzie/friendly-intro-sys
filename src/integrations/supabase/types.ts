@@ -64,6 +64,108 @@ export type Database = {
           },
         ]
       }
+      announcements: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          expires_at: string | null
+          id: string
+          message: string
+          target_roles: string[] | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          message: string
+          target_roles?: string[] | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          message?: string
+          target_roles?: string[] | null
+          title?: string
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip_address: string | null
+          new_value: Json | null
+          old_value: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      farm_zones: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          created_by: string
+          description: string | null
+          gps_coordinates: Json
+          id: string
+          name: string
+          supervisor_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          gps_coordinates: Json
+          id?: string
+          name: string
+          supervisor_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          gps_coordinates?: Json
+          id?: string
+          name?: string
+          supervisor_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -132,35 +234,50 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
           contact_number: string | null
           created_at: string
           department: string | null
           full_name: string
           id: string
+          rejection_reason: string | null
           role: Database["public"]["Enums"]["user_role"]
           student_id: string | null
+          task_target: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           contact_number?: string | null
           created_at?: string
           department?: string | null
           full_name: string
           id?: string
+          rejection_reason?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           student_id?: string | null
+          task_target?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           contact_number?: string | null
           created_at?: string
           department?: string | null
           full_name?: string
           id?: string
+          rejection_reason?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           student_id?: string | null
+          task_target?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -518,6 +635,27 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       worker_analytics: {
         Row: {
           created_at: string
@@ -560,8 +698,16 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "admin" | "supervisor" | "student" | "garden_worker"
       task_priority: "low" | "medium" | "high" | "urgent"
       task_status:
         | "pending"
@@ -698,6 +844,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "supervisor", "student", "garden_worker"],
       task_priority: ["low", "medium", "high", "urgent"],
       task_status: [
         "pending",
