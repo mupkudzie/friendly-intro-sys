@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
@@ -37,6 +38,7 @@ interface MobileWorkerDashboardProps {
 }
 
 export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboardProps) {
+  const navigate = useNavigate();
   const { signOut } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [stats, setStats] = useState({
@@ -126,7 +128,10 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
             <Plus className="h-4 w-4 mr-2" />
             Request Task
           </Button>
-          <Button onClick={() => signOut()} size="sm" variant="outline">
+          <Button onClick={async () => {
+            await signOut();
+            navigate('/auth');
+          }} size="sm" variant="outline">
             <LogOut className="h-4 w-4" />
           </Button>
         </div>

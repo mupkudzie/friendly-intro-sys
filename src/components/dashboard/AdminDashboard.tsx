@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,6 +35,7 @@ const menuItems = [
 ];
 
 export function AdminDashboard() {
+  const navigate = useNavigate();
   const { userProfile, signOut } = useAuth();
   const [activeView, setActiveView] = useState('overview');
   const [stats, setStats] = useState({
@@ -116,7 +118,10 @@ export function AdminDashboard() {
             <Badge variant="secondary" className="bg-red-100 text-red-800">
               Administrator
             </Badge>
-            <Button variant="outline" size="sm" onClick={signOut}>
+            <Button variant="outline" size="sm" onClick={async () => {
+              await signOut();
+              navigate('/auth');
+            }}>
               <LogOut className="w-4 h-4 mr-2" />
               Sign Out
             </Button>

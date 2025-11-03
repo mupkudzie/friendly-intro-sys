@@ -27,12 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('user_id', user.id)
         .single();
       
-      // Check if profile is approved
-      if (data && data.approval_status !== 'approved') {
-        setUserProfile({ ...data, isNotApproved: true });
-      } else {
-        setUserProfile(data);
-      }
+      setUserProfile(data);
     }
   };
 
