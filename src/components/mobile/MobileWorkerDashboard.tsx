@@ -5,8 +5,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MobileTaskDetail } from './MobileTaskDetail';
 import { RequestTask } from '../tasks/RequestTask';
+import { WorkerProfile } from './WorkerProfile';
+import { FarmZonesMap } from './FarmZonesMap';
+import { AutoCheckInOut } from './AutoCheckInOut';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   Clock, 
@@ -14,7 +18,10 @@ import {
   TrendingUp, 
   Plus,
   AlertCircle,
-  LogOut
+  LogOut,
+  User,
+  MapPin,
+  ClipboardList
 } from 'lucide-react';
 
 interface Task {
@@ -116,7 +123,7 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
 
   return (
     <div className="p-4 space-y-4 pb-20">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold">My Work</h1>
           <p className="text-sm text-muted-foreground">
@@ -137,34 +144,31 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="p-4">
-          <div className="flex flex-col items-center text-center">
-            <Clock className="h-6 w-6 text-primary mb-2" />
-            <p className="text-2xl font-bold">{stats.totalHours}</p>
-            <p className="text-xs text-muted-foreground">Total Hours</p>
-          </div>
-        </Card>
+      <AutoCheckInOut userId={userId} />
 
-        <Card className="p-4">
-          <div className="flex flex-col items-center text-center">
-            <CheckCircle2 className="h-6 w-6 text-green-600 mb-2" />
-            <p className="text-2xl font-bold">{stats.completedTasks}</p>
-            <p className="text-xs text-muted-foreground">Completed</p>
-          </div>
-        </Card>
+      <Tabs defaultValue="tasks" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="tasks">
+            <ClipboardList className="w-4 h-4 mr-2" />
+            Tasks
+          </TabsTrigger>
+          <TabsTrigger value="zones">
+            <MapPin className="w-4 h-4 mr-2" />
+            Zones
+          </TabsTrigger>
+          <TabsTrigger value="profile">
+            <User className="w-4 h-4 mr-2" />
+            Profile
+          </TabsTrigger>
+          <TabsTrigger value="stats">
+            <TrendingUp className="w-4 h-4 mr-2" />
+            Stats
+          </TabsTrigger>
+        </TabsList>
 
-        <Card className="p-4">
-          <div className="flex flex-col items-center text-center">
-            <TrendingUp className="h-6 w-6 text-blue-600 mb-2" />
-            <p className="text-2xl font-bold">{stats.pendingTasks}</p>
-            <p className="text-xs text-muted-foreground">Active</p>
-          </div>
-        </Card>
-      </div>
+        <TabsContent value="tasks" className="space-y-4 mt-4">
 
-      <div>
-        <h2 className="text-lg font-semibold mb-3">My Tasks</h2>
+          <div>
         {tasks.length === 0 ? (
           <Card className="p-8 text-center">
             <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
@@ -211,7 +215,45 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
             ))}
           </div>
         )}
-      </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="zones">
+          <FarmZonesMap />
+        </TabsContent>
+
+        <TabsContent value="profile">
+          <WorkerProfile />
+        </TabsContent>
+
+        <TabsContent value="stats">
+          <div className="grid grid-cols-3 gap-3 mt-4">
+            <Card className="p-4">
+              <div className="flex flex-col items-center text-center">
+                <Clock className="h-6 w-6 text-primary mb-2" />
+                <p className="text-2xl font-bold">{stats.totalHours.toFixed(1)}</p>
+                <p className="text-xs text-muted-foreground">Total Hours</p>
+              </div>
+            </Card>
+
+            <Card className="p-4">
+              <div className="flex flex-col items-center text-center">
+                <CheckCircle2 className="h-6 w-6 text-green-600 mb-2" />
+                <p className="text-2xl font-bold">{stats.completedTasks}</p>
+                <p className="text-xs text-muted-foreground">Completed</p>
+              </div>
+            </Card>
+
+            <Card className="p-4">
+              <div className="flex flex-col items-center text-center">
+                <TrendingUp className="h-6 w-6 text-blue-600 mb-2" />
+                <p className="text-2xl font-bold">{stats.pendingTasks}</p>
+                <p className="text-xs text-muted-foreground">Active</p>
+              </div>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {selectedTask && (
         <MobileTaskDetail
