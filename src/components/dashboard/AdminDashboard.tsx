@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Users, CheckCircle, Clock, BarChart3, Leaf, LogOut, LayoutDashboard, Activity, FileText, Bell, Images } from 'lucide-react';
-import { UserManagement } from '@/components/users/UserManagement';
+import { UserManagementDashboard } from '@/components/admin/UserManagementDashboard';
 import { Reports } from '@/components/reports/Reports';
 import { AdminAnalytics } from '@/components/analytics/AdminAnalytics';
 import { TaskOverview } from '@/components/tasks/TaskOverview';
@@ -80,7 +80,7 @@ export function AdminDashboard() {
       case 'approvals':
         return <UserApproval />;
       case 'users':
-        return <UserManagement />;
+        return <UserManagementDashboard />;
       case 'tasks':
         return <TaskOverview userRole="admin" />;
       case 'zones':
