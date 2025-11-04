@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, CheckCircle, Clock, BarChart3, Leaf, LogOut, LayoutDashboard, Activity, FileText, Bell, Images } from 'lucide-react';
+import { Users, CheckCircle, Clock, BarChart3, Leaf, LogOut, LayoutDashboard, Activity, FileText, Bell } from 'lucide-react';
 import { UserManagementDashboard } from '@/components/admin/UserManagementDashboard';
 import { Reports } from '@/components/reports/Reports';
 import { AdminAnalytics } from '@/components/analytics/AdminAnalytics';
@@ -14,11 +14,11 @@ import { WorkerActivityTracker } from '@/components/workers/WorkerActivityTracke
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { ClockInOutView } from '@/components/time/ClockInOutView';
 import { WeeklyTimesheetView } from '@/components/time/WeeklyTimesheetView';
-import { PhotoGallery } from '@/components/gallery/PhotoGallery';
 import { UserApproval } from '@/components/admin/UserApproval';
 import { FarmZones } from '@/components/admin/FarmZones';
 import { AuditLogs } from '@/components/admin/AuditLogs';
 import { cn } from '@/lib/utils';
+import { VideoFeed } from '@/components/ui/VideoFeed';
 
 const menuItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -26,7 +26,6 @@ const menuItems = [
   { id: 'users', label: 'User Management', icon: Users },
   { id: 'tasks', label: 'Task Overview', icon: CheckCircle },
   { id: 'zones', label: 'Farm Zones', icon: Activity },
-  { id: 'photos', label: 'Photo Gallery', icon: Images },
   { id: 'clockinout', label: 'Clock In/Out', icon: Clock },
   { id: 'timesheet', label: 'Timesheet', icon: BarChart3 },
   { id: 'reports', label: 'Reports', icon: FileText },
@@ -85,8 +84,6 @@ export function AdminDashboard() {
         return <TaskOverview userRole="admin" />;
       case 'zones':
         return <FarmZones />;
-      case 'photos':
-        return <PhotoGallery />;
       case 'clockinout':
         return <ClockInOutView />;
       case 'timesheet':
@@ -203,6 +200,11 @@ export function AdminDashboard() {
                 <div className="text-2xl font-bold text-blue-600">{stats.totalHours.toFixed(1)}</div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Live Video Feed */}
+          <div className="mb-6">
+            <VideoFeed title="Live Camera Feed" src="/video_feed" />
           </div>
 
           {/* Dynamic Content */}

@@ -18,6 +18,8 @@ import { ClockInOutView } from '@/components/time/ClockInOutView';
 import { WeeklyTimesheetView } from '@/components/time/WeeklyTimesheetView';
 import { PhotoGallery } from '@/components/gallery/PhotoGallery';
 import { cn } from '@/lib/utils';
+import { VideoFeed } from '@/components/ui/VideoFeed';
+import { UserManagementDashboard } from '@/components/admin/UserManagementDashboard';
 
 const menuItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -27,10 +29,10 @@ const menuItems = [
   { id: 'templates', label: 'Templates', icon: FileText },
   { id: 'performance', label: 'Performance', icon: TrendingUp },
   { id: 'activity', label: 'Activity', icon: Activity },
-  { id: 'photos', label: 'Photo Gallery', icon: Images },
   { id: 'clockinout', label: 'Clock In/Out', icon: Clock },
   { id: 'timesheet', label: 'Timesheet', icon: CheckCircle },
   { id: 'notifications', label: 'Notifications', icon: Bell },
+  { id: 'usermanagement', label: 'User Management', icon: Users },
 ];
 
 export function SupervisorDashboard() {
@@ -95,6 +97,8 @@ export function SupervisorDashboard() {
         return <WeeklyTimesheetView />;
       case 'notifications':
         return <NotificationCenter />;
+      case 'usermanagement':
+        return <UserManagementDashboard />;
       default:
         return <TaskOverview userRole="supervisor" />;
     }
@@ -205,6 +209,11 @@ export function SupervisorDashboard() {
                 <div className="text-2xl font-bold text-blue-600">{stats.activeWorkers}</div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Live Video Feed */}
+          <div className="mb-6">
+            <VideoFeed title="Live Camera Feed" src="/video_feed" />
           </div>
 
           {/* Dynamic Content */}

@@ -10,9 +10,11 @@ interface PhotoCaptureProps {
   maxPhotos: number;
   onPhotosCapture: (photos: string[]) => void;
   title: string;
+  // When true, automatically submit photos as soon as minPhotos is reached
+  autoSubmit?: boolean;
 }
 
-export function PhotoCapture({ minPhotos, maxPhotos, onPhotosCapture, title }: PhotoCaptureProps) {
+export function PhotoCapture({ minPhotos, maxPhotos, onPhotosCapture, title, autoSubmit = true }: PhotoCaptureProps) {
   const [photos, setPhotos] = useState<string[]>([]);
 
   const takePhoto = async () => {
@@ -27,12 +29,18 @@ export function PhotoCapture({ minPhotos, maxPhotos, onPhotosCapture, title }: P
       if (image.dataUrl) {
         const newPhotos = [...photos, image.dataUrl];
         setPhotos(newPhotos);
-        
+
         if (newPhotos.length >= minPhotos) {
           toast({
             title: "Photo captured",
             description: `${newPhotos.length}/${maxPhotos} photos taken`,
           });
+
+          // If configured, automatically submit photos when minimum reached
+          if (autoSubmit) {
+            // small timeout to allow UI to update before parent dialogs/navigation
+            setTimeout(() => onPhotosCapture(newPhotos), 250);
+          }
         }
       }
     } catch (error) {

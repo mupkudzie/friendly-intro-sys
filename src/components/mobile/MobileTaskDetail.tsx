@@ -262,6 +262,8 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
             minPhotos={2}
             maxPhotos={5}
             onPhotosCapture={handlePhotosCapture}
+            // Do not auto-submit completion photos so the user can confirm before sending
+            autoSubmit={false}
           />
         </DialogContent>
       </Dialog>
