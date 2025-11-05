@@ -25,12 +25,10 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card>
-          <CardHeader>
-            <CardTitle>Profile Setup Required</CardTitle>
-            <CardDescription>
-              Please complete your profile setup to access your dashboard.
-            </CardDescription>
-          </CardHeader>
+          <CardContent className="flex items-center gap-2 p-6">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Setting up your profile...
+          </CardContent>
         </Card>
       </div>
     );

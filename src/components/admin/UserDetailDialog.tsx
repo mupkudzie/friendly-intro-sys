@@ -60,6 +60,10 @@ interface ActivityLog {
   status: string;
   initial_photos: any;
   final_photos: any;
+  task?: {
+    title: string;
+    description: string;
+  };
 }
 
 interface AuditLog {
@@ -95,7 +99,10 @@ export function UserDetailDialog({
   const fetchActivityLogs = async () => {
     const { data } = await supabase
       .from('activity_logs')
-      .select('*')
+      .select(`
+        *,
+        task:tasks(title, description)
+      `)
       .eq('user_id', user.user_id)
       .order('created_at', { ascending: false })
       .limit(20);
@@ -198,7 +205,11 @@ export function UserDetailDialog({
 
   const handleDeleteUser = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.admin.deleteUser(user.user_id);
+    // Mark user as deleted
+    const { error } = await supabase
+      .from('profiles')
+      .update({ approval_status: 'rejected' } as any)
+      .eq('user_id', user.user_id);
 
     if (error) {
       toast({
@@ -209,7 +220,7 @@ export function UserDetailDialog({
     } else {
       toast({
         title: 'Success',
-        description: 'User deleted successfully',
+        description: 'User account has been deactivated',
       });
       onUserUpdated();
       onClose();
@@ -352,10 +363,15 @@ export function UserDetailDialog({
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {activityLogs.map((log) => (
-                    <div key={log.id} className="space-y-3">
+                    <div key={log.id} className="space-y-3 border-b pb-6 last:border-0">
                       <div className="flex items-center justify-between">
-                        <div className="text-sm font-medium">
-                          {new Date(log.start_time).toLocaleString()}
+                        <div>
+                          <div className="text-base font-semibold">
+                            {log.task?.title || 'Unknown Task'}
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-1">
+                            {new Date(log.start_time).toLocaleString()}
+                          </div>
                         </div>
                         <Badge variant={log.status === 'completed' ? 'default' : 'secondary'}>
                           {log.status}
@@ -363,13 +379,13 @@ export function UserDetailDialog({
                       </div>
                       {log.initial_photos && (
                         <div>
-                          <div className="text-sm text-muted-foreground mb-2">Before Photos</div>
+                          <div className="text-sm font-medium mb-2">Before Photos</div>
                           {renderPhotos(log.initial_photos)}
                         </div>
                       )}
                       {log.final_photos && (
                         <div>
-                          <div className="text-sm text-muted-foreground mb-2">After Photos</div>
+                          <div className="text-sm font-medium mb-2">After Photos</div>
                           {renderPhotos(log.final_photos)}
                         </div>
                       )}

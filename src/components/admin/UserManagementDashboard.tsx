@@ -70,23 +70,9 @@ export function UserManagementDashboard() {
       return;
     }
 
-    // Fetch emails from auth.users (admin only)
-    const userIds = profiles?.map(p => p.user_id) || [];
-    const usersWithEmails: UserData[] = [];
-
-    for (const profile of profiles || []) {
-      try {
-        const { data: { user } } = await supabase.auth.admin.getUserById(profile.user_id);
-        usersWithEmails.push({
-          ...profile,
-          email: user?.email
-        });
-      } catch (error) {
-        usersWithEmails.push(profile);
-      }
-    }
-
-    setUsers(usersWithEmails);
+    // Simply use profiles data without fetching from auth.users
+    // Email will be fetched in UserDetailDialog when needed
+    setUsers(profiles || []);
     setLoading(false);
   };
 

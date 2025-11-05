@@ -17,6 +17,7 @@ import { WeeklyTimesheetView } from '@/components/time/WeeklyTimesheetView';
 import { UserApproval } from '@/components/admin/UserApproval';
 import { FarmZones } from '@/components/admin/FarmZones';
 import { AuditLogs } from '@/components/admin/AuditLogs';
+import { CommentsManagement } from '@/components/admin/CommentsManagement';
 import { cn } from '@/lib/utils';
 import { VideoFeed } from '@/components/ui/VideoFeed';
 
@@ -25,6 +26,7 @@ const menuItems = [
   { id: 'approvals', label: 'Pending Approvals', icon: Users },
   { id: 'users', label: 'User Management', icon: Users },
   { id: 'tasks', label: 'Task Overview', icon: CheckCircle },
+  { id: 'comments', label: 'Comments', icon: Bell },
   { id: 'zones', label: 'Farm Zones', icon: Activity },
   { id: 'clockinout', label: 'Clock In/Out', icon: Clock },
   { id: 'timesheet', label: 'Timesheet', icon: BarChart3 },
@@ -82,6 +84,8 @@ export function AdminDashboard() {
         return <UserManagementDashboard />;
       case 'tasks':
         return <TaskOverview userRole="admin" />;
+      case 'comments':
+        return <CommentsManagement />;
       case 'zones':
         return <FarmZones />;
       case 'clockinout':
