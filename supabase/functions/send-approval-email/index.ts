@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,14 +42,29 @@ const handler = async (req: Request): Promise<Response> => {
         <p>Best regards,<br>NUST Garden Admin Team</p>
       `;
 
-    const emailResponse = await resend.emails.send({
-      from: "NUST Garden <onboarding@resend.dev>",
-      to: [email],
-      subject,
-      html,
-    });
+    if (!RESEND_API_KEY) {
+      console.warn("RESEND_API_KEY is not set; skipping email send.");
+      return new Response(JSON.stringify({ skipped: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
 
-    console.log("Email sent successfully:", emailResponse);
+    const emailResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "NUST Garden <onboarding@resend.dev>",
+        to: [email],
+        subject,
+        html,
+      }),
+    }).then((r) => r.json());
+
+    console.log("Email sent response:", emailResponse);
 
     return new Response(JSON.stringify(emailResponse), {
       status: 200,

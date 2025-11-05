@@ -21,25 +21,22 @@ import {
 import { Search, MessageSquare, User, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-interface Comment {
+interface CommentRow {
   id: string;
   task_id: string;
   user_id: string;
   comment: string;
   created_at: string;
-  task: {
-    title: string;
-    status: string;
-  };
-  profile: {
-    full_name: string;
-    role: string;
-  };
+}
+
+interface EnrichedComment extends CommentRow {
+  task?: { title: string; status?: string };
+  profile?: { full_name: string; role: string };
 }
 
 export function CommentsManagement() {
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [filteredComments, setFilteredComments] = useState<Comment[]>([]);
+  const [comments, setComments] = useState<EnrichedComment[]>([]);
+  const [filteredComments, setFilteredComments] = useState<EnrichedComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -57,11 +54,7 @@ export function CommentsManagement() {
     setLoading(true);
     const { data, error } = await supabase
       .from('task_comments')
-      .select(`
-        *,
-        task:tasks(title, status),
-        profile:profiles(full_name, role)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -74,30 +67,61 @@ export function CommentsManagement() {
       return;
     }
 
-    setComments(data as any);
+    const rows = (data || []) as CommentRow[];
+
+    // Fetch related tasks
+    const taskIds = Array.from(new Set(rows.map(r => r.task_id)));
+    let taskMap: Record<string, { title: string; status?: string }> = {};
+    if (taskIds.length) {
+      const { data: tasksData } = await supabase
+        .from('tasks')
+        .select('id,title,status')
+        .in('id', taskIds);
+      tasksData?.forEach((t: any) => {
+        taskMap[t.id] = { title: t.title, status: t.status };
+      });
+    }
+
+    // Fetch related profiles
+    const userIds = Array.from(new Set(rows.map(r => r.user_id)));
+    let profileMap: Record<string, { full_name: string; role: string }> = {};
+    if (userIds.length) {
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('user_id,full_name,role')
+        .in('user_id', userIds);
+      profilesData?.forEach((p: any) => {
+        profileMap[p.user_id] = { full_name: p.full_name, role: p.role };
+      });
+    }
+
+    const enriched: EnrichedComment[] = rows.map((r) => ({
+      ...r,
+      task: taskMap[r.task_id],
+      profile: profileMap[r.user_id],
+    }));
+
+    setComments(enriched);
     setLoading(false);
   };
 
   const filterComments = () => {
     let filtered = [...comments];
 
-    // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(
-        comment =>
-          comment.comment.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          comment.profile.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          comment.task.title.toLowerCase().includes(searchTerm.toLowerCase())
+        (c) =>
+          c.comment.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (c.profile?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (c.task?.title || '').toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    // Filter by role (only show student and garden_worker comments)
     if (roleFilter !== 'all') {
-      filtered = filtered.filter(comment => comment.profile.role === roleFilter);
+      filtered = filtered.filter((c) => c.profile?.role === roleFilter);
     } else {
-      // By default, only show comments from students and garden workers
-      filtered = filtered.filter(comment => 
-        comment.profile.role === 'student' || comment.profile.role === 'garden_worker'
+      filtered = filtered.filter(
+        (c) => c.profile?.role === 'student' || c.profile?.role === 'garden_worker'
       );
     }
 
@@ -158,13 +182,13 @@ export function CommentsManagement() {
             </div>
             <div className="text-center p-3 bg-muted rounded-lg">
               <div className="text-2xl font-bold">
-                {filteredComments.filter(c => c.profile.role === 'student').length}
+                {filteredComments.filter((c) => c.profile?.role === 'student').length}
               </div>
               <div className="text-sm text-muted-foreground">Student Comments</div>
             </div>
             <div className="text-center p-3 bg-muted rounded-lg">
               <div className="text-2xl font-bold">
-                {filteredComments.filter(c => c.profile.role === 'garden_worker').length}
+                {filteredComments.filter((c) => c.profile?.role === 'garden_worker').length}
               </div>
               <div className="text-sm text-muted-foreground">Worker Comments</div>
             </div>
@@ -188,19 +212,19 @@ export function CommentsManagement() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-medium">{comment.profile.full_name}</span>
+                        <span className="font-medium">{comment.profile?.full_name || 'Unknown'}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={comment.profile.role === 'student' ? 'outline' : 'secondary'}>
-                        {comment.profile.role.replace('_', ' ')}
+                      <Badge variant={comment.profile?.role === 'student' ? 'outline' : 'secondary'}>
+                        {comment.profile?.role?.replace('_', ' ') || 'N/A'}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="max-w-xs">
-                        <div className="font-medium text-sm">{comment.task.title}</div>
+                        <div className="font-medium text-sm">{comment.task?.title || 'Unknown Task'}</div>
                         <Badge variant="outline" className="mt-1">
-                          {comment.task.status}
+                          {comment.task?.status || 'unknown'}
                         </Badge>
                       </div>
                     </TableCell>

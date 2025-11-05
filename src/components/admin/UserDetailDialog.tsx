@@ -99,15 +99,27 @@ export function UserDetailDialog({
   const fetchActivityLogs = async () => {
     const { data } = await supabase
       .from('activity_logs')
-      .select(`
-        *,
-        task:tasks(title, description)
-      `)
+      .select('*')
       .eq('user_id', user.user_id)
       .order('created_at', { ascending: false })
-      .limit(20);
+      .limit(50);
 
-    if (data) setActivityLogs(data);
+    if (data) {
+      // Fetch task titles for these logs
+      const taskIds = Array.from(new Set(data.map((d: any) => d.task_id).filter(Boolean)));
+      let taskMap: Record<string, { title: string; description?: string }> = {};
+      if (taskIds.length) {
+        const { data: tasksData } = await supabase
+          .from('tasks')
+          .select('id,title,description')
+          .in('id', taskIds);
+        tasksData?.forEach((t: any) => {
+          taskMap[t.id] = { title: t.title, description: t.description };
+        });
+      }
+      const withTasks = (data as any[]).map((d) => ({ ...d, task: taskMap[d.task_id] }));
+      setActivityLogs(withTasks as any);
+    }
   };
 
   const fetchAuditLogs = async () => {
