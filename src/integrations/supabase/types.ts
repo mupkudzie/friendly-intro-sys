@@ -261,6 +261,7 @@ export type Database = {
           contact_number: string | null
           created_at: string
           department: string | null
+          email: string | null
           full_name: string
           id: string
           is_deleted: boolean | null
@@ -279,6 +280,7 @@ export type Database = {
           contact_number?: string | null
           created_at?: string
           department?: string | null
+          email?: string | null
           full_name: string
           id?: string
           is_deleted?: boolean | null
@@ -297,6 +299,7 @@ export type Database = {
           contact_number?: string | null
           created_at?: string
           department?: string | null
+          email?: string | null
           full_name?: string
           id?: string
           is_deleted?: boolean | null
