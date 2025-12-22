@@ -39,7 +39,7 @@ export default function Auth() {
     setError('');
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -47,10 +47,32 @@ export default function Auth() {
       if (error) {
         setError(error.message);
         toast.error(error.message);
-      } else {
-        toast.success('Signed in successfully!');
-        navigate('/dashboard');
+        return;
       }
+
+      // Check if user is approved
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('approval_status')
+        .eq('user_id', authData.user?.id)
+        .single();
+
+      if (profile?.approval_status === 'pending') {
+        await supabase.auth.signOut();
+        setError('Your account is pending approval. Please wait for admin approval.');
+        toast.error('Account pending approval');
+        return;
+      }
+
+      if (profile?.approval_status === 'rejected') {
+        await supabase.auth.signOut();
+        setError('Your account registration was rejected. Please contact the administrator.');
+        toast.error('Account rejected');
+        return;
+      }
+
+      toast.success('Signed in successfully!');
+      navigate('/dashboard');
     } catch (err) {
       setError('An unexpected error occurred');
       toast.error('An unexpected error occurred');
@@ -86,7 +108,7 @@ export default function Auth() {
         setError(error.message);
         toast.error(error.message);
       } else {
-        toast.success('Account created successfully! Please check your email to confirm your account.');
+        toast.success('Account created successfully! Please wait for admin approval before you can sign in.');
       }
     } catch (err) {
       setError('An unexpected error occurred');

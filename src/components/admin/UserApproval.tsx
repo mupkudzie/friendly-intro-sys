@@ -50,13 +50,11 @@ export function UserApproval() {
 
       if (error) throw error;
 
-      // Fetch emails from auth.users
-      const usersWithEmails = await Promise.all(
-        (data || []).map(async (profile) => {
-          const { data: { user } } = await supabase.auth.admin.getUserById(profile.user_id);
-          return { ...profile, email: user?.email };
-        })
-      );
+      // Get user emails from user metadata stored during signup
+      const usersWithEmails = (data || []).map((profile) => ({
+        ...profile,
+        email: profile.contact_number ? `Contact: ${profile.contact_number}` : 'No contact info',
+      }));
 
       setPendingUsers(usersWithEmails);
     } catch (error: any) {

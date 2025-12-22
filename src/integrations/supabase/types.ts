@@ -166,6 +166,27 @@ export type Database = {
         }
         Relationships: []
       }
+      function_backups: {
+        Row: {
+          created_at: string | null
+          definition: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          definition: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          definition?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -242,12 +263,14 @@ export type Database = {
           department: string | null
           full_name: string
           id: string
+          is_deleted: boolean | null
           rejection_reason: string | null
           role: Database["public"]["Enums"]["user_role"]
           student_id: string | null
           task_target: number | null
           updated_at: string
           user_id: string
+          user_role: string | null
         }
         Insert: {
           approval_status?: string | null
@@ -258,12 +281,14 @@ export type Database = {
           department?: string | null
           full_name: string
           id?: string
+          is_deleted?: boolean | null
           rejection_reason?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           student_id?: string | null
           task_target?: number | null
           updated_at?: string
           user_id: string
+          user_role?: string | null
         }
         Update: {
           approval_status?: string | null
@@ -274,12 +299,14 @@ export type Database = {
           department?: string | null
           full_name?: string
           id?: string
+          is_deleted?: boolean | null
           rejection_reason?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           student_id?: string | null
           task_target?: number | null
           updated_at?: string
           user_id?: string
+          user_role?: string | null
         }
         Relationships: []
       }
@@ -656,6 +683,36 @@ export type Database = {
         }
         Relationships: []
       }
+      worker_activities: {
+        Row: {
+          activity: string | null
+          confidence: number | null
+          detected_at: string | null
+          id: string
+          image_url: string | null
+          location: Json | null
+          worker_id: string | null
+        }
+        Insert: {
+          activity?: string | null
+          confidence?: number | null
+          detected_at?: string | null
+          id?: string
+          image_url?: string | null
+          location?: Json | null
+          worker_id?: string | null
+        }
+        Update: {
+          activity?: string | null
+          confidence?: number | null
+          detected_at?: string | null
+          id?: string
+          image_url?: string | null
+          location?: Json | null
+          worker_id?: string | null
+        }
+        Relationships: []
+      }
       worker_analytics: {
         Row: {
           created_at: string
@@ -697,6 +754,32 @@ export type Database = {
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      get_video_feed: {
+        Args: never
+        Returns: {
+          id: string
+          url: string
+        }[]
+      }
+      get_video_feed_v2: {
+        Args: { p_limit?: number; p_offset?: number; p_user_id?: string }
+        Returns: Json
+      }
+      get_video_feed_wrapper: {
+        Args: { p_limit?: number; p_offset?: number; p_user_id?: string }
+        Returns: Json
+      }
+      get_worker_total_hours: {
+        Args: { total_hours_threshold: number }
+        Returns: {
+          department: string
+          full_name: string
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          total_hours: number
+          user_id: string
+        }[]
       }
       has_role: {
         Args: {
