@@ -50,13 +50,8 @@ export function UserApproval() {
 
       if (error) throw error;
 
-      // Get user emails from user metadata stored during signup
-      const usersWithEmails = (data || []).map((profile) => ({
-        ...profile,
-        email: profile.contact_number ? `Contact: ${profile.contact_number}` : 'No contact info',
-      }));
-
-      setPendingUsers(usersWithEmails);
+      // Use email from profiles table
+      setPendingUsers(data || []);
     } catch (error: any) {
       toast({
         title: 'Error',
