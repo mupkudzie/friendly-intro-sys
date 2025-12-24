@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Leaf, Mail, Lock, User, Phone, Building, ArrowLeft } from 'lucide-react';
+import { Leaf, Mail, Lock, User, Phone, Building, ArrowLeft, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Auth() {
@@ -47,6 +47,9 @@ export default function Auth() {
     }
   }, [searchParams]);
 
+  const [showEmailVerificationReminder, setShowEmailVerificationReminder] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -61,6 +64,14 @@ export default function Auth() {
       if (error) {
         setError(error.message);
         toast.error(error.message);
+        return;
+      }
+
+      // Check if email is verified
+      if (authData.user && !authData.user.email_confirmed_at) {
+        setUnverifiedEmail(authData.user.email || email);
+        setShowEmailVerificationReminder(true);
+        await supabase.auth.signOut();
         return;
       }
 
@@ -90,6 +101,29 @@ export default function Auth() {
     } catch (err) {
       setError('An unexpected error occurred');
       toast.error('An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendVerificationEmail = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: unverifiedEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Verification email sent! Please check your inbox.');
+      }
+    } catch (err) {
+      toast.error('Failed to resend verification email');
     } finally {
       setLoading(false);
     }
@@ -514,6 +548,58 @@ export default function Auth() {
                     {loading ? 'Updating...' : 'Update Password'}
                   </Button>
                 </form>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Email Verification Reminder */}
+        {showEmailVerificationReminder && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-md">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-amber-500" />
+                  Email Not Verified
+                </CardTitle>
+                <CardDescription>
+                  Please verify your email address before signing in.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
+                  <Mail className="h-4 w-4 text-amber-600" />
+                  <AlertDescription className="text-amber-800 dark:text-amber-200">
+                    We sent a verification email to <strong>{unverifiedEmail}</strong>. 
+                    Please check your inbox and click the verification link to activate your account.
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="text-sm text-muted-foreground">
+                  <p>Didn't receive the email?</p>
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Check your spam or junk folder</li>
+                    <li>Make sure you entered the correct email address</li>
+                    <li>Wait a few minutes and try again</li>
+                  </ul>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <Button 
+                    onClick={handleResendVerificationEmail} 
+                    disabled={loading}
+                    className="w-full"
+                  >
+                    {loading ? 'Sending...' : 'Resend Verification Email'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowEmailVerificationReminder(false)}
+                    className="w-full"
+                  >
+                    Back to Sign In
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
