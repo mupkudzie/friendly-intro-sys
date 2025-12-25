@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, X, Clock, User, FileText, Edit, Camera, Play, Flag } from 'lucide-react';
+import { CheckCircle, X, Clock, User, FileText, Edit, Camera, Play, Flag, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -46,6 +46,9 @@ export function TaskApproval() {
   const [loading, setLoading] = useState(true);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [feedbackDialog, setFeedbackDialog] = useState<{ taskId: string; action: 'approved' | 'rejected' } | null>(null);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [editForm, setEditForm] = useState({
     title: '',
     description: '',
@@ -109,24 +112,57 @@ export function TaskApproval() {
     setLoading(false);
   };
 
-  const handleTaskAction = async (taskId: string, action: 'approved' | 'rejected') => {
-    const { error } = await supabase
-      .from('tasks')
-      .update({ status: action })
-      .eq('id', taskId);
+  const openFeedbackDialog = (taskId: string, action: 'approved' | 'rejected') => {
+    setFeedbackDialog({ taskId, action });
+    setFeedbackComment('');
+  };
 
-    if (error) {
+  const handleTaskActionWithFeedback = async () => {
+    if (!feedbackDialog) return;
+    
+    const { taskId, action } = feedbackDialog;
+    setSubmittingFeedback(true);
+
+    try {
+      // Update task status
+      const { error: taskError } = await supabase
+        .from('tasks')
+        .update({ status: action })
+        .eq('id', taskId);
+
+      if (taskError) throw taskError;
+
+      // Add feedback comment if provided
+      if (feedbackComment.trim()) {
+        const { error: commentError } = await supabase
+          .from('task_comments')
+          .insert({
+            task_id: taskId,
+            user_id: userProfile?.user_id,
+            comment: `[${action === 'approved' ? 'APPROVED' : 'REJECTED'}] ${feedbackComment.trim()}`
+          });
+
+        if (commentError) {
+          console.error('Error adding feedback comment:', commentError);
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: `Task ${action} successfully!${feedbackComment.trim() ? ' Feedback has been recorded.' : ''}`,
+      });
+      
+      setFeedbackDialog(null);
+      setFeedbackComment('');
+      fetchCompletedTasks();
+    } catch (error: any) {
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Success",
-        description: `Task ${action} successfully!`,
-      });
-      fetchCompletedTasks();
+    } finally {
+      setSubmittingFeedback(false);
     }
   };
 
@@ -375,7 +411,7 @@ export function TaskApproval() {
                 <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
                   <Button 
                     size="default" 
-                    onClick={() => handleTaskAction(task.id, 'approved')}
+                    onClick={() => openFeedbackDialog(task.id, 'approved')}
                     className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none"
                   >
                     <CheckCircle className="w-4 h-4 mr-2" />
@@ -384,7 +420,7 @@ export function TaskApproval() {
                   <Button 
                     size="default" 
                     variant="outline"
-                    onClick={() => handleTaskAction(task.id, 'rejected')}
+                    onClick={() => openFeedbackDialog(task.id, 'rejected')}
                     className="border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 flex-1 sm:flex-none"
                   >
                     <X className="w-4 h-4 mr-2" />
@@ -515,6 +551,77 @@ export function TaskApproval() {
                 className="w-full h-auto max-h-[85vh] object-contain rounded-lg"
               />
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Feedback Dialog */}
+      <Dialog open={!!feedbackDialog} onOpenChange={() => setFeedbackDialog(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {feedbackDialog?.action === 'approved' ? (
+                <>
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  Approve Task
+                </>
+              ) : (
+                <>
+                  <X className="w-5 h-5 text-red-600" />
+                  Reject Task
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <MessageSquare className="w-4 h-4" />
+                Feedback Comment {feedbackDialog?.action === 'rejected' && <span className="text-red-500">*</span>}
+              </label>
+              <Textarea
+                placeholder={
+                  feedbackDialog?.action === 'approved'
+                    ? "Add optional feedback for the student..."
+                    : "Please explain why this task is being rejected..."
+                }
+                value={feedbackComment}
+                onChange={(e) => setFeedbackComment(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+              {feedbackDialog?.action === 'rejected' && !feedbackComment.trim() && (
+                <p className="text-xs text-muted-foreground">
+                  A reason is recommended when rejecting a task
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setFeedbackDialog(null)}
+              disabled={submittingFeedback}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleTaskActionWithFeedback}
+              disabled={submittingFeedback}
+              className={
+                feedbackDialog?.action === 'approved'
+                  ? "bg-green-600 hover:bg-green-700"
+                  : "bg-red-600 hover:bg-red-700"
+              }
+            >
+              {submittingFeedback ? (
+                "Processing..."
+              ) : feedbackDialog?.action === 'approved' ? (
+                "Approve"
+              ) : (
+                "Reject"
+              )}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
