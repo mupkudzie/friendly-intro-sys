@@ -591,8 +591,8 @@ export function TaskApproval() {
                 className="resize-none"
               />
               {feedbackDialog?.action === 'rejected' && !feedbackComment.trim() && (
-                <p className="text-xs text-muted-foreground">
-                  A reason is recommended when rejecting a task
+                <p className="text-xs text-destructive">
+                  A reason is required when rejecting a task
                 </p>
               )}
             </div>
@@ -607,7 +607,7 @@ export function TaskApproval() {
             </Button>
             <Button
               onClick={handleTaskActionWithFeedback}
-              disabled={submittingFeedback}
+              disabled={submittingFeedback || (feedbackDialog?.action === 'rejected' && !feedbackComment.trim())}
               className={
                 feedbackDialog?.action === 'approved'
                   ? "bg-green-600 hover:bg-green-700"
