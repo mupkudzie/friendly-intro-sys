@@ -11,6 +11,7 @@ import { RequestTask } from '../tasks/RequestTask';
 import { WorkerProfile } from './WorkerProfile';
 import { FarmZonesMap } from './FarmZonesMap';
 import { AutoCheckInOut } from './AutoCheckInOut';
+import { OfflineSyncIndicator } from './OfflineSyncIndicator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   Clock, 
@@ -130,7 +131,8 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
             {userRole === 'student' ? 'Student Dashboard' : 'Worker Dashboard'}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <OfflineSyncIndicator />
           <Button onClick={() => setShowRequestTask(true)} size="sm">
             <Plus className="h-4 w-4 mr-2" />
             Request Task
