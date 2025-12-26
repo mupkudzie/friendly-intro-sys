@@ -5,11 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Clock, User, Calendar, BarChart3, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Clock, User, Calendar, BarChart3, Search, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useToast } from '@/hooks/use-toast';
 import {
   Table,
   TableBody,
@@ -18,6 +20,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface TimeLog {
   id: string;
@@ -35,8 +45,16 @@ interface TimeTrackingProps {
   userRole: string;
 }
 
+interface EditFormData {
+  date: string;
+  clockIn: string;
+  clockOut: string;
+  breakTime: string;
+}
+
 export function TimeTracking({ userRole }: TimeTrackingProps) {
   const { userProfile } = useAuth();
+  const { toast } = useToast();
   const [timeLogs, setTimeLogs] = useState<TimeLog[]>([]);
   const [stats, setStats] = useState({
     totalHours: 0,
@@ -48,6 +66,17 @@ export function TimeTracking({ userRole }: TimeTrackingProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingLog, setEditingLog] = useState<TimeLog | null>(null);
+  const [editFormData, setEditFormData] = useState<EditFormData>({
+    date: '',
+    clockIn: '',
+    clockOut: '',
+    breakTime: '',
+  });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchTimeLogs();
@@ -134,6 +163,95 @@ export function TimeTracking({ userRole }: TimeTrackingProps) {
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const openEditDialog = (log: TimeLog) => {
+    setEditingLog(log);
+    const startDate = new Date(log.start_time);
+    setEditFormData({
+      date: format(startDate, 'yyyy-MM-dd'),
+      clockIn: format(startDate, 'HH:mm'),
+      clockOut: log.end_time ? format(new Date(log.end_time), 'HH:mm') : '',
+      breakTime: log.break_time?.toString() || '0',
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingLog || !editFormData.date || !editFormData.clockIn) {
+      toast({
+        title: "Validation Error",
+        description: "Date and Clock In time are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      // Parse the new times
+      const [inHours, inMinutes] = editFormData.clockIn.split(':').map(Number);
+      const newStartTime = new Date(editFormData.date);
+      newStartTime.setHours(inHours, inMinutes, 0, 0);
+
+      let newEndTime: Date | null = null;
+      let totalHours: number | null = null;
+
+      if (editFormData.clockOut) {
+        const [outHours, outMinutes] = editFormData.clockOut.split(':').map(Number);
+        newEndTime = new Date(editFormData.date);
+        newEndTime.setHours(outHours, outMinutes, 0, 0);
+
+        // Handle overnight shifts (clock out next day)
+        if (newEndTime <= newStartTime) {
+          newEndTime.setDate(newEndTime.getDate() + 1);
+        }
+
+        // Calculate total hours
+        const breakHours = parseFloat(editFormData.breakTime) || 0;
+        const diffMs = newEndTime.getTime() - newStartTime.getTime();
+        const diffHours = diffMs / (1000 * 60 * 60);
+        totalHours = Math.max(0, parseFloat((diffHours - breakHours).toFixed(2)));
+      }
+
+      const updateData: Record<string, unknown> = {
+        start_time: newStartTime.toISOString(),
+        break_time: parseFloat(editFormData.breakTime) || 0,
+      };
+
+      if (newEndTime) {
+        updateData.end_time = newEndTime.toISOString();
+        updateData.total_hours = totalHours;
+      } else {
+        updateData.end_time = null;
+        updateData.total_hours = null;
+      }
+
+      const { error } = await supabase
+        .from('time_logs')
+        .update(updateData)
+        .eq('id', editingLog.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Time Log Updated",
+        description: "The time entry has been corrected successfully.",
+      });
+
+      setEditDialogOpen(false);
+      setEditingLog(null);
+      fetchTimeLogs();
+    } catch (error: unknown) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update time log.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Filter logs by search term
@@ -276,6 +394,9 @@ export function TimeTracking({ userRole }: TimeTrackingProps) {
                       <TableHead className="font-semibold text-center">Break</TableHead>
                       <TableHead className="font-semibold text-center">Total Hours</TableHead>
                       <TableHead className="font-semibold text-center">Status</TableHead>
+                      {isAdminOrSupervisor && (
+                        <TableHead className="font-semibold text-center">Actions</TableHead>
+                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -335,6 +456,19 @@ export function TimeTracking({ userRole }: TimeTrackingProps) {
                         <TableCell className="text-center">
                           {getStatusBadge(log)}
                         </TableCell>
+                        {isAdminOrSupervisor && (
+                          <TableCell className="text-center">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEditDialog(log)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Pencil className="h-4 w-4" />
+                              <span className="sr-only">Edit</span>
+                            </Button>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -376,6 +510,77 @@ export function TimeTracking({ userRole }: TimeTrackingProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Time Log Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Time Entry</DialogTitle>
+            <DialogDescription>
+              Correct the clock in/out times for{' '}
+              <span className="font-medium">{editingLog?.profile?.full_name}</span>
+              {editingLog?.task?.title && (
+                <> on task "<span className="font-medium">{editingLog.task.title}</span>"</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-date">Date</Label>
+              <Input
+                id="edit-date"
+                type="date"
+                value={editFormData.date}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, date: e.target.value }))}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-clock-in">Clock In</Label>
+                <Input
+                  id="edit-clock-in"
+                  type="time"
+                  value={editFormData.clockIn}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, clockIn: e.target.value }))}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-clock-out">Clock Out</Label>
+                <Input
+                  id="edit-clock-out"
+                  type="time"
+                  value={editFormData.clockOut}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, clockOut: e.target.value }))}
+                  placeholder="Leave empty if still working"
+                />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-break">Break Time (hours)</Label>
+              <Input
+                id="edit-break"
+                type="number"
+                step="0.25"
+                min="0"
+                value={editFormData.breakTime}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, breakTime: e.target.value }))}
+                placeholder="0"
+              />
+              <p className="text-xs text-muted-foreground">
+                Enter break time in hours (e.g., 0.5 for 30 minutes)
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={saving}>
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
