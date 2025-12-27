@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useOfflineSync } from '@/hooks/useOfflineSync';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Wifi, WifiOff, Cloud, CloudOff, RefreshCw, Loader2, CheckCircle2 } from 'lucide-react';
+import { Wifi, WifiOff, Cloud, CloudOff, RefreshCw, Loader2, CheckCircle2, Bell, BellOff } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
@@ -12,12 +13,13 @@ import { useToast } from '@/hooks/use-toast';
 
 export function OfflineSyncIndicator() {
   const { isOnline, isSyncing, pendingCount, manualSync } = useOfflineSync();
+  const { permission, isSupported, requestPermission, showSyncNotification, showOfflineNotification, showOnlineNotification } = usePushNotifications();
   const { toast } = useToast();
   const prevOnlineRef = useRef(isOnline);
   const prevPendingRef = useRef(pendingCount);
   const prevSyncingRef = useRef(isSyncing);
 
-  // Sync notifications
+  // Sync notifications (toast + push)
   useEffect(() => {
     // Coming back online
     if (!prevOnlineRef.current && isOnline) {
@@ -27,6 +29,11 @@ export function OfflineSyncIndicator() {
           ? `Syncing ${pendingCount} pending item${pendingCount !== 1 ? 's' : ''}...` 
           : "Your connection has been restored.",
       });
+      
+      // Push notification
+      if (permission === 'granted') {
+        showOnlineNotification(pendingCount);
+      }
     }
 
     // Going offline
@@ -36,10 +43,15 @@ export function OfflineSyncIndicator() {
         description: "Your data will be saved locally and synced when you're back online.",
         variant: "destructive",
       });
+      
+      // Push notification
+      if (permission === 'granted') {
+        showOfflineNotification();
+      }
     }
 
     prevOnlineRef.current = isOnline;
-  }, [isOnline, pendingCount, toast]);
+  }, [isOnline, pendingCount, toast, permission, showOnlineNotification, showOfflineNotification]);
 
   // Sync completion notification
   useEffect(() => {
@@ -56,12 +68,17 @@ export function OfflineSyncIndicator() {
             </div>
           ),
         });
+        
+        // Push notification
+        if (permission === 'granted') {
+          showSyncNotification(syncedCount, 0);
+        }
       }
     }
 
     prevSyncingRef.current = isSyncing;
     prevPendingRef.current = pendingCount;
-  }, [isSyncing, pendingCount, isOnline, toast]);
+  }, [isSyncing, pendingCount, isOnline, toast, permission, showSyncNotification]);
 
   // New pending items notification
   useEffect(() => {
@@ -74,6 +91,10 @@ export function OfflineSyncIndicator() {
     }
     prevPendingRef.current = pendingCount;
   }, [pendingCount, isOnline, toast]);
+
+  const handleEnableNotifications = async () => {
+    await requestPermission();
+  };
 
   return (
     <Popover>
@@ -100,24 +121,43 @@ export function OfflineSyncIndicator() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72" align="end">
+      <PopoverContent className="w-80" align="end">
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            {isSyncing ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                <span className="text-sm font-medium text-primary">Syncing...</span>
-              </>
-            ) : isOnline ? (
-              <>
-                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-sm font-medium text-green-700">Online</span>
-              </>
-            ) : (
-              <>
-                <div className="h-2 w-2 rounded-full bg-destructive" />
-                <span className="text-sm font-medium text-destructive">Offline</span>
-              </>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {isSyncing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <span className="text-sm font-medium text-primary">Syncing...</span>
+                </>
+              ) : isOnline ? (
+                <>
+                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-sm font-medium text-green-700">Online</span>
+                </>
+              ) : (
+                <>
+                  <div className="h-2 w-2 rounded-full bg-destructive" />
+                  <span className="text-sm font-medium text-destructive">Offline</span>
+                </>
+              )}
+            </div>
+            
+            {/* Notification toggle */}
+            {isSupported && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleEnableNotifications}
+                className="h-8 px-2"
+                title={permission === 'granted' ? 'Notifications enabled' : 'Enable notifications'}
+              >
+                {permission === 'granted' ? (
+                  <Bell className="h-4 w-4 text-green-600" />
+                ) : (
+                  <BellOff className="h-4 w-4 text-muted-foreground" />
+                )}
+              </Button>
             )}
           </div>
 
@@ -175,6 +215,21 @@ export function OfflineSyncIndicator() {
             <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 p-2 rounded-md">
               <CheckCircle2 className="h-4 w-4" />
               <span>All your data is synced and up to date.</span>
+            </div>
+          )}
+
+          {/* Notification permission prompt */}
+          {isSupported && permission === 'default' && (
+            <div className="pt-2 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={handleEnableNotifications}
+              >
+                <Bell className="h-4 w-4 mr-2" />
+                Enable Push Notifications
+              </Button>
             </div>
           )}
         </div>

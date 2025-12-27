@@ -6,10 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, User, MapPin } from 'lucide-react';
+import { useAITextAssist } from '@/hooks/useAITextAssist';
+import { AITextButton } from '@/components/ui/ai-text-button';
+import { SmartTextarea } from '@/components/ui/smart-textarea';
+import { Plus, User, MapPin, Sparkles, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface Profile {
   user_id: string;
@@ -24,6 +27,7 @@ export function TaskAssignment() {
   const { toast } = useToast();
   const [workers, setWorkers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
+  const [aiSuggestLoading, setAiSuggestLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -38,6 +42,16 @@ export function TaskAssignment() {
     geofence_radius: '100',
   });
 
+  const { assistText: assistDescription, isLoading: descriptionLoading } = useAITextAssist({
+    onSuccess: (text) => setFormData(prev => ({ ...prev, description: text })),
+  });
+
+  const { assistText: assistInstructions, isLoading: instructionsLoading } = useAITextAssist({
+    onSuccess: (text) => setFormData(prev => ({ ...prev, instructions: text })),
+  });
+
+  const aiLoading = descriptionLoading || instructionsLoading || aiSuggestLoading;
+
   useEffect(() => {
     fetchWorkers();
   }, []);
@@ -47,10 +61,93 @@ export function TaskAssignment() {
       .from('profiles')
       .select('*')
       .in('role', ['student', 'garden_worker'])
+      .eq('approval_status', 'approved')
       .order('full_name');
 
     if (!error && data) {
       setWorkers(data);
+    }
+  };
+
+  const handleAISuggestTask = async () => {
+    if (!formData.title) {
+      toast({
+        title: "Title Required",
+        description: "Please enter a task title first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAiSuggestLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-text-assist', {
+        body: {
+          text: formData.title,
+          type: 'expand',
+          context: `Generate a detailed task description for a garden/farm task titled "${formData.title}". Include what needs to be done, tools required, and expected outcomes.`
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.improvedText) {
+        setFormData(prev => ({ ...prev, description: data.improvedText }));
+        toast({
+          title: "AI Suggestion Applied",
+          description: "Task description has been generated.",
+        });
+      }
+    } catch (error) {
+      console.error('AI suggest error:', error);
+      toast({
+        title: "AI Suggestion Failed",
+        description: "Unable to generate suggestion. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setAiSuggestLoading(false);
+    }
+  };
+
+  const handleAISuggestInstructions = async () => {
+    if (!formData.title || !formData.description) {
+      toast({
+        title: "More Info Required",
+        description: "Please enter a task title and description first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAiSuggestLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-text-assist', {
+        body: {
+          text: `Task: ${formData.title}\nDescription: ${formData.description}`,
+          type: 'expand',
+          context: 'Generate clear step-by-step instructions for completing this garden/farm task. Include safety tips if relevant.'
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.improvedText) {
+        setFormData(prev => ({ ...prev, instructions: data.improvedText }));
+        toast({
+          title: "Instructions Generated",
+          description: "AI has generated task instructions.",
+        });
+      }
+    } catch (error) {
+      console.error('AI suggest error:', error);
+      toast({
+        title: "AI Suggestion Failed",
+        description: "Unable to generate instructions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setAiSuggestLoading(false);
     }
   };
 
@@ -91,7 +188,6 @@ export function TaskAssignment() {
         description: "Task assigned successfully!",
       });
       
-      // Reset form
       setFormData({
         title: '',
         description: '',
@@ -161,9 +257,13 @@ export function TaskAssignment() {
           <CardTitle className="flex items-center gap-2">
             <Plus className="w-5 h-5" />
             Assign New Task
+            <Badge variant="secondary" className="ml-2 flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              AI Powered
+            </Badge>
           </CardTitle>
           <CardDescription>
-            Create and assign a new task to students or garden workers
+            Create and assign tasks with AI assistance for descriptions and instructions
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -177,6 +277,7 @@ export function TaskAssignment() {
                   onChange={(e) => handleInputChange('title', e.target.value)}
                   placeholder="e.g., Water the vegetable garden"
                   required
+                  disabled={aiLoading}
                 />
               </div>
               
@@ -185,6 +286,7 @@ export function TaskAssignment() {
                 <Select 
                   value={formData.assigned_to} 
                   onValueChange={(value) => handleInputChange('assigned_to', value)}
+                  disabled={aiLoading}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select worker" />
@@ -207,14 +309,39 @@ export function TaskAssignment() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description *</Label>
-              <Textarea
+              <div className="flex items-center justify-between">
+                <Label htmlFor="description">Description *</Label>
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAISuggestTask}
+                    disabled={aiLoading || !formData.title}
+                    className="text-xs"
+                  >
+                    {aiSuggestLoading ? (
+                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                    ) : (
+                      <Sparkles className="h-3 w-3 mr-1" />
+                    )}
+                    Generate with AI
+                  </Button>
+                  <AITextButton
+                    isLoading={descriptionLoading}
+                    onImprove={() => assistDescription(formData.description, 'improve', formData.title)}
+                  />
+                </div>
+              </div>
+              <SmartTextarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                placeholder="Describe what needs to be done..."
-                required
+                onChange={(value) => handleInputChange('description', value)}
+                placeholder="Describe what needs to be done... (AI will suggest as you type)"
+                context="garden task description"
                 rows={3}
+                disabled={descriptionLoading || aiSuggestLoading}
+                required
               />
             </div>
 
@@ -224,6 +351,7 @@ export function TaskAssignment() {
                 <Select 
                   value={formData.priority} 
                   onValueChange={(value) => handleInputChange('priority', value)}
+                  disabled={aiLoading}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -244,6 +372,7 @@ export function TaskAssignment() {
                   type="date"
                   value={formData.due_date}
                   onChange={(e) => handleInputChange('due_date', e.target.value)}
+                  disabled={aiLoading}
                 />
               </div>
               
@@ -257,6 +386,7 @@ export function TaskAssignment() {
                   value={formData.estimated_hours}
                   onChange={(e) => handleInputChange('estimated_hours', e.target.value)}
                   placeholder="e.g., 2.5"
+                  disabled={aiLoading}
                 />
               </div>
             </div>
@@ -268,6 +398,7 @@ export function TaskAssignment() {
                 value={formData.location}
                 onChange={(e) => handleInputChange('location', e.target.value)}
                 placeholder="e.g., Greenhouse A, Main Garden, Nursery"
+                disabled={aiLoading}
               />
             </div>
 
@@ -280,6 +411,7 @@ export function TaskAssignment() {
                     variant="outline" 
                     size="sm"
                     onClick={handleUseGardenLocation}
+                    disabled={aiLoading}
                   >
                     <MapPin className="w-4 h-4 mr-2" />
                     Use Garden Location
@@ -289,6 +421,7 @@ export function TaskAssignment() {
                     variant="outline" 
                     size="sm"
                     onClick={handleUseCurrentLocation}
+                    disabled={aiLoading}
                   >
                     <MapPin className="w-4 h-4 mr-2" />
                     Use Current Location
@@ -306,6 +439,7 @@ export function TaskAssignment() {
                     value={formData.geofence_lat}
                     onChange={(e) => handleInputChange('geofence_lat', e.target.value)}
                     placeholder="e.g., 33.6425"
+                    disabled={aiLoading}
                   />
                 </div>
                 
@@ -318,6 +452,7 @@ export function TaskAssignment() {
                     value={formData.geofence_lon}
                     onChange={(e) => handleInputChange('geofence_lon', e.target.value)}
                     placeholder="e.g., 73.0657"
+                    disabled={aiLoading}
                   />
                 </div>
                 
@@ -331,23 +466,49 @@ export function TaskAssignment() {
                     value={formData.geofence_radius}
                     onChange={(e) => handleInputChange('geofence_radius', e.target.value)}
                     placeholder="100"
+                    disabled={aiLoading}
                   />
                 </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="instructions">Special Instructions</Label>
-              <Textarea
+              <div className="flex items-center justify-between">
+                <Label htmlFor="instructions">Special Instructions</Label>
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAISuggestInstructions}
+                    disabled={aiLoading || !formData.title || !formData.description}
+                    className="text-xs"
+                  >
+                    {aiSuggestLoading ? (
+                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                    ) : (
+                      <Sparkles className="h-3 w-3 mr-1" />
+                    )}
+                    Generate Instructions
+                  </Button>
+                  <AITextButton
+                    isLoading={instructionsLoading}
+                    onImprove={() => assistInstructions(formData.instructions, 'improve', formData.title)}
+                  />
+                </div>
+              </div>
+              <SmartTextarea
                 id="instructions"
                 value={formData.instructions}
-                onChange={(e) => handleInputChange('instructions', e.target.value)}
-                placeholder="Any special instructions or requirements..."
+                onChange={(value) => handleInputChange('instructions', value)}
+                placeholder="Any special instructions or requirements... (AI suggests as you type)"
+                context="garden task instructions"
                 rows={3}
+                disabled={instructionsLoading || aiSuggestLoading}
               />
             </div>
 
-            <Button type="submit" disabled={loading || !formData.title || !formData.description || !formData.assigned_to}>
+            <Button type="submit" disabled={loading || aiLoading || !formData.title || !formData.description || !formData.assigned_to}>
               {loading ? 'Assigning...' : 'Assign Task'}
             </Button>
           </form>

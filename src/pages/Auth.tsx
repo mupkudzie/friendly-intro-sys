@@ -84,15 +84,15 @@ export default function Auth() {
 
       if (profile?.approval_status === 'pending') {
         await supabase.auth.signOut();
-        setError('Your account is pending approval. Please wait for admin approval.');
-        toast.error('Account pending approval');
+        setError('Your account is being reviewed. You will receive an email notification once approved.');
+        toast.error('Account under review');
         return;
       }
 
       if (profile?.approval_status === 'rejected') {
         await supabase.auth.signOut();
-        setError('Your account registration was rejected. Please contact the administrator.');
-        toast.error('Account rejected');
+        setError('Your registration was not approved. Please check your email for details or contact the administrator.');
+        toast.error('Registration not approved');
         return;
       }
 
@@ -156,7 +156,7 @@ export default function Auth() {
         setError(error.message);
         toast.error(error.message);
       } else {
-        toast.success('Account created successfully! Please wait for admin approval before you can sign in.');
+        toast.success('Account created! You will receive an email once your account is approved.');
       }
     } catch (err) {
       setError('An unexpected error occurred');

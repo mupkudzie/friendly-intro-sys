@@ -5,13 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAITextAssist } from '@/hooks/useAITextAssist';
 import { AITextButton } from '@/components/ui/ai-text-button';
-import { Send, FileText, Lightbulb, Clock } from 'lucide-react';
+import { SmartTextarea } from '@/components/ui/smart-textarea';
+import { Send, Lightbulb, Clock, Sparkles } from 'lucide-react';
 
 interface TaskTemplate {
   id: string;
@@ -197,9 +197,13 @@ export function RequestTask() {
           <CardTitle className="flex items-center gap-2">
             <Send className="w-5 h-5 text-primary" />
             Request Additional Task
+            <Badge variant="secondary" className="ml-2 flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              Smart Compose
+            </Badge>
           </CardTitle>
           <CardDescription>
-            Submit a request for additional work or suggest a new task for the garden. AI can help improve your writing.
+            Submit a request for additional work. AI helps you write better descriptions as you type.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -228,15 +232,15 @@ export function RequestTask() {
                     showDropdown
                   />
                 </div>
-                <Textarea
+                <SmartTextarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  placeholder="Describe the task you would like to work on... (AI can help improve your text)"
-                  required
+                  onChange={(value) => handleInputChange('description', value)}
+                  placeholder="Describe the task you would like to work on... (AI suggests as you type, press Tab to accept)"
+                  context="task request description"
                   rows={3}
                   disabled={descriptionLoading}
-                  className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                  required
                 />
               </div>
 
@@ -250,15 +254,15 @@ export function RequestTask() {
                     showDropdown
                   />
                 </div>
-                <Textarea
+                <SmartTextarea
                   id="justification"
                   value={formData.justification}
-                  onChange={(e) => handleInputChange('justification', e.target.value)}
-                  placeholder="Explain why this task is needed and why you're suitable for it... (AI can help improve your text)"
-                  required
+                  onChange={(value) => handleInputChange('justification', value)}
+                  placeholder="Explain why this task is needed... (AI suggests as you type, press Tab to accept)"
+                  context="task justification"
                   rows={4}
                   disabled={justificationLoading}
-                  className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                  required
                 />
               </div>
 
