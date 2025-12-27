@@ -2,3 +2,6 @@ project_id = "aczdwxhjdaljeflbsmwo"
 
 [functions.send-approval-email]
 verify_jwt = false
+
+[functions.ai-text-assist]
+verify_jwt = false

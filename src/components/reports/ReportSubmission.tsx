@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useAITextAssist } from '@/hooks/useAITextAssist';
+import { AITextButton } from '@/components/ui/ai-text-button';
 import { Send, FileText } from 'lucide-react';
 
 interface Task {
@@ -22,6 +24,12 @@ export function ReportSubmission() {
   const [selectedTaskId, setSelectedTaskId] = useState('');
   const [report, setReport] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const selectedTask = completedTasks.find(t => t.id === selectedTaskId);
+
+  const { assistText, isLoading: aiLoading } = useAITextAssist({
+    onSuccess: (improvedText) => setReport(improvedText),
+  });
 
   useEffect(() => {
     fetchCompletedTasks();
@@ -40,6 +48,14 @@ export function ReportSubmission() {
     if (!error && data) {
       setCompletedTasks(data);
     }
+  };
+
+  const handleAIImprove = () => {
+    assistText(report, 'report', selectedTask?.title);
+  };
+
+  const handleAIExpand = () => {
+    assistText(report, 'expand', selectedTask?.title);
   };
 
   const submitReport = async () => {
@@ -107,21 +123,33 @@ export function ReportSubmission() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="report" className="text-sm font-medium">
-                Work Report
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="report" className="text-sm font-medium">
+                  Work Report
+                </label>
+                <AITextButton
+                  isLoading={aiLoading}
+                  onImprove={handleAIImprove}
+                  onExpand={handleAIExpand}
+                  showDropdown
+                />
+              </div>
               <Textarea
                 id="report"
                 value={report}
                 onChange={(e) => setReport(e.target.value)}
-                placeholder="Describe what you accomplished, any challenges faced, and the current status..."
+                placeholder="Describe what you accomplished, any challenges faced, and the current status... (AI can help improve your text)"
                 rows={6}
+                disabled={aiLoading}
               />
+              <p className="text-xs text-muted-foreground">
+                Tip: Click the sparkle icon to let AI improve your report
+              </p>
             </div>
 
             <Button 
               onClick={submitReport}
-              disabled={!selectedTaskId || !report.trim() || loading}
+              disabled={!selectedTaskId || !report.trim() || loading || aiLoading}
               className="w-full bg-primary hover:bg-primary/90"
             >
               {loading ? 'Submitting...' : 'Submit Report'}
@@ -129,7 +157,6 @@ export function ReportSubmission() {
           </div>
         </CardContent>
       </Card>
-
     </div>
   );
 }
