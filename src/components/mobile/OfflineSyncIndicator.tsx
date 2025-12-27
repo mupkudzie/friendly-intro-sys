@@ -1,15 +1,79 @@
+import { useEffect, useRef } from 'react';
 import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Wifi, WifiOff, Cloud, CloudOff, RefreshCw, Loader2 } from 'lucide-react';
+import { Wifi, WifiOff, Cloud, CloudOff, RefreshCw, Loader2, CheckCircle2 } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { useToast } from '@/hooks/use-toast';
 
 export function OfflineSyncIndicator() {
   const { isOnline, isSyncing, pendingCount, manualSync } = useOfflineSync();
+  const { toast } = useToast();
+  const prevOnlineRef = useRef(isOnline);
+  const prevPendingRef = useRef(pendingCount);
+  const prevSyncingRef = useRef(isSyncing);
+
+  // Sync notifications
+  useEffect(() => {
+    // Coming back online
+    if (!prevOnlineRef.current && isOnline) {
+      toast({
+        title: "Back Online",
+        description: pendingCount > 0 
+          ? `Syncing ${pendingCount} pending item${pendingCount !== 1 ? 's' : ''}...` 
+          : "Your connection has been restored.",
+      });
+    }
+
+    // Going offline
+    if (prevOnlineRef.current && !isOnline) {
+      toast({
+        title: "Working Offline",
+        description: "Your data will be saved locally and synced when you're back online.",
+        variant: "destructive",
+      });
+    }
+
+    prevOnlineRef.current = isOnline;
+  }, [isOnline, pendingCount, toast]);
+
+  // Sync completion notification
+  useEffect(() => {
+    // Syncing finished
+    if (prevSyncingRef.current && !isSyncing && isOnline) {
+      const syncedCount = prevPendingRef.current - pendingCount;
+      if (syncedCount > 0) {
+        toast({
+          title: "Sync Complete",
+          description: (
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              <span>Successfully synced {syncedCount} item{syncedCount !== 1 ? 's' : ''}.</span>
+            </div>
+          ),
+        });
+      }
+    }
+
+    prevSyncingRef.current = isSyncing;
+    prevPendingRef.current = pendingCount;
+  }, [isSyncing, pendingCount, isOnline, toast]);
+
+  // New pending items notification
+  useEffect(() => {
+    if (!isOnline && pendingCount > prevPendingRef.current) {
+      const newItems = pendingCount - prevPendingRef.current;
+      toast({
+        title: "Saved Locally",
+        description: `${newItems} item${newItems !== 1 ? 's' : ''} saved offline. Will sync when online.`,
+      });
+    }
+    prevPendingRef.current = pendingCount;
+  }, [pendingCount, isOnline, toast]);
 
   return (
     <Popover>
@@ -19,7 +83,9 @@ export function OfflineSyncIndicator() {
           size="sm"
           className="relative h-9 px-2"
         >
-          {isOnline ? (
+          {isSyncing ? (
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          ) : isOnline ? (
             <Wifi className="h-4 w-4 text-green-600" />
           ) : (
             <WifiOff className="h-4 w-4 text-destructive" />
@@ -37,7 +103,12 @@ export function OfflineSyncIndicator() {
       <PopoverContent className="w-72" align="end">
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            {isOnline ? (
+            {isSyncing ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <span className="text-sm font-medium text-primary">Syncing...</span>
+              </>
+            ) : isOnline ? (
               <>
                 <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                 <span className="text-sm font-medium text-green-700">Online</span>
@@ -98,6 +169,13 @@ export function OfflineSyncIndicator() {
             <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-md">
               Connect to the internet to sync your pending data.
             </p>
+          )}
+
+          {isOnline && pendingCount === 0 && !isSyncing && (
+            <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 p-2 rounded-md">
+              <CheckCircle2 className="h-4 w-4" />
+              <span>All your data is synced and up to date.</span>
+            </div>
           )}
         </div>
       </PopoverContent>

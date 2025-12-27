@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useAITextAssist } from '@/hooks/useAITextAssist';
+import { AITextButton } from '@/components/ui/ai-text-button';
 import { Send, FileText, Lightbulb, Clock } from 'lucide-react';
 
 interface TaskTemplate {
@@ -33,6 +35,16 @@ export function RequestTask() {
     justification: '',
     priority: 'medium',
   });
+
+  const { assistText: assistDescription, isLoading: descriptionLoading } = useAITextAssist({
+    onSuccess: (text) => setFormData(prev => ({ ...prev, description: text })),
+  });
+
+  const { assistText: assistJustification, isLoading: justificationLoading } = useAITextAssist({
+    onSuccess: (text) => setFormData(prev => ({ ...prev, justification: text })),
+  });
+
+  const aiLoading = descriptionLoading || justificationLoading;
 
   useEffect(() => {
     fetchTemplates();
@@ -81,7 +93,6 @@ export function RequestTask() {
         description: "Your task request has been sent to supervisors for review.",
       });
       
-      // Reset form
       setFormData({
         title: '',
         description: '',
@@ -114,6 +125,22 @@ export function RequestTask() {
       case 'low': return 'bg-gray-100 text-gray-800 border-gray-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
+  };
+
+  const handleImproveDescription = () => {
+    assistDescription(formData.description, 'improve', formData.title);
+  };
+
+  const handleExpandDescription = () => {
+    assistDescription(formData.description, 'expand', formData.title);
+  };
+
+  const handleImproveJustification = () => {
+    assistJustification(formData.justification, 'justification', formData.title);
+  };
+
+  const handleExpandJustification = () => {
+    assistJustification(formData.justification, 'expand', formData.title);
   };
 
   return (
@@ -172,7 +199,7 @@ export function RequestTask() {
             Request Additional Task
           </CardTitle>
           <CardDescription>
-            Submit a request for additional work or suggest a new task for the garden
+            Submit a request for additional work or suggest a new task for the garden. AI can help improve your writing.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -186,32 +213,51 @@ export function RequestTask() {
                   onChange={(e) => handleInputChange('title', e.target.value)}
                   placeholder="e.g., Install new irrigation system"
                   required
+                  disabled={aiLoading}
                   className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <Label htmlFor="description">Task Description *</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="description">Task Description *</Label>
+                  <AITextButton
+                    isLoading={descriptionLoading}
+                    onImprove={handleImproveDescription}
+                    onExpand={handleExpandDescription}
+                    showDropdown
+                  />
+                </div>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
-                  placeholder="Describe the task you would like to work on..."
+                  placeholder="Describe the task you would like to work on... (AI can help improve your text)"
                   required
                   rows={3}
+                  disabled={descriptionLoading}
                   className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <Label htmlFor="justification">Justification *</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="justification">Justification *</Label>
+                  <AITextButton
+                    isLoading={justificationLoading}
+                    onImprove={handleImproveJustification}
+                    onExpand={handleExpandJustification}
+                    showDropdown
+                  />
+                </div>
                 <Textarea
                   id="justification"
                   value={formData.justification}
                   onChange={(e) => handleInputChange('justification', e.target.value)}
-                  placeholder="Explain why this task is needed and why you're suitable for it..."
+                  placeholder="Explain why this task is needed and why you're suitable for it... (AI can help improve your text)"
                   required
                   rows={4}
+                  disabled={justificationLoading}
                   className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                 />
               </div>
@@ -221,6 +267,7 @@ export function RequestTask() {
                 <Select 
                   value={formData.priority} 
                   onValueChange={(value) => handleInputChange('priority', value)}
+                  disabled={aiLoading}
                 >
                   <SelectTrigger className="transition-all duration-200 focus:ring-2 focus:ring-primary/20">
                     <SelectValue />
@@ -237,7 +284,7 @@ export function RequestTask() {
 
             <Button 
               type="submit" 
-              disabled={loading || !formData.title || !formData.description || !formData.justification}
+              disabled={loading || aiLoading || !formData.title || !formData.description || !formData.justification}
               className="w-full gradient-green text-white hover:shadow-lg transition-all duration-200"
             >
               {loading ? 'Submitting...' : 'Submit Request'}
@@ -245,7 +292,6 @@ export function RequestTask() {
           </form>
         </CardContent>
       </Card>
-
     </div>
   );
 }
