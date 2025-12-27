@@ -3,12 +3,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAITextAssist } from '@/hooks/useAITextAssist';
 import { AITextButton } from '@/components/ui/ai-text-button';
-import { Send, FileText } from 'lucide-react';
+import { SmartTextarea } from '@/components/ui/smart-textarea';
+import { Send, Sparkles } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface Task {
   id: string;
@@ -97,6 +98,10 @@ export function ReportSubmission() {
           <CardTitle className="flex items-center gap-2">
             <Send className="w-5 h-5" />
             Submit Task Report
+            <Badge variant="secondary" className="ml-2 flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              Smart Compose
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -134,16 +139,17 @@ export function ReportSubmission() {
                   showDropdown
                 />
               </div>
-              <Textarea
+              <SmartTextarea
                 id="report"
                 value={report}
-                onChange={(e) => setReport(e.target.value)}
-                placeholder="Describe what you accomplished, any challenges faced, and the current status... (AI can help improve your text)"
+                onChange={setReport}
+                placeholder="Describe what you accomplished... (AI suggests as you type, press Tab to accept)"
+                context="task completion report"
                 rows={6}
                 disabled={aiLoading}
               />
               <p className="text-xs text-muted-foreground">
-                Tip: Click the sparkle icon to let AI improve your report
+                Tip: Start typing and AI will suggest completions. Press Tab to accept or Esc to dismiss.
               </p>
             </div>
 
