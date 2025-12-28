@@ -9,8 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAITextAssist } from '@/hooks/useAITextAssist';
+import { useWorkerRecommendations } from '@/hooks/useWorkerRecommendations';
 import { AITextButton } from '@/components/ui/ai-text-button';
 import { SmartTextarea } from '@/components/ui/smart-textarea';
+import { WorkerRecommendations } from '@/components/tasks/WorkerRecommendations';
 import { Plus, User, MapPin, Sparkles, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -50,7 +52,14 @@ export function TaskAssignment() {
     onSuccess: (text) => setFormData(prev => ({ ...prev, instructions: text })),
   });
 
-  const aiLoading = descriptionLoading || instructionsLoading || aiSuggestLoading;
+  const {
+    recommendations,
+    isLoading: recommendationsLoading,
+    getRecommendations,
+    clearRecommendations,
+  } = useWorkerRecommendations();
+
+  const aiLoading = descriptionLoading || instructionsLoading || aiSuggestLoading || recommendationsLoading;
 
   useEffect(() => {
     fetchWorkers();
@@ -285,7 +294,10 @@ export function TaskAssignment() {
                 <Label htmlFor="assigned_to">Assign To *</Label>
                 <Select 
                   value={formData.assigned_to} 
-                  onValueChange={(value) => handleInputChange('assigned_to', value)}
+                  onValueChange={(value) => {
+                    handleInputChange('assigned_to', value);
+                    clearRecommendations();
+                  }}
                   disabled={aiLoading}
                 >
                   <SelectTrigger>
@@ -307,6 +319,20 @@ export function TaskAssignment() {
                 </Select>
               </div>
             </div>
+
+            {/* AI Worker Recommendations */}
+            <WorkerRecommendations
+              recommendations={recommendations}
+              isLoading={recommendationsLoading}
+              onSelectWorker={(userId) => {
+                handleInputChange('assigned_to', userId);
+                clearRecommendations();
+              }}
+              onGetRecommendations={() => 
+                getRecommendations(formData.title, formData.description, formData.priority)
+              }
+              disabled={!formData.title || !formData.description}
+            />
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">

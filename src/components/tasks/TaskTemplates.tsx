@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useAITemplates } from '@/hooks/useAITemplates';
+import { AITemplatesSuggestions } from '@/components/tasks/AITemplatesSuggestions';
 import { Plus, Edit2, Archive, FileText, Clock, AlertCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
@@ -39,6 +41,14 @@ export function TaskTemplates() {
     priority: 'medium',
     requirements: '',
   });
+
+  const {
+    suggestedTemplates,
+    isLoading: aiLoading,
+    generateTemplates,
+    saveTemplate,
+    dismissTemplate,
+  } = useAITemplates();
 
   useEffect(() => {
     fetchTemplates();
@@ -168,8 +178,30 @@ export function TaskTemplates() {
     );
   }
 
+  const handleUseAITemplate = (template: { title: string; description: string; category: string; priority: 'low' | 'medium' | 'high'; estimated_hours: number; requirements: string }) => {
+    setFormData({
+      title: template.title,
+      description: template.description,
+      category: template.category,
+      estimated_hours: template.estimated_hours?.toString() || '',
+      priority: template.priority,
+      requirements: template.requirements || '',
+    });
+    setIsDialogOpen(true);
+  };
+
   return (
     <div className="space-y-6">
+      {/* AI-Generated Templates Section */}
+      <AITemplatesSuggestions
+        templates={suggestedTemplates}
+        isLoading={aiLoading}
+        onGenerate={generateTemplates}
+        onSave={(template) => userProfile && saveTemplate(template, userProfile.user_id)}
+        onDismiss={dismissTemplate}
+        onUseTemplate={handleUseAITemplate}
+      />
+
       <Card className="fade-in">
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
