@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.ai-text-assist]
 verify_jwt = false
+
+[functions.ai-worker-recommend]
+verify_jwt = false
+
+[functions.ai-generate-templates]
+verify_jwt = false
