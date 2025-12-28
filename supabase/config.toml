@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.ai-generate-templates]
 verify_jwt = false
+
+[functions.ai-performance-insights]
+verify_jwt = false
+
+[functions.ai-task-prioritization]
+verify_jwt = false

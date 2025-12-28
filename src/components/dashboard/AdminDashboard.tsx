@@ -5,11 +5,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, CheckCircle, Clock, BarChart3, Leaf, LogOut, LayoutDashboard, Activity, FileText, Bell } from 'lucide-react';
+import { Users, CheckCircle, Clock, BarChart3, Leaf, LogOut, LayoutDashboard, Activity, FileText, Bell, Sparkles, ListOrdered } from 'lucide-react';
 import { UserManagementDashboard } from '@/components/admin/UserManagementDashboard';
 import { Reports } from '@/components/reports/Reports';
 import { AdminAnalytics } from '@/components/analytics/AdminAnalytics';
+import { AIPerformanceDashboard } from '@/components/analytics/AIPerformanceDashboard';
 import { TaskOverview } from '@/components/tasks/TaskOverview';
+import { AITaskPrioritization } from '@/components/tasks/AITaskPrioritization';
 import { WorkerActivityTracker } from '@/components/workers/WorkerActivityTracker';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { ClockInOutView } from '@/components/time/ClockInOutView';
@@ -23,6 +25,8 @@ import { VideoFeed } from '@/components/ui/VideoFeed';
 
 const menuItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'ai-analytics', label: 'AI Analytics', icon: Sparkles },
+  { id: 'ai-priority', label: 'AI Priority', icon: ListOrdered },
   { id: 'approvals', label: 'Pending Approvals', icon: Users },
   { id: 'users', label: 'User Management', icon: Users },
   { id: 'tasks', label: 'Task Overview', icon: CheckCircle },
@@ -78,6 +82,10 @@ export function AdminDashboard() {
     switch (activeView) {
       case 'overview':
         return <AdminAnalytics />;
+      case 'ai-analytics':
+        return <AIPerformanceDashboard />;
+      case 'ai-priority':
+        return <AITaskPrioritization />;
       case 'approvals':
         return <UserApproval />;
       case 'users':

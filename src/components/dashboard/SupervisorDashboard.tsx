@@ -5,13 +5,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, Users, Leaf, LogOut, Plus, LayoutDashboard, ClipboardList, CheckSquare, UserPlus, FileText, TrendingUp, Activity, Bell, Images } from 'lucide-react';
+import { CheckCircle, Clock, Users, Leaf, LogOut, Plus, LayoutDashboard, ClipboardList, CheckSquare, UserPlus, FileText, TrendingUp, Activity, Bell, Images, Sparkles, ListOrdered } from 'lucide-react';
 import { TaskAssignment } from '@/components/tasks/TaskAssignment';
 import { TaskRequests } from '@/components/tasks/TaskRequests';
 import { TaskApproval } from '@/components/tasks/TaskApproval';
 import { TaskTemplates } from '@/components/tasks/TaskTemplates';
 import { PerformanceEvaluation } from '@/components/performance/PerformanceEvaluation';
 import { TaskOverview } from '@/components/tasks/TaskOverview';
+import { AIPerformanceDashboard } from '@/components/analytics/AIPerformanceDashboard';
+import { AITaskPrioritization } from '@/components/tasks/AITaskPrioritization';
 import { WorkerActivityTracker } from '@/components/workers/WorkerActivityTracker';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { ClockInOutView } from '@/components/time/ClockInOutView';
@@ -23,6 +25,8 @@ import { UserManagementDashboard } from '@/components/admin/UserManagementDashbo
 
 const menuItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'ai-analytics', label: 'AI Analytics', icon: Sparkles },
+  { id: 'ai-priority', label: 'AI Priority', icon: ListOrdered },
   { id: 'requests', label: 'Requests', icon: ClipboardList },
   { id: 'approval', label: 'Review', icon: CheckSquare },
   { id: 'assign', label: 'Assign', icon: UserPlus },
@@ -77,6 +81,10 @@ export function SupervisorDashboard() {
     switch (activeView) {
       case 'overview':
         return <TaskOverview userRole="supervisor" />;
+      case 'ai-analytics':
+        return <AIPerformanceDashboard />;
+      case 'ai-priority':
+        return <AITaskPrioritization />;
       case 'requests':
         return <TaskRequests />;
       case 'approval':
