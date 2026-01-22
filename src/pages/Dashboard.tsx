@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { AdminDashboard } from '@/components/dashboard/AdminDashboard';
 import { SupervisorDashboard } from '@/components/dashboard/SupervisorDashboard';
@@ -6,7 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2 } from 'lucide-react';
 
 export default function Dashboard() {
-  const { userProfile, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect to auth if not authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [loading, user, navigate]);
 
   if (loading) {
     return (
@@ -21,13 +31,23 @@ export default function Dashboard() {
     );
   }
 
+  // If not authenticated, show nothing while redirecting
+  if (!user) {
+    return null;
+  }
+
   if (!userProfile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card>
-          <CardContent className="flex items-center gap-2 p-6">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Setting up your profile...
+          <CardContent className="flex flex-col items-center gap-4 p-6">
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Setting up your profile...
+            </div>
+            <p className="text-sm text-muted-foreground text-center">
+              If this takes too long, try refreshing the page or signing in again.
+            </p>
           </CardContent>
         </Card>
       </div>
