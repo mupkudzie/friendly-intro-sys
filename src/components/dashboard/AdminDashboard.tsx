@@ -21,7 +21,6 @@ import { FarmZones } from '@/components/admin/FarmZones';
 import { AuditLogs } from '@/components/admin/AuditLogs';
 import { CommentsManagement } from '@/components/admin/CommentsManagement';
 import { cn } from '@/lib/utils';
-import { VideoFeed } from '@/components/ui/VideoFeed';
 
 const menuItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -212,11 +211,6 @@ export function AdminDashboard() {
                 <div className="text-2xl font-bold text-blue-600">{stats.totalHours.toFixed(1)}</div>
               </CardContent>
             </Card>
-          </div>
-
-          {/* Live Video Feed */}
-          <div className="mb-6">
-            <VideoFeed title="Live Camera Feed" src="/video_feed" />
           </div>
 
           {/* Dynamic Content */}

@@ -20,7 +20,6 @@ import { ClockInOutView } from '@/components/time/ClockInOutView';
 import { WeeklyTimesheetView } from '@/components/time/WeeklyTimesheetView';
 import { PhotoGallery } from '@/components/gallery/PhotoGallery';
 import { cn } from '@/lib/utils';
-import { VideoFeed } from '@/components/ui/VideoFeed';
 import { UserManagementDashboard } from '@/components/admin/UserManagementDashboard';
 
 const menuItems = [
@@ -217,11 +216,6 @@ export function SupervisorDashboard() {
                 <div className="text-2xl font-bold text-blue-600">{stats.activeWorkers}</div>
               </CardContent>
             </Card>
-          </div>
-
-          {/* Live Video Feed */}
-          <div className="mb-6">
-            <VideoFeed title="Live Camera Feed" src="/video_feed" />
           </div>
 
           {/* Dynamic Content */}
