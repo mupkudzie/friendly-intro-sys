@@ -31,7 +31,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const fetchProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    setUserProfile(data);
+  };
+
   useEffect(() => {
+    // Check for existing session first
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      }
+      setLoading(false);
+    });
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -39,8 +59,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          setTimeout(async () => {
-            await refreshProfile();
+          // Use setTimeout to avoid potential deadlock with Supabase client
+          setTimeout(() => {
+            fetchProfile(session.user.id);
           }, 0);
         } else {
           setUserProfile(null);
@@ -49,18 +70,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        refreshProfile();
-      }
-      setLoading(false);
-    });
-
     return () => subscription.unsubscribe();
-  }, [user?.id]);
+  }, []);
 
   const signOut = async () => {
     await supabase.auth.signOut();
