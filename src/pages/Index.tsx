@@ -1,13 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Leaf, Users, Clock, BarChart3 } from 'lucide-react';
+import { Leaf, Users, Clock, BarChart3, Loader2 } from 'lucide-react';
 
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [showTimeout, setShowTimeout] = useState(false);
 
   useEffect(() => {
     if (user && !loading) {
@@ -15,10 +16,34 @@ const Index = () => {
     }
   }, [user, loading, navigate]);
 
+  // Show timeout message after 5 seconds of loading
+  useEffect(() => {
+    if (loading) {
+      const timer = setTimeout(() => setShowTimeout(true), 5000);
+      return () => clearTimeout(timer);
+    }
+    setShowTimeout(false);
+  }, [loading]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div>Loading...</div>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <div>Loading...</div>
+          {showTimeout && (
+            <div className="text-center text-sm text-muted-foreground">
+              <p>Taking longer than expected...</p>
+              <Button 
+                variant="link" 
+                onClick={() => window.location.reload()}
+                className="mt-2"
+              >
+                Refresh page
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
