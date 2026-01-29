@@ -66,50 +66,70 @@ export function UserApproval() {
   const handleApprove = async (user: PendingUser) => {
     setActionLoading(true);
     try {
+      const currentUser = (await supabase.auth.getUser()).data.user;
+      
       // Update approval status
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
           approval_status: 'approved',
-          approved_by: (await supabase.auth.getUser()).data.user?.id,
+          approved_by: currentUser?.id,
           approved_at: new Date().toISOString(),
         })
         .eq('user_id', user.user_id);
 
       if (updateError) throw updateError;
 
-      // Create role entry
-      const roleMap: { [key: string]: 'admin' | 'supervisor' | 'student' | 'garden_worker' } = {
-        admin: 'admin',
-        supervisor: 'supervisor',
-        student: 'student',
-        garden_worker: 'garden_worker',
-      };
-
-      const { error: roleError } = await supabase
+      // Check if role already exists before inserting
+      const { data: existingRole } = await supabase
         .from('user_roles')
-        .insert({
-          user_id: user.user_id,
-          role: roleMap[user.role],
-        });
+        .select('id')
+        .eq('user_id', user.user_id)
+        .maybeSingle();
 
-      if (roleError) throw roleError;
+      if (!existingRole) {
+        // Create role entry only if it doesn't exist
+        const roleMap: { [key: string]: 'admin' | 'supervisor' | 'student' | 'garden_worker' } = {
+          admin: 'admin',
+          supervisor: 'supervisor',
+          student: 'student',
+          garden_worker: 'garden_worker',
+        };
+
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: user.user_id,
+            role: roleMap[user.role],
+          });
+
+        if (roleError) {
+          console.error('Role insert error:', roleError);
+          // Don't throw - approval still succeeded
+        }
+      }
 
       // Send approval email
-      await supabase.functions.invoke('send-approval-email', {
-        body: {
-          email: user.email,
-          name: user.full_name,
-          status: 'approved',
-        },
-      });
+      try {
+        await supabase.functions.invoke('send-approval-email', {
+          body: {
+            email: user.email,
+            name: user.full_name,
+            status: 'approved',
+          },
+        });
+      } catch (emailError) {
+        console.error('Email error:', emailError);
+        // Don't throw - approval still succeeded
+      }
 
       toast({
         title: 'Success',
-        description: `${user.full_name} has been approved and notified via email.`,
+        description: `${user.full_name} has been approved.`,
       });
 
-      fetchPendingUsers();
+      // Remove from list immediately
+      setPendingUsers(prev => prev.filter(u => u.user_id !== user.user_id));
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -126,11 +146,13 @@ export function UserApproval() {
     
     setActionLoading(true);
     try {
+      const currentUser = (await supabase.auth.getUser()).data.user;
+      
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
           approval_status: 'rejected',
-          approved_by: (await supabase.auth.getUser()).data.user?.id,
+          approved_by: currentUser?.id,
           approved_at: new Date().toISOString(),
           rejection_reason: rejectReason,
         })
@@ -139,24 +161,29 @@ export function UserApproval() {
       if (updateError) throw updateError;
 
       // Send rejection email
-      await supabase.functions.invoke('send-approval-email', {
-        body: {
-          email: selectedUser.email,
-          name: selectedUser.full_name,
-          status: 'rejected',
-          reason: rejectReason,
-        },
-      });
+      try {
+        await supabase.functions.invoke('send-approval-email', {
+          body: {
+            email: selectedUser.email,
+            name: selectedUser.full_name,
+            status: 'rejected',
+            reason: rejectReason,
+          },
+        });
+      } catch (emailError) {
+        console.error('Email error:', emailError);
+      }
 
       toast({
         title: 'User Rejected',
-        description: `${selectedUser.full_name} has been notified.`,
+        description: `${selectedUser.full_name} has been rejected.`,
       });
 
+      // Remove from list immediately
+      setPendingUsers(prev => prev.filter(u => u.user_id !== selectedUser.user_id));
       setShowRejectDialog(false);
       setRejectReason('');
       setSelectedUser(null);
-      fetchPendingUsers();
     } catch (error: any) {
       toast({
         title: 'Error',
