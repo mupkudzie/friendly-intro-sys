@@ -79,19 +79,17 @@ Both applications connect to the same Supabase database.
 ### Starting a Task (Workers Only)
 1. Navigate to "My Tasks" tab
 2. Click "Start Task" on any pending task
-3. **Location Verification**: The app will verify you're at the work site (within geofence radius)
-4. **Photo Verification**: Take 2-3 photos of the work area before starting
-5. Task automatically starts tracking time and activity
-
-### Activity Tracking
-- While working, the app monitors your movement using accelerometer
-- Activity levels: Idle, Light, Moderate, Active
-- Data logged every 5 minutes to the database
+3. **Location Verification**: The app verifies you're at the work site (within geofence radius)
+4. **Photo Verification**: Take at least 3 photos (up to 5) of the work area before starting
+5. Task automatically starts and clock-in time is recorded
+6. A live timer shows your elapsed work time
 
 ### Completing Tasks
-1. Click "Work Completed" when finished
-2. Take 2-3 photos of completed work
-3. Submit for supervisor approval
+1. Click "End Task" when finished
+2. Take at least 3 photos (up to 5) of your completed work
+3. Photos are uploaded and clock-out time is recorded
+4. Task is submitted for supervisor approval
+5. You'll receive a notification when your task is approved or rejected
 
 ## Database Changes
 New tables added:

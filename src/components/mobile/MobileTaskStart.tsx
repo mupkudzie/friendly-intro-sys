@@ -36,18 +36,22 @@ export function MobileTaskStart({ task, userId, isOpen, onClose, onTaskStarted }
     setInitialPhotos(photos);
     
     try {
-      // Upload photos to Supabase Storage (we'll create this bucket in migration)
+      // Upload photos to Supabase Storage
       const photoUrls: string[] = [];
+      const startTime = new Date().toISOString();
       
       for (let i = 0; i < photos.length; i++) {
         const blob = await fetch(photos[i]).then(r => r.blob());
         const fileName = `${userId}/${task.id}/start_${Date.now()}_${i}.jpg`;
         
-        const { data, error } = await supabase.storage
+        const { error } = await supabase.storage
           .from('task-photos')
           .upload(fileName, blob);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Photo upload error:', error);
+          throw error;
+        }
         
         const { data: { publicUrl } } = supabase.storage
           .from('task-photos')
@@ -56,28 +60,52 @@ export function MobileTaskStart({ task, userId, isOpen, onClose, onTaskStarted }
         photoUrls.push(publicUrl);
       }
 
-      // Create time log entry
+      // Create time log entry - this is the clock in
       const { data: timeLog, error: logError } = await supabase
         .from('time_logs')
         .insert({
           task_id: task.id,
           user_id: userId,
-          start_time: new Date().toISOString(),
+          start_time: startTime,
         })
         .select()
         .single();
 
-      if (logError) throw logError;
+      if (logError) {
+        console.error('Time log error:', logError);
+        throw logError;
+      }
+
+      // Create activity log with initial photos
+      const { error: activityError } = await supabase
+        .from('activity_logs')
+        .insert({
+          task_id: task.id,
+          user_id: userId,
+          start_time: startTime,
+          initial_photos: photoUrls,
+          status: 'in_progress'
+        });
+
+      if (activityError) {
+        console.error('Activity log error:', activityError);
+        // Don't throw - activity log is supplementary
+      }
 
       // Update task status
-      await supabase
+      const { error: taskError } = await supabase
         .from('tasks')
         .update({ status: 'in_progress' })
         .eq('id', task.id);
 
+      if (taskError) {
+        console.error('Task update error:', taskError);
+        throw taskError;
+      }
+
       toast({
-        title: "Task started",
-        description: "Location verified and photos uploaded successfully",
+        title: "Clock In Started!",
+        description: "Your time is now being recorded. Take photos when you're done.",
       });
 
       onTaskStarted(timeLog.id, photoUrls);
@@ -115,10 +143,11 @@ export function MobileTaskStart({ task, userId, isOpen, onClose, onTaskStarted }
 
         {step === 'photos' && (
           <PhotoCapture
-            minPhotos={2}
-            maxPhotos={3}
-            title="Initial Work Area Photos"
+            minPhotos={3}
+            maxPhotos={5}
+            title="Take Photos Before Starting"
             onPhotosCapture={handlePhotosCapture}
+            autoSubmit={false}
           />
         )}
       </DialogContent>
