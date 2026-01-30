@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PhotoCapture } from './PhotoCapture';
 import { GeofenceCheck } from './GeofenceCheck';
+import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { Loader2, Upload } from 'lucide-react';
 
 interface MobileTaskStartProps {
   task: {
@@ -20,12 +22,14 @@ interface MobileTaskStartProps {
   onTaskStarted: (logId: string, photos: string[]) => void;
 }
 
-type Step = 'location' | 'photos' | 'complete';
+type Step = 'location' | 'photos' | 'uploading' | 'complete';
 
 export function MobileTaskStart({ task, userId, isOpen, onClose, onTaskStarted }: MobileTaskStartProps) {
   const [step, setStep] = useState<Step>('location');
   const [verifiedLocation, setVerifiedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [initialPhotos, setInitialPhotos] = useState<string[]>([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadingMessage, setUploadingMessage] = useState('');
 
   const handleLocationVerified = (location: { latitude: number; longitude: number }) => {
     setVerifiedLocation(location);
@@ -34,11 +38,17 @@ export function MobileTaskStart({ task, userId, isOpen, onClose, onTaskStarted }
 
   const handlePhotosCapture = async (photos: string[]) => {
     setInitialPhotos(photos);
+    setStep('uploading');
+    setUploadProgress(0);
     
     try {
       // Upload photos to Supabase Storage
       const photoUrls: string[] = [];
       const startTime = new Date().toISOString();
+      const totalSteps = photos.length + 3; // photos + time_log + activity_log + task_update
+      let currentStep = 0;
+      
+      setUploadingMessage('Uploading photos...');
       
       for (let i = 0; i < photos.length; i++) {
         const blob = await fetch(photos[i]).then(r => r.blob());
@@ -58,8 +68,12 @@ export function MobileTaskStart({ task, userId, isOpen, onClose, onTaskStarted }
           .getPublicUrl(fileName);
           
         photoUrls.push(publicUrl);
+        currentStep++;
+        setUploadProgress(Math.round((currentStep / totalSteps) * 100));
       }
 
+      setUploadingMessage('Starting clock...');
+      
       // Create time log entry - this is the clock in
       const { data: timeLog, error: logError } = await supabase
         .from('time_logs')
@@ -75,6 +89,10 @@ export function MobileTaskStart({ task, userId, isOpen, onClose, onTaskStarted }
         console.error('Time log error:', logError);
         throw logError;
       }
+      
+      currentStep++;
+      setUploadProgress(Math.round((currentStep / totalSteps) * 100));
+      setUploadingMessage('Saving activity...');
 
       // Create activity log with initial photos
       const { error: activityError } = await supabase
@@ -91,6 +109,10 @@ export function MobileTaskStart({ task, userId, isOpen, onClose, onTaskStarted }
         console.error('Activity log error:', activityError);
         // Don't throw - activity log is supplementary
       }
+      
+      currentStep++;
+      setUploadProgress(Math.round((currentStep / totalSteps) * 100));
+      setUploadingMessage('Updating task...');
 
       // Update task status
       const { error: taskError } = await supabase
@@ -102,6 +124,9 @@ export function MobileTaskStart({ task, userId, isOpen, onClose, onTaskStarted }
         console.error('Task update error:', taskError);
         throw taskError;
       }
+      
+      setUploadProgress(100);
+      setUploadingMessage('Done!');
 
       toast({
         title: "Clock In Started!",
@@ -113,6 +138,7 @@ export function MobileTaskStart({ task, userId, isOpen, onClose, onTaskStarted }
       
     } catch (error) {
       console.error('Error starting task:', error);
+      setStep('photos'); // Go back to photos step
       toast({
         title: "Error",
         description: "Failed to start task. Please try again.",
@@ -145,10 +171,29 @@ export function MobileTaskStart({ task, userId, isOpen, onClose, onTaskStarted }
           <PhotoCapture
             minPhotos={3}
             maxPhotos={5}
-            title="Take Photos Before Starting"
+            title="Select Photos Before Starting"
             onPhotosCapture={handlePhotosCapture}
             autoSubmit={false}
           />
+        )}
+
+        {step === 'uploading' && (
+          <div className="p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-full bg-primary/10">
+                <Upload className="h-6 w-6 text-primary animate-pulse" />
+              </div>
+              <div className="flex-1">
+                <p className="font-medium">Starting Your Task</p>
+                <p className="text-sm text-muted-foreground">{uploadingMessage}</p>
+              </div>
+            </div>
+            <Progress value={uploadProgress} className="h-3" />
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>{uploadProgress}% complete</span>
+            </div>
+          </div>
         )}
       </DialogContent>
     </Dialog>

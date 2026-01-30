@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PhotoCapture } from './PhotoCapture';
+import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Card } from '@/components/ui/card';
-import { Clock, CheckCircle2 } from 'lucide-react';
+import { Clock, CheckCircle2, Loader2, Upload } from 'lucide-react';
 
 interface MobileTaskEndProps {
   task: {
@@ -18,16 +19,24 @@ interface MobileTaskEndProps {
   onTaskEnded: () => void;
 }
 
+type SubmitStep = 'photos' | 'uploading';
+
 export function MobileTaskEnd({ task, userId, timeLogId, isOpen, onClose, onTaskEnded }: MobileTaskEndProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStep, setSubmitStep] = useState<SubmitStep>('photos');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadingMessage, setUploadingMessage] = useState('');
 
   const handlePhotosCapture = async (photos: string[]) => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
+    setSubmitStep('uploading');
+    setUploadProgress(0);
     
     try {
       // Upload photos to Supabase Storage
       const photoUrls: string[] = [];
+      const totalSteps = photos.length + 3; // photos + time_log + activity_log + task_update
+      let currentStep = 0;
+      
+      setUploadingMessage('Uploading photos...');
       
       for (let i = 0; i < photos.length; i++) {
         const blob = await fetch(photos[i]).then(r => r.blob());
@@ -47,9 +56,13 @@ export function MobileTaskEnd({ task, userId, timeLogId, isOpen, onClose, onTask
           .getPublicUrl(fileName);
           
         photoUrls.push(publicUrl);
+        currentStep++;
+        setUploadProgress(Math.round((currentStep / totalSteps) * 100));
       }
 
       const endTime = new Date().toISOString();
+      
+      setUploadingMessage('Stopping clock...');
 
       // End the time log if we have one
       if (timeLogId) {
@@ -65,6 +78,10 @@ export function MobileTaskEnd({ task, userId, timeLogId, isOpen, onClose, onTask
           throw logError;
         }
       }
+      
+      currentStep++;
+      setUploadProgress(Math.round((currentStep / totalSteps) * 100));
+      setUploadingMessage('Saving activity...');
 
       // Update the activity log with final photos
       const { error: activityError } = await supabase
@@ -91,6 +108,10 @@ export function MobileTaskEnd({ task, userId, timeLogId, isOpen, onClose, onTask
             end_time: endTime
           });
       }
+      
+      currentStep++;
+      setUploadProgress(Math.round((currentStep / totalSteps) * 100));
+      setUploadingMessage('Submitting for approval...');
 
       // Update task status to pending_approval
       const { error: taskError } = await supabase
@@ -99,6 +120,9 @@ export function MobileTaskEnd({ task, userId, timeLogId, isOpen, onClose, onTask
         .eq('id', task.id);
 
       if (taskError) throw taskError;
+      
+      setUploadProgress(100);
+      setUploadingMessage('Done!');
 
       toast({
         title: "Task completed!",
@@ -109,13 +133,12 @@ export function MobileTaskEnd({ task, userId, timeLogId, isOpen, onClose, onTask
       onClose();
     } catch (error) {
       console.error('Error ending task:', error);
+      setSubmitStep('photos'); // Go back to photos step
       toast({
         title: "Error",
         description: "Failed to submit task. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -126,32 +149,48 @@ export function MobileTaskEnd({ task, userId, timeLogId, isOpen, onClose, onTask
           <DialogTitle>Complete Task: {task.title}</DialogTitle>
         </DialogHeader>
 
-        <Card className="p-4 mb-4 bg-muted/50">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-full bg-primary/10">
-              <Clock className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium">Clock Out</p>
-              <p className="text-sm text-muted-foreground">
-                Take photos of your completed work to stop the timer
-              </p>
-            </div>
-          </div>
-        </Card>
+        {submitStep === 'photos' && (
+          <>
+            <Card className="p-4 mb-4 bg-muted/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-primary/10">
+                  <Clock className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">Clock Out</p>
+                  <p className="text-sm text-muted-foreground">
+                    Select photos of your completed work to stop the timer
+                  </p>
+                </div>
+              </div>
+            </Card>
 
-        <PhotoCapture
-          minPhotos={3}
-          maxPhotos={5}
-          title="Completion Photos"
-          onPhotosCapture={handlePhotosCapture}
-          autoSubmit={false}
-        />
+            <PhotoCapture
+              minPhotos={3}
+              maxPhotos={5}
+              title="Completion Photos"
+              onPhotosCapture={handlePhotosCapture}
+              autoSubmit={false}
+            />
+          </>
+        )}
 
-        {isSubmitting && (
-          <div className="flex items-center justify-center gap-2 p-4">
-            <CheckCircle2 className="h-5 w-5 animate-pulse text-primary" />
-            <span className="text-sm text-muted-foreground">Submitting your work...</span>
+        {submitStep === 'uploading' && (
+          <div className="p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-full bg-green-100 dark:bg-green-900/30">
+                <Upload className="h-6 w-6 text-green-600 animate-pulse" />
+              </div>
+              <div className="flex-1">
+                <p className="font-medium">Completing Your Task</p>
+                <p className="text-sm text-muted-foreground">{uploadingMessage}</p>
+              </div>
+            </div>
+            <Progress value={uploadProgress} className="h-3" />
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>{uploadProgress}% complete</span>
+            </div>
           </div>
         )}
       </DialogContent>
