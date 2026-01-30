@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Camera as CameraIcon, X } from 'lucide-react';
+import { ImagePlus, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface PhotoCaptureProps {
@@ -17,13 +17,13 @@ interface PhotoCaptureProps {
 export function PhotoCapture({ minPhotos, maxPhotos, onPhotosCapture, title, autoSubmit = true }: PhotoCaptureProps) {
   const [photos, setPhotos] = useState<string[]>([]);
 
-  const takePhoto = async () => {
+  const selectPhoto = async () => {
     try {
       const image = await Camera.getPhoto({
         quality: 90,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
-        source: CameraSource.Camera
+        source: CameraSource.Photos // Use gallery instead of camera
       });
 
       if (image.dataUrl) {
@@ -45,8 +45,8 @@ export function PhotoCapture({ minPhotos, maxPhotos, onPhotosCapture, title, aut
       }
     } catch (error) {
       toast({
-        title: "Camera error",
-        description: "Failed to take photo. Please try again.",
+        title: "Gallery error",
+        description: "Failed to select photo. Please try again.",
         variant: "destructive",
       });
     }
@@ -93,12 +93,12 @@ export function PhotoCapture({ minPhotos, maxPhotos, onPhotosCapture, title, aut
 
       <div className="flex gap-2">
         <Button
-          onClick={takePhoto}
+          onClick={selectPhoto}
           disabled={photos.length >= maxPhotos}
           className="flex-1"
         >
-          <CameraIcon className="mr-2 h-4 w-4" />
-          Take Photo ({photos.length}/{maxPhotos})
+          <ImagePlus className="mr-2 h-4 w-4" />
+          Select Photo ({photos.length}/{maxPhotos})
         </Button>
         
         {photos.length >= minPhotos && (
