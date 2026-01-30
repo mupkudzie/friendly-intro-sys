@@ -1,13 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TaskComments } from './TaskComments';
 import { MobileTaskStart } from './MobileTaskStart';
-import { PhotoCapture } from './PhotoCapture';
+import { MobileTaskEnd } from './MobileTaskEnd';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 import { 
   MapPin, 
   Calendar, 
@@ -45,8 +44,68 @@ interface MobileTaskDetailProps {
 
 export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }: MobileTaskDetailProps) {
   const [showStartWorkflow, setShowStartWorkflow] = useState(false);
+  const [showEndWorkflow, setShowEndWorkflow] = useState(false);
   const [activeTimeLogId, setActiveTimeLogId] = useState<string | null>(null);
-  const [showPhotoCapture, setShowPhotoCapture] = useState(false);
+  const [elapsedTime, setElapsedTime] = useState<string>('00:00:00');
+
+  // Fetch active time log when task is in_progress
+  useEffect(() => {
+    const fetchActiveTimeLog = async () => {
+      if (task.status === 'in_progress') {
+        const { data } = await supabase
+          .from('time_logs')
+          .select('id, start_time')
+          .eq('task_id', task.id)
+          .eq('user_id', userId)
+          .is('end_time', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (data) {
+          setActiveTimeLogId(data.id);
+        }
+      }
+    };
+
+    fetchActiveTimeLog();
+  }, [task.id, task.status, userId]);
+
+  // Timer for elapsed time display
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (task.status === 'in_progress' && activeTimeLogId) {
+      const updateElapsedTime = async () => {
+        const { data } = await supabase
+          .from('time_logs')
+          .select('start_time')
+          .eq('id', activeTimeLogId)
+          .single();
+
+        if (data?.start_time) {
+          const start = new Date(data.start_time);
+          const now = new Date();
+          const diff = Math.floor((now.getTime() - start.getTime()) / 1000);
+          
+          const hours = Math.floor(diff / 3600);
+          const minutes = Math.floor((diff % 3600) / 60);
+          const seconds = diff % 60;
+          
+          setElapsedTime(
+            `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+          );
+        }
+      };
+
+      updateElapsedTime();
+      interval = setInterval(updateElapsedTime, 1000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [task.status, activeTimeLogId]);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -75,70 +134,24 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
 
   const handleTaskStarted = (logId: string) => {
     setActiveTimeLogId(logId);
+    setShowStartWorkflow(false);
     onTaskUpdate();
   };
 
-  const handleCompleteTask = () => {
-    setShowPhotoCapture(true);
+  const handleEndTask = () => {
+    setShowEndWorkflow(true);
   };
 
-  const handlePhotosCapture = async (photos: string[]) => {
-    setShowPhotoCapture(false);
-    
-    try {
-      // Update task status to pending_approval
-      const { error: taskError } = await supabase
-        .from('tasks')
-        .update({ status: 'pending_approval' })
-        .eq('id', task.id);
-
-      if (taskError) throw taskError;
-
-      // Store photos in activity_logs
-      const { error: activityError } = await supabase
-        .from('activity_logs')
-        .insert({
-          user_id: userId,
-          task_id: task.id,
-          status: 'completed',
-          final_photos: photos,
-          end_time: new Date().toISOString()
-        });
-
-      if (activityError) throw activityError;
-
-      // End the time log
-      if (activeTimeLogId) {
-        const { error: logError } = await supabase
-          .from('time_logs')
-          .update({ 
-            end_time: new Date().toISOString(),
-          })
-          .eq('id', activeTimeLogId);
-
-        if (logError) throw logError;
-      }
-
-      toast({
-        title: "Task completed",
-        description: "Waiting for supervisor approval. Your supervisor has been notified.",
-      });
-
-      onTaskUpdate();
-      onClose();
-    } catch (error) {
-      console.error('Error completing task:', error);
-      toast({
-        title: "Error",
-        description: "Failed to complete task",
-        variant: "destructive",
-      });
-    }
+  const handleTaskEnded = () => {
+    setShowEndWorkflow(false);
+    setActiveTimeLogId(null);
+    onTaskUpdate();
+    onClose();
   };
 
   return (
     <>
-      <Dialog open={isOpen && !showStartWorkflow} onOpenChange={onClose}>
+      <Dialog open={isOpen && !showStartWorkflow && !showEndWorkflow} onOpenChange={onClose}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -154,6 +167,21 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
               </Badge>
               <Badge variant="outline">{task.status}</Badge>
             </div>
+
+            {/* Show elapsed time when task is in progress */}
+            {task.status === 'in_progress' && (
+              <Card className="p-4 bg-primary/10 border-primary">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-primary animate-pulse" />
+                    <span className="font-medium">Time Recording</span>
+                  </div>
+                  <span className="text-2xl font-mono font-bold text-primary">
+                    {elapsedTime}
+                  </span>
+                </div>
+              </Card>
+            )}
 
             <Card className="p-4">
               <h4 className="font-semibold mb-2">Description</h4>
@@ -218,7 +246,7 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
               )}
 
               {task.status === 'in_progress' && (
-                <Button onClick={handleCompleteTask} className="w-full">
+                <Button onClick={handleEndTask} className="w-full" variant="default">
                   <CheckCircle2 className="mr-2 h-4 w-4" />
                   End Task
                 </Button>
@@ -232,10 +260,23 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
               )}
 
               {task.status === 'approved' && (
-                <Badge className="w-full py-3 justify-center text-sm bg-green-600 hover:bg-green-700">
+                <Badge className="w-full py-3 justify-center text-sm bg-primary hover:bg-primary/90 text-primary-foreground">
                   <CheckCircle2 className="mr-2 h-4 w-4" />
                   Work Done
                 </Badge>
+              )}
+
+              {task.status === 'rejected' && (
+                <div className="space-y-2">
+                  <Badge variant="destructive" className="w-full py-3 justify-center text-sm">
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Task Rejected - Please Rework
+                  </Badge>
+                  <Button onClick={handleStartTask} className="w-full" variant="outline">
+                    <PlayCircle className="mr-2 h-4 w-4" />
+                    Start Rework
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -252,21 +293,16 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
         />
       )}
 
-      <Dialog open={showPhotoCapture} onOpenChange={setShowPhotoCapture}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Capture Completion Photos</DialogTitle>
-          </DialogHeader>
-          <PhotoCapture
-            title="Work Completed"
-            minPhotos={2}
-            maxPhotos={5}
-            onPhotosCapture={handlePhotosCapture}
-            // Do not auto-submit completion photos so the user can confirm before sending
-            autoSubmit={false}
-          />
-        </DialogContent>
-      </Dialog>
+      {showEndWorkflow && (
+        <MobileTaskEnd
+          task={task}
+          userId={userId}
+          timeLogId={activeTimeLogId}
+          isOpen={showEndWorkflow}
+          onClose={() => setShowEndWorkflow(false)}
+          onTaskEnded={handleTaskEnded}
+        />
+      )}
     </>
   );
 }
