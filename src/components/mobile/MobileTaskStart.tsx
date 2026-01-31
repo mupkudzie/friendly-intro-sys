@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Upload } from 'lucide-react';
+import { refreshCheckInStatus } from './AutoCheckInOut';
 
 interface MobileTaskStartProps {
   task: {
@@ -132,6 +133,9 @@ export function MobileTaskStart({ task, userId, isOpen, onClose, onTaskStarted }
         title: "Clock In Started!",
         description: "Your time is now being recorded. Take photos when you're done.",
       });
+
+      // Refresh the check-in status display
+      refreshCheckInStatus();
 
       onTaskStarted(timeLog.id, photoUrls);
       onClose();

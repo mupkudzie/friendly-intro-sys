@@ -83,21 +83,32 @@ export function MobileTaskEnd({ task, userId, timeLogId, isOpen, onClose, onTask
       setUploadProgress(Math.round((currentStep / totalSteps) * 100));
       setUploadingMessage('Saving activity...');
 
-      // Update the activity log with final photos
-      const { error: activityError } = await supabase
+      // Find the most recent activity log for this task and user
+      const { data: existingActivity } = await supabase
         .from('activity_logs')
-        .update({
-          final_photos: photoUrls,
-          end_time: endTime,
-          status: 'completed'
-        })
+        .select('id')
         .eq('task_id', task.id)
         .eq('user_id', userId)
-        .is('end_time', null);
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
 
-      if (activityError) {
-        console.error('Activity log update error:', activityError);
-        // If no existing activity log, create one
+      if (existingActivity) {
+        // Update the existing activity log with final photos
+        const { error: activityError } = await supabase
+          .from('activity_logs')
+          .update({
+            final_photos: photoUrls,
+            end_time: endTime,
+            status: 'completed'
+          })
+          .eq('id', existingActivity.id);
+
+        if (activityError) {
+          console.error('Activity log update error:', activityError);
+        }
+      } else {
+        // Create new activity log if none exists
         await supabase
           .from('activity_logs')
           .insert({
