@@ -5,9 +5,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, MapPin } from 'lucide-react';
 
+// Export refresh function for other components to use
+export const refreshCheckInStatus = () => {
+  window.dispatchEvent(new CustomEvent('refresh-checkin-status'));
+};
+
 interface AutoCheckInOutProps {
   userId: string;
 }
+
+// Custom event for refreshing check-in status
+const CHECK_IN_REFRESH_EVENT = 'refresh-checkin-status';
 
 export function AutoCheckInOut({ userId }: AutoCheckInOutProps) {
   const [isCheckedIn, setIsCheckedIn] = useState(false);
@@ -18,6 +26,16 @@ export function AutoCheckInOut({ userId }: AutoCheckInOutProps) {
   useEffect(() => {
     checkCurrentStatus();
     startLocationTracking();
+    
+    // Listen for refresh events when a task is started
+    const handleRefresh = () => {
+      checkCurrentStatus();
+    };
+    window.addEventListener(CHECK_IN_REFRESH_EVENT, handleRefresh);
+    
+    return () => {
+      window.removeEventListener(CHECK_IN_REFRESH_EVENT, handleRefresh);
+    };
   }, [userId]);
 
   const checkCurrentStatus = async () => {
