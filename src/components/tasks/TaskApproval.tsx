@@ -80,20 +80,26 @@ export function TaskApproval() {
     }
 
     if (tasksData && tasksData.length > 0) {
-      // Fetch activity logs for all pending tasks
+      // Fetch activity logs for all pending tasks - get the most recent completed one for each task
       const taskIds = tasksData.map(t => t.id);
       const { data: activityLogs, error: activityError } = await supabase
         .from('activity_logs')
         .select('*')
-        .in('task_id', taskIds);
+        .in('task_id', taskIds)
+        .order('created_at', { ascending: false });
 
       if (activityError) {
         console.error('Error fetching activity logs:', activityError);
       }
 
-      // Map activity logs to tasks
+      // Map activity logs to tasks - find the most recent one for each task (first in sorted list)
       const tasksWithActivity = tasksData.map(task => {
-        const activityLog = activityLogs?.find(log => log.task_id === task.id) || null;
+        // Find the most recent activity log for this task (completed or in_progress with final photos)
+        const taskLogs = activityLogs?.filter(log => log.task_id === task.id) || [];
+        // Prefer completed logs with final_photos, otherwise take the most recent one
+        const completedLog = taskLogs.find(log => log.status === 'completed' && log.final_photos);
+        const activityLog = completedLog || taskLogs[0] || null;
+        
         return {
           ...task,
           activityLog: activityLog ? {

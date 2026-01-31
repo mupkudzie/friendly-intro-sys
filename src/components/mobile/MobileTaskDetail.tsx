@@ -3,10 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { TaskComments } from './TaskComments';
 import { MobileTaskStart } from './MobileTaskStart';
 import { MobileTaskEnd } from './MobileTaskEnd';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 import { 
   MapPin, 
   Calendar, 
@@ -15,7 +17,8 @@ import {
   CheckCircle2,
   XCircle,
   PlayCircle,
-  Loader2
+  Loader2,
+  RotateCcw
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -45,6 +48,9 @@ interface MobileTaskDetailProps {
 export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }: MobileTaskDetailProps) {
   const [showStartWorkflow, setShowStartWorkflow] = useState(false);
   const [showEndWorkflow, setShowEndWorkflow] = useState(false);
+  const [showRedoRequest, setShowRedoRequest] = useState(false);
+  const [redoReason, setRedoReason] = useState('');
+  const [submittingRedo, setSubmittingRedo] = useState(false);
   const [activeTimeLogId, setActiveTimeLogId] = useState<string | null>(null);
   const [elapsedTime, setElapsedTime] = useState<string>('00:00:00');
 
@@ -149,9 +155,53 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
     onClose();
   };
 
+  const handleRequestRedo = async () => {
+    if (!redoReason.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide a reason for the redo request.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSubmittingRedo(true);
+    try {
+      const { error } = await supabase
+        .from('task_requests')
+        .insert({
+          title: task.title,
+          description: task.description,
+          justification: redoReason.trim(),
+          priority: task.priority as 'low' | 'medium' | 'high' | 'urgent',
+          requested_by: userId,
+          status: 'redo_pending',
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Redo Request Submitted",
+        description: "Your request has been sent to the supervisor for approval.",
+      });
+
+      setShowRedoRequest(false);
+      setRedoReason('');
+      onClose();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSubmittingRedo(false);
+    }
+  };
+
   return (
     <>
-      <Dialog open={isOpen && !showStartWorkflow && !showEndWorkflow} onOpenChange={onClose}>
+      <Dialog open={isOpen && !showStartWorkflow && !showEndWorkflow && !showRedoRequest} onOpenChange={onClose}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -270,14 +320,65 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
                 <div className="space-y-2">
                   <Badge variant="destructive" className="w-full py-3 justify-center text-sm">
                     <XCircle className="mr-2 h-4 w-4" />
-                    Task Rejected - Please Rework
+                    Task Rejected
                   </Badge>
-                  <Button onClick={handleStartTask} className="w-full" variant="outline">
-                    <PlayCircle className="mr-2 h-4 w-4" />
-                    Start Rework
+                  <Button onClick={() => setShowRedoRequest(true)} className="w-full" variant="outline">
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Request to Redo
                   </Button>
                 </div>
               )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Redo Request Dialog */}
+      <Dialog open={showRedoRequest} onOpenChange={setShowRedoRequest}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RotateCcw className="w-5 h-5" />
+              Request to Redo Task
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Your previous work was rejected. Please explain why you want to redo this task.
+            </p>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Reason for Redo Request *</label>
+              <Textarea
+                placeholder="Explain what you'll do differently this time..."
+                value={redoReason}
+                onChange={(e) => setRedoReason(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowRedoRequest(false)}
+                className="flex-1"
+                disabled={submittingRedo}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleRequestRedo}
+                className="flex-1"
+                disabled={submittingRedo || !redoReason.trim()}
+              >
+                {submittingRedo ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  'Submit Request'
+                )}
+              </Button>
             </div>
           </div>
         </DialogContent>

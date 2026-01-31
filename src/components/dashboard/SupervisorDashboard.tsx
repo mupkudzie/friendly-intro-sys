@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, Users, Leaf, LogOut, Plus, LayoutDashboard, ClipboardList, CheckSquare, UserPlus, FileText, TrendingUp, Activity, Bell, Images, Sparkles, ListOrdered } from 'lucide-react';
+import { CheckCircle, Clock, Users, Leaf, LogOut, Plus, LayoutDashboard, ClipboardList, CheckSquare, UserPlus, FileText, TrendingUp, Activity, Bell, Images, Sparkles, ListOrdered, RotateCcw } from 'lucide-react';
 import { TaskAssignment } from '@/components/tasks/TaskAssignment';
 import { TaskRequests } from '@/components/tasks/TaskRequests';
 import { TaskApproval } from '@/components/tasks/TaskApproval';
@@ -21,20 +21,29 @@ import { WeeklyTimesheetView } from '@/components/time/WeeklyTimesheetView';
 import { PhotoGallery } from '@/components/gallery/PhotoGallery';
 import { cn } from '@/lib/utils';
 import { UserManagementDashboard } from '@/components/admin/UserManagementDashboard';
+import { RedoRequests } from '@/components/tasks/RedoRequests';
+
+interface MenuItemCount {
+  requests: number;
+  approval: number;
+  notifications: number;
+  redo: number;
+}
 
 const menuItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'ai-analytics', label: 'AI Analytics', icon: Sparkles },
   { id: 'ai-priority', label: 'AI Priority', icon: ListOrdered },
-  { id: 'requests', label: 'Requests', icon: ClipboardList },
-  { id: 'approval', label: 'Review', icon: CheckSquare },
+  { id: 'requests', label: 'Requests', icon: ClipboardList, countKey: 'requests' as const },
+  { id: 'approval', label: 'Review', icon: CheckSquare, countKey: 'approval' as const },
+  { id: 'redo', label: 'Redo Requests', icon: RotateCcw, countKey: 'redo' as const },
   { id: 'assign', label: 'Assign', icon: UserPlus },
   { id: 'templates', label: 'Templates', icon: FileText },
   { id: 'performance', label: 'Performance', icon: TrendingUp },
   { id: 'activity', label: 'Activity', icon: Activity },
   { id: 'clockinout', label: 'Clock In/Out', icon: Clock },
   { id: 'timesheet', label: 'Timesheet', icon: CheckCircle },
-  { id: 'notifications', label: 'Notifications', icon: Bell },
+  { id: 'notifications', label: 'Notifications', icon: Bell, countKey: 'notifications' as const },
   { id: 'usermanagement', label: 'User Management', icon: Users },
 ];
 
@@ -48,10 +57,35 @@ export function SupervisorDashboard() {
     pendingApprovals: 0,
     activeWorkers: 0,
   });
+  const [menuCounts, setMenuCounts] = useState<MenuItemCount>({
+    requests: 0,
+    approval: 0,
+    notifications: 0,
+    redo: 0,
+  });
 
   useEffect(() => {
     fetchStats();
+    fetchMenuCounts();
   }, [userProfile]);
+
+  const fetchMenuCounts = async () => {
+    if (!userProfile) return;
+
+    const [requestsResult, approvalResult, notificationsResult, redoResult] = await Promise.all([
+      supabase.from('task_requests').select('id', { count: 'exact' }).eq('status', 'pending'),
+      supabase.from('tasks').select('id', { count: 'exact' }).eq('status', 'pending_approval'),
+      supabase.from('notifications').select('id', { count: 'exact' }).eq('recipient_id', userProfile.user_id).eq('read', false),
+      supabase.from('task_requests').select('id', { count: 'exact' }).eq('status', 'redo_pending'),
+    ]);
+
+    setMenuCounts({
+      requests: requestsResult.count || 0,
+      approval: approvalResult.count || 0,
+      notifications: notificationsResult.count || 0,
+      redo: redoResult.count || 0,
+    });
+  };
 
   const fetchStats = async () => {
     if (!userProfile) return;
@@ -88,6 +122,8 @@ export function SupervisorDashboard() {
         return <TaskRequests />;
       case 'approval':
         return <TaskApproval />;
+      case 'redo':
+        return <RedoRequests onRefresh={fetchMenuCounts} />;
       case 'assign':
         return <TaskAssignment />;
       case 'templates':
@@ -149,6 +185,7 @@ export function SupervisorDashboard() {
           <nav className="p-4 space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
+              const count = item.countKey ? menuCounts[item.countKey] : 0;
               return (
                 <button
                   key={item.id}
@@ -161,7 +198,15 @@ export function SupervisorDashboard() {
                   )}
                 >
                   <Icon className="w-5 h-5" />
-                  <span>{item.label}</span>
+                  <span className="flex-1 text-left">{item.label}</span>
+                  {count > 0 && (
+                    <Badge 
+                      variant="secondary" 
+                      className="ml-auto bg-destructive text-destructive-foreground text-xs min-w-[20px] justify-center"
+                    >
+                      {count}
+                    </Badge>
+                  )}
                 </button>
               );
             })}
