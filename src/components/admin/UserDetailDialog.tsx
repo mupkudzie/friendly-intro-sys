@@ -288,9 +288,8 @@ export function UserDetailDialog({
           </DialogHeader>
 
           <Tabs defaultValue="info" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="info">Info</TabsTrigger>
-              <TabsTrigger value="photos">Photos</TabsTrigger>
               <TabsTrigger value="activity">Activity</TabsTrigger>
               <TabsTrigger value="actions">Actions</TabsTrigger>
             </TabsList>
@@ -365,52 +364,6 @@ export function UserDetailDialog({
               </Card>
             </TabsContent>
 
-            <TabsContent value="photos" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <ImageIcon className="w-5 h-5" />
-                    Work Photos
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {activityLogs.map((log) => (
-                    <div key={log.id} className="space-y-3 border-b pb-6 last:border-0">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-base font-semibold">
-                            {log.task?.title || 'Unknown Task'}
-                          </div>
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {new Date(log.start_time).toLocaleString()}
-                          </div>
-                        </div>
-                        <Badge variant={log.status === 'completed' ? 'default' : 'secondary'}>
-                          {log.status}
-                        </Badge>
-                      </div>
-                      {log.initial_photos && (
-                        <div>
-                          <div className="text-sm font-medium mb-2">Before Photos</div>
-                          {renderPhotos(log.initial_photos)}
-                        </div>
-                      )}
-                      {log.final_photos && (
-                        <div>
-                          <div className="text-sm font-medium mb-2">After Photos</div>
-                          {renderPhotos(log.final_photos)}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  {activityLogs.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No work photos available
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
 
             <TabsContent value="activity" className="space-y-4">
               <Card>

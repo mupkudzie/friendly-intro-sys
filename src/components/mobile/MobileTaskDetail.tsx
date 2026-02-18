@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { TaskComments } from './TaskComments';
 import { MobileTaskStart } from './MobileTaskStart';
 import { MobileTaskEnd } from './MobileTaskEnd';
+import { LocationReverification } from './LocationReverification';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { 
@@ -35,6 +36,7 @@ interface Task {
   geofence_lon?: number;
   geofence_radius?: number;
   instructions?: string;
+  location_type?: string;
 }
 
 interface MobileTaskDetailProps {
@@ -232,6 +234,18 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
                 </div>
               </Card>
             )}
+
+            {/* Random re-verification for garden location tasks */}
+            <LocationReverification
+              taskId={task.id}
+              taskLocation={{
+                latitude: task.geofence_lat || 0,
+                longitude: task.geofence_lon || 0,
+                radius: task.geofence_radius || 100,
+              }}
+              isTaskActive={task.status === 'in_progress'}
+              locationTypeIsGarden={task.location_type !== 'current_location'}
+            />
 
             <Card className="p-4">
               <h4 className="font-semibold mb-2">Description</h4>
