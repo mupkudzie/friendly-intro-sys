@@ -160,14 +160,14 @@ export function ClockInOutView() {
               </thead>
               <tbody className="bg-white">
                 {loading ? (
-                  <tr>
-                    <td colSpan={4} className="text-center p-12 text-muted-foreground">
+                   <tr>
+                    <td colSpan={5} className="text-center p-12 text-muted-foreground">
                       Loading...
                     </td>
                   </tr>
                 ) : filteredEntries.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="text-center p-12 text-muted-foreground">
+                   <tr>
+                    <td colSpan={5} className="text-center p-12 text-muted-foreground">
                       No time entries found for this date
                     </td>
                   </tr>
@@ -183,6 +183,9 @@ export function ClockInOutView() {
                           </Avatar>
                           <span className="font-medium text-foreground">{entry.full_name}</span>
                         </div>
+                      </td>
+                      <td className="p-4 border-l">
+                        <span className="text-sm">{entry.task_title}</span>
                       </td>
                       <td className="text-center p-4 border-l">
                         <span className="text-sm">{entry.clock_in || '-'}</span>
