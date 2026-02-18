@@ -16,6 +16,7 @@ interface MobileTaskStartProps {
     geofence_lat?: number;
     geofence_lon?: number;
     geofence_radius?: number;
+    location_type?: string;
   };
   userId: string;
   isOpen: boolean;
@@ -26,14 +27,13 @@ interface MobileTaskStartProps {
 type Step = 'location' | 'photos' | 'uploading' | 'complete';
 
 export function MobileTaskStart({ task, userId, isOpen, onClose, onTaskStarted }: MobileTaskStartProps) {
-  const [step, setStep] = useState<Step>('location');
-  const [verifiedLocation, setVerifiedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const isCurrentLocation = task.location_type === 'current_location';
+  const [step, setStep] = useState<Step>(isCurrentLocation ? 'photos' : 'location');
   const [initialPhotos, setInitialPhotos] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadingMessage, setUploadingMessage] = useState('');
 
   const handleLocationVerified = (location: { latitude: number; longitude: number }) => {
-    setVerifiedLocation(location);
     setStep('photos');
   };
 

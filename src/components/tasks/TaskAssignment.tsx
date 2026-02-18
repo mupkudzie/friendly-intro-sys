@@ -42,6 +42,7 @@ export function TaskAssignment() {
     geofence_lat: '',
     geofence_lon: '',
     geofence_radius: '100',
+    location_type: 'garden_coordinates' as 'garden_coordinates' | 'current_location',
   });
 
   const { assistText: assistDescription, isLoading: descriptionLoading } = useAITextAssist({
@@ -166,6 +167,7 @@ export function TaskAssignment() {
 
     setLoading(true);
 
+    const isGardenLocation = formData.location_type === 'garden_coordinates';
     const taskData = {
       title: formData.title,
       description: formData.description,
@@ -176,9 +178,10 @@ export function TaskAssignment() {
       estimated_hours: formData.estimated_hours ? parseFloat(formData.estimated_hours) : null,
       location: formData.location || null,
       instructions: formData.instructions || null,
-      geofence_lat: formData.geofence_lat ? parseFloat(formData.geofence_lat) : null,
-      geofence_lon: formData.geofence_lon ? parseFloat(formData.geofence_lon) : null,
-      geofence_radius: formData.geofence_radius ? parseFloat(formData.geofence_radius) : 100,
+      location_type: formData.location_type,
+      geofence_lat: isGardenLocation && formData.geofence_lat ? parseFloat(formData.geofence_lat) : null,
+      geofence_lon: isGardenLocation && formData.geofence_lon ? parseFloat(formData.geofence_lon) : null,
+      geofence_radius: isGardenLocation && formData.geofence_radius ? parseFloat(formData.geofence_radius) : 100,
     };
 
     const { error } = await supabase
@@ -209,6 +212,7 @@ export function TaskAssignment() {
         geofence_lat: '',
         geofence_lon: '',
         geofence_radius: '100',
+        location_type: 'garden_coordinates',
       });
     }
 
@@ -429,73 +433,114 @@ export function TaskAssignment() {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label>Geofence Location (for mobile verification)</Label>
-                <div className="flex gap-2">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm"
-                    onClick={handleUseGardenLocation}
-                    disabled={aiLoading}
-                  >
-                    <MapPin className="w-4 h-4 mr-2" />
-                    Use Garden Location
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm"
-                    onClick={handleUseCurrentLocation}
-                    disabled={aiLoading}
-                  >
-                    <MapPin className="w-4 h-4 mr-2" />
-                    Use Current Location
-                  </Button>
-                </div>
+              <div className="space-y-2">
+                <Label>Location Type *</Label>
+                <Select
+                  value={formData.location_type}
+                  onValueChange={(value) => {
+                    handleInputChange('location_type', value);
+                    if (value === 'current_location') {
+                      setFormData(prev => ({ ...prev, location_type: value as any, geofence_lat: '', geofence_lon: '', geofence_radius: '100' }));
+                    }
+                  }}
+                  disabled={aiLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="garden_coordinates">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
+                        Garden Location Coordinates
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="current_location">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
+                        Current Location (Anywhere)
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {formData.location_type === 'garden_coordinates'
+                    ? 'Worker must be at the specified garden coordinates to start and will be re-verified randomly during work.'
+                    : 'Worker can start and work from any location. No GPS verification required.'}
+                </p>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="geofence_lat">Latitude</Label>
-                  <Input
-                    id="geofence_lat"
-                    type="number"
-                    step="any"
-                    value={formData.geofence_lat}
-                    onChange={(e) => handleInputChange('geofence_lat', e.target.value)}
-                    placeholder="e.g., 33.6425"
-                    disabled={aiLoading}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="geofence_lon">Longitude</Label>
-                  <Input
-                    id="geofence_lon"
-                    type="number"
-                    step="any"
-                    value={formData.geofence_lon}
-                    onChange={(e) => handleInputChange('geofence_lon', e.target.value)}
-                    placeholder="e.g., 73.0657"
-                    disabled={aiLoading}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="geofence_radius">Radius (meters)</Label>
-                  <Input
-                    id="geofence_radius"
-                    type="number"
-                    step="1"
-                    min="10"
-                    value={formData.geofence_radius}
-                    onChange={(e) => handleInputChange('geofence_radius', e.target.value)}
-                    placeholder="100"
-                    disabled={aiLoading}
-                  />
-                </div>
-              </div>
+
+              {formData.location_type === 'garden_coordinates' && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <Label>Geofence Coordinates</Label>
+                    <div className="flex gap-2">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleUseGardenLocation}
+                        disabled={aiLoading}
+                      >
+                        <MapPin className="w-4 h-4 mr-2" />
+                        Use Garden Location
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleUseCurrentLocation}
+                        disabled={aiLoading}
+                      >
+                        <MapPin className="w-4 h-4 mr-2" />
+                        Use Current Location
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="geofence_lat">Latitude</Label>
+                      <Input
+                        id="geofence_lat"
+                        type="number"
+                        step="any"
+                        value={formData.geofence_lat}
+                        onChange={(e) => handleInputChange('geofence_lat', e.target.value)}
+                        placeholder="e.g., -20.164235"
+                        disabled={aiLoading}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="geofence_lon">Longitude</Label>
+                      <Input
+                        id="geofence_lon"
+                        type="number"
+                        step="any"
+                        value={formData.geofence_lon}
+                        onChange={(e) => handleInputChange('geofence_lon', e.target.value)}
+                        placeholder="e.g., 28.641425"
+                        disabled={aiLoading}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="geofence_radius">Radius (meters)</Label>
+                      <Input
+                        id="geofence_radius"
+                        type="number"
+                        step="1"
+                        min="10"
+                        value={formData.geofence_radius}
+                        onChange={(e) => handleInputChange('geofence_radius', e.target.value)}
+                        placeholder="100"
+                        disabled={aiLoading}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="space-y-2">
