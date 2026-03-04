@@ -217,25 +217,25 @@ export function UserDetailDialog({
 
   const handleDeleteUser = async () => {
     setLoading(true);
-    // Mark user as deleted
-    const { error } = await supabase
-      .from('profiles')
-      .update({ approval_status: 'rejected' } as any)
-      .eq('user_id', user.user_id);
-
-    if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete user',
-        variant: 'destructive',
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-user-and-data', {
+        body: { user_id: user.user_id },
       });
-    } else {
+
+      if (error) throw error;
+
       toast({
-        title: 'Success',
-        description: 'User account has been deactivated',
+        title: 'User Permanently Deleted',
+        description: 'The user and all associated data have been removed from the system.',
       });
       onUserUpdated();
       onClose();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete user',
+        variant: 'destructive',
+      });
     }
     setLoading(false);
   };
