@@ -13,8 +13,18 @@ import { useWorkerRecommendations } from '@/hooks/useWorkerRecommendations';
 import { AITextButton } from '@/components/ui/ai-text-button';
 import { SmartTextarea } from '@/components/ui/smart-textarea';
 import { WorkerRecommendations } from '@/components/tasks/WorkerRecommendations';
-import { Plus, User, MapPin, Sparkles, Loader2 } from 'lucide-react';
+import { Plus, User, MapPin, Sparkles, Loader2, FileText, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+
+interface TaskTemplate {
+  id: string;
+  title: string;
+  description: string;
+  category: string | null;
+  estimated_hours: number | null;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  requirements: string | null;
+}
 
 interface Profile {
   user_id: string;
@@ -44,6 +54,8 @@ export function TaskAssignment() {
     geofence_radius: '100',
     location_type: 'garden_coordinates' as 'garden_coordinates' | 'current_location',
   });
+  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(true);
 
   const { assistText: assistDescription, isLoading: descriptionLoading } = useAITextAssist({
     onSuccess: (text) => setFormData(prev => ({ ...prev, description: text })),
@@ -64,7 +76,18 @@ export function TaskAssignment() {
 
   useEffect(() => {
     fetchWorkers();
+    fetchTemplates();
   }, []);
+
+  const fetchTemplates = async () => {
+    const { data, error } = await supabase
+      .from('task_templates')
+      .select('*')
+      .eq('active', true)
+      .order('title');
+    if (!error && data) setTemplates(data);
+    setTemplatesLoading(false);
+  };
 
   const fetchWorkers = async () => {
     const { data, error } = await supabase
@@ -586,36 +609,50 @@ export function TaskAssignment() {
         </CardContent>
       </Card>
 
-      {/* Quick assign presets */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Assign Templates</CardTitle>
-          <CardDescription>Common garden tasks you can quickly assign</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[
-              { title: 'Watering Plants', description: 'Water designated garden areas', location: 'Main Garden' },
-              { title: 'Weeding', description: 'Remove weeds from flower beds', location: 'Flower Garden' },
-              { title: 'Pruning', description: 'Trim and prune shrubs and trees', location: 'Tree Section' },
-            ].map((template) => (
-              <Card key={template.title} className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => setFormData(prev => ({ 
-                      ...prev, 
-                      title: template.title, 
-                      description: template.description,
-                      location: template.location 
-                    }))}>
-                <CardContent className="p-4">
-                  <h4 className="font-medium">{template.title}</h4>
-                  <p className="text-sm text-muted-foreground">{template.description}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{template.location}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Templates from database */}
+      {!templatesLoading && templates.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Quick Assign from Templates
+            </CardTitle>
+            <CardDescription>Select a template to auto-fill the form above</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {templates.map((template) => (
+                <Card
+                  key={template.id}
+                  className="cursor-pointer hover:shadow-md transition-all duration-200 hover:border-primary/30"
+                  onClick={() => setFormData(prev => ({
+                    ...prev,
+                    title: template.title,
+                    description: template.description,
+                    priority: template.priority,
+                    estimated_hours: template.estimated_hours?.toString() || '',
+                    instructions: template.requirements || '',
+                  }))}
+                >
+                  <CardContent className="p-4 space-y-2">
+                    <div className="flex items-start justify-between">
+                      <h4 className="font-medium text-sm">{template.title}</h4>
+                      <Badge variant="outline" className="text-xs ml-2 shrink-0">{template.priority}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{template.description}</p>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      {template.category && <Badge variant="secondary" className="text-xs">{template.category}</Badge>}
+                      {template.estimated_hours && (
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{template.estimated_hours}h</span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
