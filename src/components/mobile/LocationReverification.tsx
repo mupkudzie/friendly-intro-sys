@@ -8,8 +8,9 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { MapPin, AlertTriangle, CheckCircle, XCircle, Volume2 } from 'lucide-react';
+import { MapPin, AlertTriangle, CheckCircle, XCircle, Volume2, Timer } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LocationReverificationProps {
   taskId: string;
@@ -20,18 +21,12 @@ interface LocationReverificationProps {
   };
   isTaskActive: boolean;
   locationTypeIsGarden: boolean;
+  supervisorId?: string;
   onVerificationFailed?: () => void;
 }
 
-const REVERIFICATION_MIN_INTERVAL = 5 * 60 * 1000; // 5 minutes minimum
-const REVERIFICATION_MAX_INTERVAL = 15 * 60 * 1000; // 15 minutes maximum
-
-function getRandomInterval() {
-  return Math.floor(
-    Math.random() * (REVERIFICATION_MAX_INTERVAL - REVERIFICATION_MIN_INTERVAL) +
-      REVERIFICATION_MIN_INTERVAL
-  );
-}
+const MAX_VERIFICATIONS = 3;
+const TIMEOUT_DURATION = 2 * 60 * 1000; // 2 minutes
 
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371e3;
@@ -49,7 +44,6 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 function playNotificationSound() {
   try {
     const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    // Play a two-tone alert
     const playTone = (freq: number, startTime: number, duration: number) => {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
@@ -76,34 +70,101 @@ export function LocationReverification({
   taskLocation,
   isTaskActive,
   locationTypeIsGarden,
+  supervisorId,
   onVerificationFailed,
 }: LocationReverificationProps) {
   const [showDialog, setShowDialog] = useState(false);
   const [checking, setChecking] = useState(false);
   const [result, setResult] = useState<'success' | 'failed' | null>(null);
-  const [failCount, setFailCount] = useState(0);
+  const [verificationsCompleted, setVerificationsCompleted] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState(120); // seconds
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+
+  const notifySupervisor = useCallback(async (reason: string) => {
+    try {
+      // Find supervisor (task assigned_by)
+      const { data: taskData } = await supabase
+        .from('tasks')
+        .select('assigned_by, title')
+        .eq('id', taskId)
+        .single();
+
+      if (taskData?.assigned_by) {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: workerProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', user?.id || '')
+          .single();
+
+        await supabase.from('notifications').insert({
+          recipient_id: taskData.assigned_by,
+          sender_id: user?.id || null,
+          type: 'location_warning',
+          title: 'Location Verification Warning',
+          message: `${workerProfile?.full_name || 'A worker'} ${reason} for task "${taskData.title}".`,
+        });
+      }
+    } catch (e) {
+      console.error('Failed to notify supervisor:', e);
+    }
+  }, [taskId]);
+
+  const clearAllTimers = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (countdownRef.current) clearInterval(countdownRef.current);
+  }, []);
 
   const scheduleNextCheck = useCallback(() => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (!isTaskActive || !locationTypeIsGarden) return;
+    clearAllTimers();
+    if (!isTaskActive || !locationTypeIsGarden || verificationsCompleted >= MAX_VERIFICATIONS) return;
 
-    const interval = getRandomInterval();
+    // Random interval: spread 3 checks across the work session
+    // Use 3-8 minute intervals for reasonable spacing
+    const minInterval = 3 * 60 * 1000;
+    const maxInterval = 8 * 60 * 1000;
+    const interval = Math.floor(Math.random() * (maxInterval - minInterval) + minInterval);
+
     timerRef.current = setTimeout(() => {
       playNotificationSound();
       setShowDialog(true);
       setResult(null);
+      setTimeRemaining(120);
+
+      // Start 2-minute countdown
+      countdownRef.current = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            if (countdownRef.current) clearInterval(countdownRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      // Auto-dismiss after 2 minutes if not verified
+      timeoutRef.current = setTimeout(() => {
+        setShowDialog(false);
+        setVerificationsCompleted(prev => prev + 1);
+        notifySupervisor('did not respond to location verification within 2 minutes');
+        toast({
+          title: 'Verification Missed',
+          description: 'You did not verify your location in time. Supervisor has been notified.',
+          variant: 'destructive',
+        });
+      }, TIMEOUT_DURATION);
     }, interval);
-  }, [isTaskActive, locationTypeIsGarden]);
+  }, [isTaskActive, locationTypeIsGarden, verificationsCompleted, clearAllTimers, notifySupervisor]);
 
   useEffect(() => {
-    if (isTaskActive && locationTypeIsGarden) {
+    if (isTaskActive && locationTypeIsGarden && verificationsCompleted < MAX_VERIFICATIONS) {
       scheduleNextCheck();
     }
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [isTaskActive, locationTypeIsGarden, scheduleNextCheck]);
+    return () => clearAllTimers();
+  }, [isTaskActive, locationTypeIsGarden, verificationsCompleted, scheduleNextCheck, clearAllTimers]);
 
   const handleVerify = async () => {
     setChecking(true);
@@ -124,27 +185,29 @@ export function LocationReverification({
 
       if (isWithin) {
         setResult('success');
-        setFailCount(0);
+        clearAllTimers();
+        const newCount = verificationsCompleted + 1;
+        setVerificationsCompleted(newCount);
         toast({
           title: 'Location Verified ✓',
-          description: 'You are still at the work site. Keep up the good work!',
+          description: `Verification ${newCount}/${MAX_VERIFICATIONS} complete. Keep up the good work!`,
         });
         setTimeout(() => {
           setShowDialog(false);
-          scheduleNextCheck();
+          // Schedule next if more checks remain
+          if (newCount < MAX_VERIFICATIONS) {
+            scheduleNextCheck();
+          }
         }, 2000);
       } else {
         setResult('failed');
-        const newFailCount = failCount + 1;
-        setFailCount(newFailCount);
         toast({
           title: 'Location Verification Failed',
           description: `You are ${Math.round(distance)}m away from the work site.`,
           variant: 'destructive',
         });
-        if (newFailCount >= 3 && onVerificationFailed) {
-          onVerificationFailed();
-        }
+        notifySupervisor(`failed location verification (${Math.round(distance)}m away)`);
+        if (onVerificationFailed) onVerificationFailed();
       }
     } catch (error) {
       setResult('failed');
@@ -158,20 +221,21 @@ export function LocationReverification({
     }
   };
 
-  const handleDismiss = () => {
-    setShowDialog(false);
-    scheduleNextCheck();
-  };
-
   if (!isTaskActive || !locationTypeIsGarden) return null;
 
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
   return (
-    <Dialog open={showDialog} onOpenChange={handleDismiss}>
-      <DialogContent className="max-w-sm">
+    <Dialog open={showDialog} onOpenChange={() => {}}>
+      <DialogContent className="max-w-sm" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Volume2 className="w-5 h-5 text-orange-500 animate-pulse" />
-            Location Re-verification
+            Location Re-verification ({verificationsCompleted + 1}/{MAX_VERIFICATIONS})
           </DialogTitle>
         </DialogHeader>
 
@@ -181,11 +245,20 @@ export function LocationReverification({
             <div>
               <p className="text-sm font-medium">Confirm you are still at the garden location</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Random verification to ensure you remain at the assigned work site.
+                You must verify within 2 minutes or your supervisor will be notified.
               </p>
             </div>
           </div>
         </Card>
+
+        {/* Countdown timer */}
+        <div className="flex items-center justify-center gap-2 p-3 rounded-lg bg-muted">
+          <Timer className="h-5 w-5 text-muted-foreground" />
+          <span className={`text-xl font-mono font-bold ${timeRemaining <= 30 ? 'text-destructive' : ''}`}>
+            {formatTime(timeRemaining)}
+          </span>
+          <span className="text-sm text-muted-foreground">remaining</span>
+        </div>
 
         {result === 'success' && (
           <div className="flex items-center gap-2 p-3 rounded bg-green-500/10">
@@ -198,8 +271,7 @@ export function LocationReverification({
           <div className="flex items-center gap-2 p-3 rounded bg-destructive/10">
             <XCircle className="h-5 w-5 text-destructive" />
             <span className="text-sm text-destructive font-medium">
-              Not at work site! Please return immediately.
-              {failCount >= 2 && ' Warning: repeated failures will be reported.'}
+              Not at work site! Supervisor has been notified.
             </span>
           </div>
         )}

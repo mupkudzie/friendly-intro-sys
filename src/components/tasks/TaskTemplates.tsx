@@ -11,7 +11,17 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAITemplates } from '@/hooks/useAITemplates';
 import { AITemplatesSuggestions } from '@/components/tasks/AITemplatesSuggestions';
-import { Plus, Edit2, Archive, FileText, Clock, AlertCircle } from 'lucide-react';
+import { Plus, Edit2, Archive, Trash2, FileText, Clock, AlertCircle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface TaskTemplate {
@@ -135,6 +145,8 @@ export function TaskTemplates() {
     setIsDialogOpen(true);
   };
 
+  const [deleteTemplateId, setDeleteTemplateId] = useState<string | null>(null);
+
   const handleArchive = async (templateId: string) => {
     const { error } = await supabase
       .from('task_templates')
@@ -154,6 +166,28 @@ export function TaskTemplates() {
       });
       fetchTemplates();
     }
+  };
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    const { error } = await supabase
+      .from('task_templates')
+      .delete()
+      .eq('id', templateId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Template Deleted",
+        description: "The task template has been permanently deleted.",
+      });
+      fetchTemplates();
+    }
+    setDeleteTemplateId(null);
   };
 
   const getPriorityColor = (priority: string) => {
@@ -394,12 +428,39 @@ export function TaskTemplates() {
                     <Archive className="w-3 h-3 mr-1" />
                     Archive
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => setDeleteTemplateId(template.id)}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <AlertDialog open={!!deleteTemplateId} onOpenChange={() => setDeleteTemplateId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Template Permanently?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The template will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTemplateId && handleDeleteTemplate(deleteTemplateId)}
+              className="bg-destructive text-destructive-foreground"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
