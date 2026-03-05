@@ -118,7 +118,7 @@ export function TaskAssignment() {
         body: {
           text: formData.title,
           type: 'expand',
-          context: `Generate a detailed task description for a garden/farm task titled "${formData.title}". Include what needs to be done, tools required, and expected outcomes.`
+          context: `Generate a detailed task description for a farm task titled "${formData.title}". Include what needs to be done, tools required, and expected outcomes.`
         },
       });
 
@@ -159,7 +159,7 @@ export function TaskAssignment() {
         body: {
           text: `Task: ${formData.title}\nDescription: ${formData.description}`,
           type: 'expand',
-          context: 'Generate clear step-by-step instructions for completing this garden/farm task. Include safety tips if relevant.'
+          context: 'Generate clear step-by-step instructions for completing this farm task. Include safety tips if relevant.'
         },
       });
 
