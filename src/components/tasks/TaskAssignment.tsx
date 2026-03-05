@@ -118,7 +118,7 @@ export function TaskAssignment() {
         body: {
           text: formData.title,
           type: 'expand',
-          context: `Generate a detailed task description for a garden/farm task titled "${formData.title}". Include what needs to be done, tools required, and expected outcomes.`
+          context: `Generate a detailed task description for a farm task titled "${formData.title}". Include what needs to be done, tools required, and expected outcomes.`
         },
       });
 
@@ -159,7 +159,7 @@ export function TaskAssignment() {
         body: {
           text: `Task: ${formData.title}\nDescription: ${formData.description}`,
           type: 'expand',
-          context: 'Generate clear step-by-step instructions for completing this garden/farm task. Include safety tips if relevant.'
+          context: 'Generate clear step-by-step instructions for completing this farm task. Include safety tips if relevant.'
         },
       });
 
@@ -277,12 +277,12 @@ export function TaskAssignment() {
       ...prev,
       geofence_lat: '-20.164235',
       geofence_lon: '28.641425',
-      location: 'Bulawayo North Garden',
+      location: 'Bulawayo North Farm',
     }));
 
     toast({
-      title: "Garden location set",
-      description: "Bulawayo North Garden (-20.164235, 28.641425)",
+      title: "Farm location set",
+      description: "Bulawayo North Farm (-20.164235, 28.641425)",
     });
   };
 
@@ -311,7 +311,7 @@ export function TaskAssignment() {
                   id="title"
                   value={formData.title}
                   onChange={(e) => handleInputChange('title', e.target.value)}
-                  placeholder="e.g., Water the vegetable garden"
+                  placeholder="e.g., Water the vegetable farm"
                   required
                   disabled={aiLoading}
                 />
@@ -391,7 +391,7 @@ export function TaskAssignment() {
                 value={formData.description}
                 onChange={(value) => handleInputChange('description', value)}
                 placeholder="Describe what needs to be done... (AI will suggest as you type)"
-                context="garden task description"
+                context="farm task description"
                 rows={3}
                 disabled={descriptionLoading || aiSuggestLoading}
                 required
@@ -450,7 +450,7 @@ export function TaskAssignment() {
                 id="location"
                 value={formData.location}
                 onChange={(e) => handleInputChange('location', e.target.value)}
-                placeholder="e.g., Greenhouse A, Main Garden, Nursery"
+                placeholder="e.g., Greenhouse A, Main Farm, Nursery"
                 disabled={aiLoading}
               />
             </div>
@@ -475,7 +475,7 @@ export function TaskAssignment() {
                     <SelectItem value="garden_coordinates">
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4" />
-                        Garden Location Coordinates
+                        Farm Location Coordinates
                       </div>
                     </SelectItem>
                     <SelectItem value="current_location">
@@ -488,7 +488,7 @@ export function TaskAssignment() {
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   {formData.location_type === 'garden_coordinates'
-                    ? 'Worker must be at the specified garden coordinates to start and will be re-verified randomly during work.'
+                    ? 'Worker must be at the specified farm coordinates to start and will be re-verified randomly during work.'
                     : 'Worker can start and work from any location. No GPS verification required.'}
                 </p>
               </div>
@@ -506,7 +506,7 @@ export function TaskAssignment() {
                         disabled={aiLoading}
                       >
                         <MapPin className="w-4 h-4 mr-2" />
-                        Use Garden Location
+                        Use Farm Location
                       </Button>
                       <Button 
                         type="button" 
@@ -596,7 +596,7 @@ export function TaskAssignment() {
                 value={formData.instructions}
                 onChange={(value) => handleInputChange('instructions', value)}
                 placeholder="Any special instructions or requirements... (AI suggests as you type)"
-                context="garden task instructions"
+                context="farm task instructions"
                 rows={3}
                 disabled={instructionsLoading || aiSuggestLoading}
               />

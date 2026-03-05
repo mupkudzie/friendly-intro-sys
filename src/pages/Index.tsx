@@ -56,7 +56,7 @@ const Index = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Leaf className="w-8 h-8 text-green-600" />
-              <h1 className="text-2xl font-bold text-primary">NUST Garden Tracking</h1>
+              <h1 className="text-2xl font-bold text-primary">NUST Farm Tracking</h1>
             </div>
             <Button onClick={() => navigate('/auth')}>
               Sign In
@@ -69,10 +69,10 @@ const Index = () => {
       <div className="container mx-auto px-6 py-16">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-primary mb-4">
-            Smart Garden Management System
+            Smart Farm Management System
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Track student and worker activities, manage tasks, monitor time, and maintain comprehensive reports for the National University of Science and Technology garden.
+            Track student and worker activities, manage tasks, monitor time, and maintain comprehensive reports for the National University of Science and Technology farm.
           </p>
         </div>
 
@@ -85,7 +85,7 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <CardDescription className="text-center">
-                Manage students, garden workers, supervisors, and administrators with role-based access control.
+                Manage students, farm workers, supervisors, and administrators with role-based access control.
               </CardDescription>
             </CardContent>
           </Card>
@@ -133,7 +133,7 @@ const Index = () => {
             <CardHeader>
               <CardTitle>Get Started Today</CardTitle>
               <CardDescription>
-                Join the NUST Garden community and start tracking your garden activities.
+                Join the NUST Farm community and start tracking your farm activities.
               </CardDescription>
             </CardHeader>
             <CardContent>

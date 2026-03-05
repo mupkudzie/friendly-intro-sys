@@ -169,7 +169,7 @@ export function CommentsManagement() {
               <SelectContent>
                 <SelectItem value="all">All Workers</SelectItem>
                 <SelectItem value="student">Students</SelectItem>
-                <SelectItem value="garden_worker">Garden Workers</SelectItem>
+                <SelectItem value="garden_worker">Farm Workers</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -10,10 +10,10 @@ interface GeofenceCheckProps {
   onLocationVerified: (location: { latitude: number; longitude: number }) => void;
 }
 
-const GARDEN_LOCATION = {
+const FARM_LOCATION = {
   latitude: -20.164235,
   longitude: 28.641425,
-  name: 'Bulawayo North Garden'
+  name: 'Bulawayo North Farm'
 };
 
 export function GeofenceCheck({ taskLocation, onLocationVerified }: GeofenceCheckProps) {
@@ -81,18 +81,18 @@ export function GeofenceCheck({ taskLocation, onLocationVerified }: GeofenceChec
     }
   };
 
-  const useGardenLocation = () => {
+  const useFarmLocation = () => {
     setChecking(true);
     setVerified(true);
 
     toast({
       title: "Location verified",
-      description: `Using ${GARDEN_LOCATION.name} location`,
+      description: `Using ${FARM_LOCATION.name} location`,
     });
     
     onLocationVerified({
-      latitude: GARDEN_LOCATION.latitude,
-      longitude: GARDEN_LOCATION.longitude,
+      latitude: FARM_LOCATION.latitude,
+      longitude: FARM_LOCATION.longitude,
     });
 
     setChecking(false);
@@ -119,13 +119,13 @@ export function GeofenceCheck({ taskLocation, onLocationVerified }: GeofenceChec
         </Button>
 
         <Button
-          onClick={useGardenLocation}
+          onClick={useFarmLocation}
           disabled={checking}
           variant="outline"
           className="w-full"
         >
           <MapPin className="h-4 w-4 mr-2" />
-          Use {GARDEN_LOCATION.name}
+          Use {FARM_LOCATION.name}
         </Button>
       </div>
 

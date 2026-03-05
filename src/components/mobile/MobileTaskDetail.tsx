@@ -244,7 +244,7 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
                 radius: task.geofence_radius || 100,
               }}
               isTaskActive={task.status === 'in_progress'}
-              locationTypeIsGarden={task.location_type !== 'current_location'}
+              locationTypeIsFarm={task.location_type !== 'current_location'}
             />
 
             <Card className="p-4">

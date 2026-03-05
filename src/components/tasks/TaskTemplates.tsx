@@ -242,10 +242,10 @@ export function TaskTemplates() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-primary" />
-                Garden Task Templates
+                Farm Task Templates
               </CardTitle>
               <CardDescription>
-                Create and manage reusable task templates for efficient garden management
+                Create and manage reusable task templates for efficient farm management
               </CardDescription>
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -272,7 +272,7 @@ export function TaskTemplates() {
                         id="title"
                         value={formData.title}
                         onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                        placeholder="e.g., Weekly Garden Maintenance"
+                        placeholder="e.g., Weekly Farm Maintenance"
                         required
                       />
                     </div>
@@ -363,7 +363,7 @@ export function TaskTemplates() {
             <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium mb-2">No templates yet</h3>
             <p className="text-muted-foreground mb-4">
-              Create your first task template to streamline garden work assignments
+              Create your first task template to streamline farm work assignments
             </p>
             <Button onClick={() => setIsDialogOpen(true)} className="gradient-green text-white">
               <Plus className="w-4 h-4 mr-2" />
