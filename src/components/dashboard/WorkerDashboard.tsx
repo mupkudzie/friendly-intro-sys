@@ -71,7 +71,7 @@ export function WorkerDashboard() {
         <div className="flex h-16 items-center px-6">
           <div className="flex items-center gap-2">
             <Leaf className="w-6 h-6 text-green-600" />
-            <h1 className="text-xl font-semibold">NUST Garden - My Dashboard</h1>
+            <h1 className="text-xl font-semibold">FarmFlow — My Dashboard</h1>
           </div>
           <div className="ml-auto flex items-center gap-4">
             <div className="text-sm text-muted-foreground">
