@@ -157,7 +157,7 @@ export function SupervisorDashboard() {
               <Leaf className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg sm:text-xl font-semibold">NUST Garden</h1>
+              <h1 className="text-lg sm:text-xl font-semibold">FarmFlow</h1>
               <p className="text-xs text-muted-foreground hidden sm:block">Supervisor Dashboard</p>
             </div>
           </div>

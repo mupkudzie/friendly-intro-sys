@@ -241,11 +241,13 @@ export default function Auth() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Leaf className="w-8 h-8 text-green-600" />
-            <h1 className="text-2xl font-bold">NUST Farm</h1>
+          <div className="flex items-center justify-center gap-2.5 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+              <Leaf className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground">FarmFlow</h1>
           </div>
-          <p className="text-muted-foreground">Task Management System</p>
+          <p className="text-muted-foreground">Smart Farm Task Management</p>
         </div>
 
         <Card>
