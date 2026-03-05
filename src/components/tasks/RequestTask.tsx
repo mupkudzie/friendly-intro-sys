@@ -112,7 +112,7 @@ export function RequestTask() {
     setFormData({
       title: template.title,
       description: template.description,
-      justification: template.requirements || `I would like to work on ${template.title.toLowerCase()} as it aligns with my skills and the garden's needs.`,
+      justification: template.requirements || `I would like to work on ${template.title.toLowerCase()} as it aligns with my skills and the farm's needs.`,
       priority: template.priority,
     });
   };
@@ -151,7 +151,7 @@ export function RequestTask() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Lightbulb className="w-5 h-5 text-primary" />
-              Available Garden Tasks
+              Available Farm Tasks
             </CardTitle>
             <CardDescription>
               Choose from pre-defined tasks or create your own custom request

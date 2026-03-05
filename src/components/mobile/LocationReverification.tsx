@@ -20,7 +20,7 @@ interface LocationReverificationProps {
     radius: number;
   };
   isTaskActive: boolean;
-  locationTypeIsGarden: boolean;
+  locationTypeIsFarm: boolean;
   supervisorId?: string;
   onVerificationFailed?: () => void;
 }
@@ -69,7 +69,7 @@ export function LocationReverification({
   taskId,
   taskLocation,
   isTaskActive,
-  locationTypeIsGarden,
+  locationTypeIsFarm,
   supervisorId,
   onVerificationFailed,
 }: LocationReverificationProps) {
@@ -120,7 +120,7 @@ export function LocationReverification({
 
   const scheduleNextCheck = useCallback(() => {
     clearAllTimers();
-    if (!isTaskActive || !locationTypeIsGarden || verificationsCompleted >= MAX_VERIFICATIONS) return;
+    if (!isTaskActive || !locationTypeIsFarm || verificationsCompleted >= MAX_VERIFICATIONS) return;
 
     // Random interval: spread 3 checks across the work session
     // Use 3-8 minute intervals for reasonable spacing
@@ -157,14 +157,14 @@ export function LocationReverification({
         });
       }, TIMEOUT_DURATION);
     }, interval);
-  }, [isTaskActive, locationTypeIsGarden, verificationsCompleted, clearAllTimers, notifySupervisor]);
+  }, [isTaskActive, locationTypeIsFarm, verificationsCompleted, clearAllTimers, notifySupervisor]);
 
   useEffect(() => {
-    if (isTaskActive && locationTypeIsGarden && verificationsCompleted < MAX_VERIFICATIONS) {
+    if (isTaskActive && locationTypeIsFarm && verificationsCompleted < MAX_VERIFICATIONS) {
       scheduleNextCheck();
     }
     return () => clearAllTimers();
-  }, [isTaskActive, locationTypeIsGarden, verificationsCompleted, scheduleNextCheck, clearAllTimers]);
+  }, [isTaskActive, locationTypeIsFarm, verificationsCompleted, scheduleNextCheck, clearAllTimers]);
 
   const handleVerify = async () => {
     setChecking(true);
@@ -221,7 +221,7 @@ export function LocationReverification({
     }
   };
 
-  if (!isTaskActive || !locationTypeIsGarden) return null;
+  if (!isTaskActive || !locationTypeIsFarm) return null;
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -243,7 +243,7 @@ export function LocationReverification({
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-orange-500 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-medium">Confirm you are still at the garden location</p>
+              <p className="text-sm font-medium">Confirm you are still at the farm location</p>
               <p className="text-xs text-muted-foreground mt-1">
                 You must verify within 2 minutes or your supervisor will be notified.
               </p>

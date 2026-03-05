@@ -243,7 +243,7 @@ export default function Auth() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Leaf className="w-8 h-8 text-green-600" />
-            <h1 className="text-2xl font-bold">NUST Garden</h1>
+            <h1 className="text-2xl font-bold">NUST Farm</h1>
           </div>
           <p className="text-muted-foreground">Task Management System</p>
         </div>
@@ -376,7 +376,7 @@ export default function Auth() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="student">Student</SelectItem>
-                        <SelectItem value="garden_worker">Garden Worker</SelectItem>
+                        <SelectItem value="garden_worker">Farm Worker</SelectItem>
                         <SelectItem value="supervisor">Supervisor</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>

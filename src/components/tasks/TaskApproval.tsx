@@ -505,7 +505,7 @@ export function TaskApproval() {
                             id="location"
                             value={editForm.location}
                             onChange={(e) => setEditForm(prev => ({ ...prev, location: e.target.value }))}
-                            placeholder="Garden section, greenhouse, etc."
+                            placeholder="Farm section, greenhouse, etc."
                           />
                         </div>
                         <div className="grid gap-2">

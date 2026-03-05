@@ -187,7 +187,7 @@ export function UserManagementDashboard() {
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="supervisor">Supervisor</SelectItem>
-                <SelectItem value="garden_worker">Garden Worker</SelectItem>
+                <SelectItem value="garden_worker">Farm Worker</SelectItem>
                 <SelectItem value="student">Student</SelectItem>
               </SelectContent>
             </Select>
