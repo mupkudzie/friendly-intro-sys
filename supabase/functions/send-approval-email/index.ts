@@ -31,7 +31,7 @@ const getApprovedEmailHtml = (name: string, loginUrl: string) => `
           <tr>
             <td style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); padding: 40px 30px; text-align: center;">
               <div style="font-size: 48px; margin-bottom: 10px;">🌿</div>
-              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">NUST Garden System</h1>
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">FarmFlow</h1>
             </td>
           </tr>
           
@@ -50,7 +50,7 @@ const getApprovedEmailHtml = (name: string, loginUrl: string) => `
               <h2 style="color: #16a34a; margin: 0 0 15px; font-size: 24px;">Account Approved!</h2>
               <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">
                 Hi <strong>${name}</strong>,<br><br>
-                Great news! Your account has been approved by the administrator. You now have full access to the NUST Garden Task Management System.
+                Great news! Your account has been approved by the administrator. You now have full access to the FarmFlow Task Management System.
               </p>
               
               <!-- CTA Button -->
@@ -84,7 +84,7 @@ const getApprovedEmailHtml = (name: string, loginUrl: string) => `
             <td style="background-color: #f9fafb; padding: 25px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
               <p style="color: #6b7280; font-size: 14px; margin: 0 0 10px;">
                 Best regards,<br>
-                <strong>NUST Garden Admin Team</strong>
+                <strong>FarmFlow Admin Team</strong>
               </p>
               <p style="color: #9ca3af; font-size: 12px; margin: 0;">
                 This is an automated message. Please do not reply to this email.
@@ -116,7 +116,7 @@ const getRejectedEmailHtml = (name: string, reason?: string) => `
           <tr>
             <td style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); padding: 40px 30px; text-align: center;">
               <div style="font-size: 48px; margin-bottom: 10px;">🌿</div>
-              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">NUST Garden System</h1>
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">FarmFlow</h1>
             </td>
           </tr>
           
@@ -156,7 +156,7 @@ const getRejectedEmailHtml = (name: string, reason?: string) => `
             <td style="background-color: #f9fafb; padding: 25px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
               <p style="color: #6b7280; font-size: 14px; margin: 0 0 10px;">
                 Best regards,<br>
-                <strong>NUST Garden Admin Team</strong>
+                <strong>FarmFlow Admin Team</strong>
               </p>
               <p style="color: #9ca3af; font-size: 12px; margin: 0;">
                 This is an automated message. Please do not reply to this email.
@@ -186,8 +186,8 @@ const handler = async (req: Request): Promise<Response> => {
     const loginUrl = `${origin}/auth`;
 
     const subject = status === "approved" 
-      ? "🎉 Account Approved - Welcome to NUST Garden System" 
-      : "📋 Account Registration Update - NUST Garden System";
+      ? "🎉 Account Approved - Welcome to FarmFlow" 
+      : "📋 Account Registration Update - FarmFlow";
 
     const html = status === "approved"
       ? getApprovedEmailHtml(name, loginUrl)
@@ -208,7 +208,7 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "NUST Garden <onboarding@resend.dev>",
+        from: "FarmFlow <onboarding@resend.dev>",
         to: [email],
         subject,
         html,
