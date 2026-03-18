@@ -20,6 +20,7 @@ import { UserApproval } from '@/components/admin/UserApproval';
 import { FarmZones } from '@/components/admin/FarmZones';
 import { AuditLogs } from '@/components/admin/AuditLogs';
 import { CommentsManagement } from '@/components/admin/CommentsManagement';
+import { AccessCodeManager } from '@/components/admin/AccessCodeManager';
 import { cn } from '@/lib/utils';
 
 const menuItems = [
