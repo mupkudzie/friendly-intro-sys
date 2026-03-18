@@ -106,7 +106,7 @@ export function RedoRequests({ onRefresh }: RedoRequestsProps) {
 
         toast({
           title: "Redo Approved",
-          description: "A new task has been created for the student to redo the work.",
+          description: "A new task has been created for the farm worker to redo the work.",
         });
       } else {
         // Reject the redo request
