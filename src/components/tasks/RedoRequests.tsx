@@ -288,7 +288,7 @@ export function RedoRequests({ onRefresh }: RedoRequestsProps) {
               <Textarea
                 placeholder={
                   actionDialog?.action === 'approve'
-                    ? "Add optional comment for the student..."
+                    ? "Add optional comment for the farm worker..."
                     : "Please explain why this redo request is being rejected..."
                 }
                 value={comment}

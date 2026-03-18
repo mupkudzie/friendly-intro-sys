@@ -588,7 +588,7 @@ export function TaskApproval() {
               <Textarea
                 placeholder={
                   feedbackDialog?.action === 'approved'
-                    ? "Add optional feedback for the student..."
+                    ? "Add optional feedback for the farm worker..."
                     : "Please explain why this task is being rejected..."
                 }
                 value={feedbackComment}
