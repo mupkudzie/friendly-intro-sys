@@ -37,6 +37,7 @@ const menuItems = [
   { id: 'reports', label: 'Reports', icon: FileText },
   { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'audit', label: 'Audit Logs', icon: FileText },
+  { id: 'access-codes', label: 'Access Codes', icon: Activity },
 ];
 
 export function AdminDashboard() {
