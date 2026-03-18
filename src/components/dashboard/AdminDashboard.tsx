@@ -107,6 +107,8 @@ export function AdminDashboard() {
         return <NotificationCenter />;
       case 'audit':
         return <AuditLogs />;
+      case 'access-codes':
+        return <AccessCodeManager />;
       default:
         return <AdminAnalytics />;
     }

@@ -335,9 +335,9 @@ export function TaskAssignment() {
                       <SelectItem key={worker.user_id} value={worker.user_id}>
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4" />
-                          {worker.full_name} 
+                        {worker.full_name}
                           <span className="text-muted-foreground">
-                            ({worker.role.replace('_', ' ')})
+                            (Farm Worker)
                           </span>
                         </div>
                       </SelectItem>
