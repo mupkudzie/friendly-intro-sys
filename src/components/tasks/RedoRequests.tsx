@@ -68,7 +68,7 @@ export function RedoRequests({ onRefresh }: RedoRequestsProps) {
 
     try {
       if (action === 'approve') {
-        // Create new task for the student to redo
+        // Create new task for the farm worker to redo
         const { error: taskError } = await supabase
           .from('tasks')
           .insert({
