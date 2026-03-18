@@ -90,11 +90,11 @@ export function TaskAssignment() {
   };
 
   const fetchWorkers = async () => {
+    // Fetch all farm workers (both 'student' and 'garden_worker' DB roles are farm workers)
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .in('role', ['student', 'garden_worker'])
-      .eq('approval_status', 'approved')
       .order('full_name');
 
     if (!error && data) {
