@@ -325,11 +325,11 @@ export function TaskApproval() {
                 </div>
               </CardHeader>
               <CardContent className="pt-0 space-y-6">
-                {/* Student and Time Info */}
+                {/* Worker Info */}
                 <div className="bg-muted/30 rounded-lg p-4 space-y-3">
                   <h4 className="font-medium text-sm flex items-center gap-2">
                     <User className="w-4 h-4" />
-                    Student Information
+                    Farm Worker Information
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                     <div className="space-y-1">
@@ -588,7 +588,7 @@ export function TaskApproval() {
               <Textarea
                 placeholder={
                   feedbackDialog?.action === 'approved'
-                    ? "Add optional feedback for the student..."
+                    ? "Add optional feedback for the farm worker..."
                     : "Please explain why this task is being rejected..."
                 }
                 value={feedbackComment}

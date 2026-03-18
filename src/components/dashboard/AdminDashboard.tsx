@@ -20,6 +20,7 @@ import { UserApproval } from '@/components/admin/UserApproval';
 import { FarmZones } from '@/components/admin/FarmZones';
 import { AuditLogs } from '@/components/admin/AuditLogs';
 import { CommentsManagement } from '@/components/admin/CommentsManagement';
+import { AccessCodeManager } from '@/components/admin/AccessCodeManager';
 import { cn } from '@/lib/utils';
 
 const menuItems = [
@@ -36,6 +37,7 @@ const menuItems = [
   { id: 'reports', label: 'Reports', icon: FileText },
   { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'audit', label: 'Audit Logs', icon: FileText },
+  { id: 'access-codes', label: 'Access Codes', icon: Activity },
 ];
 
 export function AdminDashboard() {
@@ -105,6 +107,8 @@ export function AdminDashboard() {
         return <NotificationCenter />;
       case 'audit':
         return <AuditLogs />;
+      case 'access-codes':
+        return <AccessCodeManager />;
       default:
         return <AdminAnalytics />;
     }

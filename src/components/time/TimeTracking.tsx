@@ -385,7 +385,7 @@ export function TimeTracking({ userRole }: TimeTrackingProps) {
                   <TableHeader>
                     <TableRow className="bg-muted/50">
                       {isAdminOrSupervisor && (
-                        <TableHead className="font-semibold">Student Name</TableHead>
+                        <TableHead className="font-semibold">Worker Name</TableHead>
                       )}
                       <TableHead className="font-semibold">Task</TableHead>
                       <TableHead className="font-semibold">Date</TableHead>

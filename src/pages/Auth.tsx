@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Leaf, Mail, Lock, User, Phone, Building, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Leaf, Mail, Lock, User, Phone, ArrowLeft, AlertCircle, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Auth() {
@@ -29,8 +29,7 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [contactNumber, setContactNumber] = useState('');
-  const [department, setDepartment] = useState('');
-  const [studentId, setStudentId] = useState('');
+  const [accessCode, setAccessCode] = useState('');
   const [role, setRole] = useState<'student' | 'garden_worker' | 'supervisor' | 'admin'>('student');
 
   useEffect(() => {
@@ -39,7 +38,6 @@ export default function Auth() {
     }
   }, [user, navigate]);
 
-  // Check if this is a password reset callback
   useEffect(() => {
     const type = searchParams.get('type');
     if (type === 'recovery') {
@@ -49,6 +47,8 @@ export default function Auth() {
 
   const [showEmailVerificationReminder, setShowEmailVerificationReminder] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
+
+  const requiresAccessCode = role === 'admin' || role === 'supervisor';
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +67,6 @@ export default function Auth() {
         return;
       }
 
-      // Check if email is verified
       if (authData.user && !authData.user.email_confirmed_at) {
         setUnverifiedEmail(authData.user.email || email);
         setShowEmailVerificationReminder(true);
@@ -75,7 +74,6 @@ export default function Auth() {
         return;
       }
 
-      // Check if user is approved
       const { data: profile } = await supabase
         .from('profiles')
         .select('approval_status')
@@ -135,8 +133,30 @@ export default function Auth() {
     setError('');
 
     try {
+      // Verify access code for admin/supervisor roles
+      if (requiresAccessCode) {
+        const roleToCheck = role === 'admin' ? 'admin' : 'supervisor';
+        const { data: codeData, error: codeError } = await supabase
+          .from('access_codes')
+          .select('id')
+          .eq('role', roleToCheck)
+          .eq('code', accessCode)
+          .eq('active', true)
+          .maybeSingle();
+
+        if (codeError || !codeData) {
+          setError(`Invalid access code for ${roleToCheck} registration. Please contact an administrator.`);
+          toast.error('Invalid access code');
+          setLoading(false);
+          return;
+        }
+      }
+
       const redirectUrl = `${window.location.origin}/`;
       
+      // Map role: "student" DB enum is used for farm workers
+      const dbRole = role;
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -144,10 +164,8 @@ export default function Auth() {
           emailRedirectTo: redirectUrl,
           data: {
             full_name: fullName,
-            role: role,
+            role: dbRole,
             contact_number: contactNumber,
-            department: department,
-            student_id: studentId,
           },
         },
       });
@@ -226,7 +244,6 @@ export default function Auth() {
         setShowResetPassword(false);
         setNewPassword('');
         setConfirmPassword('');
-        // Clear the URL params
         navigate('/auth', { replace: true });
       }
     } catch (err) {
@@ -377,13 +394,33 @@ export default function Auth() {
                         <SelectValue placeholder="Select your role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="student">Student</SelectItem>
-                        <SelectItem value="garden_worker">Farm Worker</SelectItem>
+                        <SelectItem value="student">Farm Worker</SelectItem>
                         <SelectItem value="supervisor">Supervisor</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {requiresAccessCode && (
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-access-code">Access Code</Label>
+                      <div className="relative">
+                        <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          id="signup-access-code"
+                          type="password"
+                          placeholder={`Enter ${role} access code`}
+                          value={accessCode}
+                          onChange={(e) => setAccessCode(e.target.value)}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Contact your administrator to get the access code for {role} registration.
+                      </p>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="signup-contact">Contact Number</Label>
@@ -399,34 +436,6 @@ export default function Auth() {
                       />
                     </div>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-department">Department</Label>
-                    <div className="relative">
-                      <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="signup-department"
-                        type="text"
-                        placeholder="Enter your department"
-                        value={department}
-                        onChange={(e) => setDepartment(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-
-                  {role === 'student' && (
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-student-id">Student ID</Label>
-                      <Input
-                        id="signup-student-id"
-                        type="text"
-                        placeholder="Enter your student ID"
-                        value={studentId}
-                        onChange={(e) => setStudentId(e.target.value)}
-                      />
-                    </div>
-                  )}
 
                   {error && (
                     <Alert variant="destructive">
@@ -494,7 +503,7 @@ export default function Auth() {
           </div>
         )}
 
-        {/* Reset Password Form (after clicking email link) */}
+        {/* Reset Password Form */}
         {showResetPassword && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <Card className="w-full max-w-md">

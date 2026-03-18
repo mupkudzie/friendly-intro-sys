@@ -68,7 +68,7 @@ export function RedoRequests({ onRefresh }: RedoRequestsProps) {
 
     try {
       if (action === 'approve') {
-        // Create new task for the student to redo
+        // Create new task for the farm worker to redo
         const { error: taskError } = await supabase
           .from('tasks')
           .insert({
@@ -106,7 +106,7 @@ export function RedoRequests({ onRefresh }: RedoRequestsProps) {
 
         toast({
           title: "Redo Approved",
-          description: "A new task has been created for the student to redo the work.",
+          description: "A new task has been created for the farm worker to redo the work.",
         });
       } else {
         // Reject the redo request
@@ -183,7 +183,7 @@ export function RedoRequests({ onRefresh }: RedoRequestsProps) {
             <RotateCcw className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <div className="text-muted-foreground">No redo requests pending</div>
             <p className="text-sm text-muted-foreground mt-2">
-              Students can request to redo rejected tasks here.
+              Farm workers can request to redo rejected tasks here.
             </p>
           </CardContent>
         </Card>
@@ -288,7 +288,7 @@ export function RedoRequests({ onRefresh }: RedoRequestsProps) {
               <Textarea
                 placeholder={
                   actionDialog?.action === 'approve'
-                    ? "Add optional comment for the student..."
+                    ? "Add optional comment for the farm worker..."
                     : "Please explain why this redo request is being rejected..."
                 }
                 value={comment}

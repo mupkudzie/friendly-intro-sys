@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_codes: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string | null
+          created_by: string
+          id: string
+          role: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          role: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          role?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       activity_logs: {
         Row: {
           activity_data_json: Json | null

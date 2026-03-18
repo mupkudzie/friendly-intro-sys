@@ -90,11 +90,11 @@ export function TaskAssignment() {
   };
 
   const fetchWorkers = async () => {
+    // Fetch all farm workers (both 'student' and 'garden_worker' DB roles are farm workers)
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .in('role', ['student', 'garden_worker'])
-      .eq('approval_status', 'approved')
       .order('full_name');
 
     if (!error && data) {
@@ -335,9 +335,9 @@ export function TaskAssignment() {
                       <SelectItem key={worker.user_id} value={worker.user_id}>
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4" />
-                          {worker.full_name} 
+                        {worker.full_name}
                           <span className="text-muted-foreground">
-                            ({worker.role.replace('_', ' ')})
+                            (Farm Worker)
                           </span>
                         </div>
                       </SelectItem>

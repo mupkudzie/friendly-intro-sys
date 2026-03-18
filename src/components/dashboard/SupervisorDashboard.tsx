@@ -93,7 +93,7 @@ export function SupervisorDashboard() {
     const [tasksResult, approvalsResult, workersResult] = await Promise.all([
       supabase.from('tasks').select('*').eq('assigned_by', userProfile.user_id),
       supabase.from('task_reports').select('*').is('approved_by', null),
-      supabase.from('profiles').select('*').in('role', ['student', 'garden_worker']),
+      supabase.from('profiles').select('*').in('role', ['student', 'garden_worker']).eq('is_deleted', false),
     ]);
 
     const tasks = tasksResult.data || [];
