@@ -13,9 +13,20 @@ import { useWorkerRecommendations } from '@/hooks/useWorkerRecommendations';
 import { AITextButton } from '@/components/ui/ai-text-button';
 import { SmartTextarea } from '@/components/ui/smart-textarea';
 import { WorkerRecommendations } from '@/components/tasks/WorkerRecommendations';
-import { Plus, User, MapPin, Sparkles, Loader2, FileText, Clock } from 'lucide-react';
+import { Plus, User, MapPin, Sparkles, Loader2, FileText, Clock, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface TaskTemplate {
   id: string;
@@ -55,6 +66,8 @@ export function TaskAssignment() {
     geofence_radius: '100',
     gps_required: true,
     location_type: 'garden_coordinates' as 'garden_coordinates' | 'current_location',
+    verify_time_1_min: '',
+    verify_time_2_min: '',
   });
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState(true);
@@ -209,6 +222,8 @@ export function TaskAssignment() {
       geofence_lat: isGardenLocation && formData.geofence_lat ? parseFloat(formData.geofence_lat) : null,
       geofence_lon: isGardenLocation && formData.geofence_lon ? parseFloat(formData.geofence_lon) : null,
       geofence_radius: isGardenLocation && formData.geofence_radius ? parseFloat(formData.geofence_radius) : 100,
+      verify_time_1_min: gpsEnabled && formData.verify_time_1_min ? parseInt(formData.verify_time_1_min) : null,
+      verify_time_2_min: gpsEnabled && formData.verify_time_2_min ? parseInt(formData.verify_time_2_min) : null,
     };
 
     const { error } = await supabase
@@ -267,6 +282,8 @@ export function TaskAssignment() {
         geofence_radius: '100',
         gps_required: true,
         location_type: 'garden_coordinates',
+        verify_time_1_min: '',
+        verify_time_2_min: '',
       });
     }
 
