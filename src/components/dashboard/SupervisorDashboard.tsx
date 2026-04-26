@@ -38,7 +38,6 @@ const menuItems = [
   { id: 'approval', label: 'Review', icon: CheckSquare, countKey: 'approval' as const },
   { id: 'redo', label: 'Redo Requests', icon: RotateCcw, countKey: 'redo' as const },
   { id: 'assign', label: 'Assign', icon: UserPlus },
-  { id: 'templates', label: 'Templates', icon: FileText },
   { id: 'performance', label: 'Performance', icon: TrendingUp },
   { id: 'activity', label: 'Activity', icon: Activity },
   { id: 'clockinout', label: 'Clock In/Out', icon: Clock },

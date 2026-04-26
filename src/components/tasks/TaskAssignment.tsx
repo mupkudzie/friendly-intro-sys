@@ -469,9 +469,10 @@ export function TaskAssignment() {
                   min="0"
                   value={formData.estimated_hours}
                   onChange={(e) => handleInputChange('estimated_hours', e.target.value)}
-                  placeholder="e.g., 2.5"
+                  placeholder="8"
                   disabled={aiLoading}
                 />
+                <p className="text-xs text-muted-foreground">Defaults to 8 hours</p>
               </div>
             </div>
 
