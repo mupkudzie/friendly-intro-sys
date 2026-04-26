@@ -46,12 +46,13 @@ export function TaskAssignment() {
     assigned_to: '',
     priority: 'medium',
     due_date: '',
-    estimated_hours: '',
+    estimated_hours: '8',
     location: '',
     instructions: '',
     geofence_lat: '',
     geofence_lon: '',
     geofence_radius: '100',
+    gps_required: true,
     location_type: 'garden_coordinates' as 'garden_coordinates' | 'current_location',
   });
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
@@ -90,11 +91,12 @@ export function TaskAssignment() {
   };
 
   const fetchWorkers = async () => {
-    // Fetch all farm workers (both 'student' and 'garden_worker' DB roles are farm workers)
+    // Fetch all farm workers
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .in('role', ['student', 'garden_worker'])
+      .eq('is_deleted', false)
       .order('full_name');
 
     if (!error && data) {
@@ -190,7 +192,8 @@ export function TaskAssignment() {
 
     setLoading(true);
 
-    const isGardenLocation = formData.location_type === 'garden_coordinates';
+    const gpsEnabled = formData.gps_required;
+    const isGardenLocation = gpsEnabled && formData.location_type === 'garden_coordinates';
     const taskData = {
       title: formData.title,
       description: formData.description,
@@ -198,10 +201,10 @@ export function TaskAssignment() {
       assigned_by: userProfile.user_id,
       priority: formData.priority as 'low' | 'medium' | 'high' | 'urgent',
       due_date: formData.due_date || null,
-      estimated_hours: formData.estimated_hours ? parseFloat(formData.estimated_hours) : null,
+      estimated_hours: formData.estimated_hours ? parseFloat(formData.estimated_hours) : 8,
       location: formData.location || null,
       instructions: formData.instructions || null,
-      location_type: formData.location_type,
+      location_type: gpsEnabled ? formData.location_type : 'current_location',
       geofence_lat: isGardenLocation && formData.geofence_lat ? parseFloat(formData.geofence_lat) : null,
       geofence_lon: isGardenLocation && formData.geofence_lon ? parseFloat(formData.geofence_lon) : null,
       geofence_radius: isGardenLocation && formData.geofence_radius ? parseFloat(formData.geofence_radius) : 100,
@@ -218,9 +221,35 @@ export function TaskAssignment() {
         variant: "destructive",
       });
     } else {
+      // Auto-save as template if not already existing (case-insensitive title match)
+      try {
+        const { data: existingTemplate } = await supabase
+          .from('task_templates')
+          .select('id')
+          .ilike('title', formData.title.trim())
+          .eq('active', true)
+          .maybeSingle();
+
+        if (!existingTemplate) {
+          await supabase.from('task_templates').insert({
+            title: formData.title.trim(),
+            description: formData.description,
+            priority: formData.priority as 'low' | 'medium' | 'high' | 'urgent',
+            estimated_hours: formData.estimated_hours ? parseFloat(formData.estimated_hours) : 8,
+            requirements: formData.instructions || null,
+            category: formData.location || null,
+            created_by: userProfile.user_id,
+            active: true,
+          });
+          fetchTemplates();
+        }
+      } catch (tplErr) {
+        console.warn('Template auto-save skipped:', tplErr);
+      }
+
       toast({
         title: "Success",
-        description: "Task assigned successfully!",
+        description: "Task assigned successfully! Saved as template for future use.",
       });
       
       setFormData({
@@ -229,12 +258,13 @@ export function TaskAssignment() {
         assigned_to: '',
         priority: 'medium',
         due_date: '',
-        estimated_hours: '',
+        estimated_hours: '8',
         location: '',
         instructions: '',
         geofence_lat: '',
         geofence_lon: '',
         geofence_radius: '100',
+        gps_required: true,
         location_type: 'garden_coordinates',
       });
     }
@@ -242,7 +272,7 @@ export function TaskAssignment() {
     setLoading(false);
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
