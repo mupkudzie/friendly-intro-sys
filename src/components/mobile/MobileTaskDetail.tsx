@@ -37,6 +37,8 @@ interface Task {
   geofence_radius?: number;
   instructions?: string;
   location_type?: string;
+  verify_time_1_min?: number | null;
+  verify_time_2_min?: number | null;
 }
 
 interface MobileTaskDetailProps {
@@ -54,6 +56,7 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
   const [redoReason, setRedoReason] = useState('');
   const [submittingRedo, setSubmittingRedo] = useState(false);
   const [activeTimeLogId, setActiveTimeLogId] = useState<string | null>(null);
+  const [taskStartTime, setTaskStartTime] = useState<string | null>(null);
   const [elapsedTime, setElapsedTime] = useState<string>('00:00:00');
 
   // Fetch active time log when task is in_progress
@@ -72,6 +75,7 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
 
         if (data) {
           setActiveTimeLogId(data.id);
+          setTaskStartTime(data.start_time);
         }
       }
     };
@@ -235,7 +239,7 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
               </Card>
             )}
 
-            {/* Random re-verification for garden location tasks */}
+            {/* Random re-verification for farm-location tasks */}
             <LocationReverification
               taskId={task.id}
               taskLocation={{
@@ -245,6 +249,9 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
               }}
               isTaskActive={task.status === 'in_progress'}
               locationTypeIsFarm={task.location_type !== 'current_location'}
+              taskStartTime={taskStartTime}
+              verifyTime1Min={task.verify_time_1_min ?? null}
+              verifyTime2Min={task.verify_time_2_min ?? null}
             />
 
             <Card className="p-4">
