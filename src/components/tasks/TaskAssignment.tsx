@@ -15,6 +15,7 @@ import { SmartTextarea } from '@/components/ui/smart-textarea';
 import { WorkerRecommendations } from '@/components/tasks/WorkerRecommendations';
 import { Plus, User, MapPin, Sparkles, Loader2, FileText, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 
 interface TaskTemplate {
   id: string;
