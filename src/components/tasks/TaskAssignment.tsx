@@ -513,7 +513,7 @@ export function TaskAssignment() {
                   </Label>
                   <p className="text-xs text-muted-foreground">
                     {formData.gps_required
-                      ? 'Worker must verify their location. 3 random GPS check-ins will appear during the task.'
+                      ? 'Worker must be inside the geofence to start. 2 GPS check-ins will appear during the task — set times below or leave blank for random.'
                       : 'No GPS verification required. Worker can complete the task from anywhere.'}
                   </p>
                 </div>
@@ -630,6 +630,39 @@ export function TaskAssignment() {
                       </div>
                     </>
                   )}
+
+                  <div className="space-y-2 pt-2 border-t">
+                    <Label className="text-sm font-medium">GPS Re-verification Times (optional)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Set the minutes (after task start) when each pop-up should appear. Leave blank to trigger them randomly.
+                    </p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label htmlFor="verify_time_1_min" className="text-xs">Verification 1 (min)</Label>
+                        <Input
+                          id="verify_time_1_min"
+                          type="number"
+                          min="1"
+                          value={formData.verify_time_1_min}
+                          onChange={(e) => handleInputChange('verify_time_1_min', e.target.value)}
+                          placeholder="e.g., 30"
+                          disabled={aiLoading}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="verify_time_2_min" className="text-xs">Verification 2 (min)</Label>
+                        <Input
+                          id="verify_time_2_min"
+                          type="number"
+                          min="1"
+                          value={formData.verify_time_2_min}
+                          onChange={(e) => handleInputChange('verify_time_2_min', e.target.value)}
+                          placeholder="e.g., 90"
+                          disabled={aiLoading}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </>
               )}
             </div>
