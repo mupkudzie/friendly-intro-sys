@@ -30,7 +30,7 @@ export default function Auth() {
   const [fullName, setFullName] = useState('');
   const [contactNumber, setContactNumber] = useState('');
   const [accessCode, setAccessCode] = useState('');
-  const [role, setRole] = useState<'student' | 'garden_worker' | 'supervisor' | 'admin'>('student');
+  const [role, setRole] = useState<'garden_worker' | 'supervisor' | 'admin'>('garden_worker');
 
   useEffect(() => {
     if (user) {
@@ -394,7 +394,7 @@ export default function Auth() {
                         <SelectValue placeholder="Select your role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="student">Farm Worker</SelectItem>
+                        <SelectItem value="garden_worker">Farm Worker</SelectItem>
                         <SelectItem value="supervisor">Supervisor</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
