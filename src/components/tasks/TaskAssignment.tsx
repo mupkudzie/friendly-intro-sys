@@ -104,6 +104,43 @@ export function TaskAssignment() {
     setTemplatesLoading(false);
   };
 
+  const handleDeleteTemplate = async (templateId: string) => {
+    const { error } = await supabase
+      .from('task_templates')
+      .delete()
+      .eq('id', templateId);
+
+    if (error) {
+      toast({
+        title: 'Failed to delete template',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({ title: 'Template deleted' });
+      fetchTemplates();
+    }
+  };
+
+  const handleApplyTemplate = (template: TaskTemplate) => {
+    setFormData(prev => ({
+      ...prev,
+      title: template.title,
+      description: template.description,
+      priority: template.priority,
+      estimated_hours: template.estimated_hours?.toString() || '8',
+      instructions: template.requirements || '',
+      location: template.category || prev.location,
+    }));
+    toast({
+      title: 'Template applied',
+      description: 'Task fields have been auto-filled. Choose a worker and assign.',
+    });
+    // Scroll to top of form for visibility
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
   const fetchWorkers = async () => {
     // Fetch all farm workers
     const { data, error } = await supabase
@@ -725,19 +762,14 @@ export function TaskAssignment() {
               {templates.map((template) => (
                 <Card
                   key={template.id}
-                  className="cursor-pointer hover:shadow-md transition-all duration-200 hover:border-primary/30"
-                  onClick={() => setFormData(prev => ({
-                    ...prev,
-                    title: template.title,
-                    description: template.description,
-                    priority: template.priority,
-                    estimated_hours: template.estimated_hours?.toString() || '',
-                    instructions: template.requirements || '',
-                  }))}
+                  className="hover:shadow-md transition-all duration-200 hover:border-primary/30 relative"
                 >
-                  <CardContent className="p-4 space-y-2">
+                  <CardContent
+                    className="p-4 space-y-2 cursor-pointer"
+                    onClick={() => handleApplyTemplate(template)}
+                  >
                     <div className="flex items-start justify-between">
-                      <h4 className="font-medium text-sm">{template.title}</h4>
+                      <h4 className="font-medium text-sm pr-8">{template.title}</h4>
                       <Badge variant="outline" className="text-xs ml-2 shrink-0">{template.priority}</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground line-clamp-2">{template.description}</p>
@@ -748,6 +780,36 @@ export function TaskAssignment() {
                       )}
                     </div>
                   </CardContent>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 h-7 w-7 text-destructive hover:bg-destructive/10"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete this template?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          "{template.title}" will be permanently removed and can no longer be used to assign tasks.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDeleteTemplate(template.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </Card>
               ))}
             </div>
