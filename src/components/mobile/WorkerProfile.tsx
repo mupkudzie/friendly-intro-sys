@@ -153,21 +153,7 @@ export function WorkerProfile() {
               </div>
             </div>
 
-            {userProfile?.role === 'student' && (
-              <div className="space-y-2">
-                <Label htmlFor="student_id">Student ID</Label>
-                <div className="relative">
-                  <CreditCard className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="student_id"
-                    name="student_id"
-                    value={formData.student_id}
-                    onChange={handleInputChange}
-                    className="pl-9"
-                  />
-                </div>
-              </div>
-            )}
+            {/* Student ID field removed - all workers are Farm Workers */}
 
             <div className="space-y-2">
               <Label htmlFor="credential">Upload ID/Credential</Label>

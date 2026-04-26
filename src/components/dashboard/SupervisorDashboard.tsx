@@ -125,8 +125,6 @@ export function SupervisorDashboard() {
         return <RedoRequests onRefresh={fetchMenuCounts} />;
       case 'assign':
         return <TaskAssignment />;
-      case 'templates':
-        return <TaskTemplates />;
       case 'performance':
         return <PerformanceEvaluation userRole="supervisor" />;
       case 'activity':
