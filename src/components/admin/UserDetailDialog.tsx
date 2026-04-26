@@ -331,8 +331,8 @@ export function UserDetailDialog({
                   <div className="flex items-center gap-3">
                     <Calendar className="w-4 h-4 text-muted-foreground" />
                     <div>
-                      <div className="text-sm text-muted-foreground">Student ID</div>
-                      <div className="font-medium">{user.student_id || 'N/A'}</div>
+                      <div className="text-sm text-muted-foreground">Contact</div>
+                      <div className="font-medium">{user.contact_number || 'N/A'}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -444,7 +444,6 @@ export function UserDetailDialog({
                           <SelectItem value="admin">Admin</SelectItem>
                           <SelectItem value="supervisor">Supervisor</SelectItem>
                           <SelectItem value="garden_worker">Farm Worker</SelectItem>
-                          <SelectItem value="student">Student</SelectItem>
                         </SelectContent>
                       </Select>
                       <Button
