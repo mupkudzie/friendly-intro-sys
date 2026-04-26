@@ -50,16 +50,9 @@ export function WorkerDashboard() {
   };
 
   const getRoleBadge = () => {
-    if (userProfile?.role === 'student') {
-      return (
-        <Badge variant="secondary" className="bg-green-100 text-green-800">
-          Student
-        </Badge>
-      );
-    }
     return (
-      <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-        Garden Worker
+      <Badge variant="secondary" className="bg-green-100 text-green-800">
+        Farm Worker
       </Badge>
     );
   };

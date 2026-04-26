@@ -173,7 +173,7 @@ export function UserManagementDashboard() {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name, email, or student ID..."
+                placeholder="Search by name or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -188,7 +188,6 @@ export function UserManagementDashboard() {
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="supervisor">Supervisor</SelectItem>
                 <SelectItem value="garden_worker">Farm Worker</SelectItem>
-                <SelectItem value="student">Student</SelectItem>
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -224,9 +223,9 @@ export function UserManagementDashboard() {
             </div>
             <div className="text-center p-3 bg-muted rounded-lg">
               <div className="text-2xl font-bold">
-                {filteredUsers.filter(u => u.role === 'student').length}
+                {filteredUsers.filter(u => u.role === 'student' || u.role === 'garden_worker').length}
               </div>
-              <div className="text-sm text-muted-foreground">Students</div>
+              <div className="text-sm text-muted-foreground">Farm Workers</div>
             </div>
           </div>
 

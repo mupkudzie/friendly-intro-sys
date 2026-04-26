@@ -15,6 +15,7 @@ import { SmartTextarea } from '@/components/ui/smart-textarea';
 import { WorkerRecommendations } from '@/components/tasks/WorkerRecommendations';
 import { Plus, User, MapPin, Sparkles, Loader2, FileText, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 
 interface TaskTemplate {
   id: string;
@@ -46,12 +47,13 @@ export function TaskAssignment() {
     assigned_to: '',
     priority: 'medium',
     due_date: '',
-    estimated_hours: '',
+    estimated_hours: '8',
     location: '',
     instructions: '',
     geofence_lat: '',
     geofence_lon: '',
     geofence_radius: '100',
+    gps_required: true,
     location_type: 'garden_coordinates' as 'garden_coordinates' | 'current_location',
   });
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
@@ -90,11 +92,12 @@ export function TaskAssignment() {
   };
 
   const fetchWorkers = async () => {
-    // Fetch all farm workers (both 'student' and 'garden_worker' DB roles are farm workers)
+    // Fetch all farm workers
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .in('role', ['student', 'garden_worker'])
+      .eq('is_deleted', false)
       .order('full_name');
 
     if (!error && data) {
@@ -190,7 +193,8 @@ export function TaskAssignment() {
 
     setLoading(true);
 
-    const isGardenLocation = formData.location_type === 'garden_coordinates';
+    const gpsEnabled = formData.gps_required;
+    const isGardenLocation = gpsEnabled && formData.location_type === 'garden_coordinates';
     const taskData = {
       title: formData.title,
       description: formData.description,
@@ -198,10 +202,10 @@ export function TaskAssignment() {
       assigned_by: userProfile.user_id,
       priority: formData.priority as 'low' | 'medium' | 'high' | 'urgent',
       due_date: formData.due_date || null,
-      estimated_hours: formData.estimated_hours ? parseFloat(formData.estimated_hours) : null,
+      estimated_hours: formData.estimated_hours ? parseFloat(formData.estimated_hours) : 8,
       location: formData.location || null,
       instructions: formData.instructions || null,
-      location_type: formData.location_type,
+      location_type: gpsEnabled ? formData.location_type : 'current_location',
       geofence_lat: isGardenLocation && formData.geofence_lat ? parseFloat(formData.geofence_lat) : null,
       geofence_lon: isGardenLocation && formData.geofence_lon ? parseFloat(formData.geofence_lon) : null,
       geofence_radius: isGardenLocation && formData.geofence_radius ? parseFloat(formData.geofence_radius) : 100,
@@ -218,9 +222,35 @@ export function TaskAssignment() {
         variant: "destructive",
       });
     } else {
+      // Auto-save as template if not already existing (case-insensitive title match)
+      try {
+        const { data: existingTemplate } = await supabase
+          .from('task_templates')
+          .select('id')
+          .ilike('title', formData.title.trim())
+          .eq('active', true)
+          .maybeSingle();
+
+        if (!existingTemplate) {
+          await supabase.from('task_templates').insert({
+            title: formData.title.trim(),
+            description: formData.description,
+            priority: formData.priority as 'low' | 'medium' | 'high' | 'urgent',
+            estimated_hours: formData.estimated_hours ? parseFloat(formData.estimated_hours) : 8,
+            requirements: formData.instructions || null,
+            category: formData.location || null,
+            created_by: userProfile.user_id,
+            active: true,
+          });
+          fetchTemplates();
+        }
+      } catch (tplErr) {
+        console.warn('Template auto-save skipped:', tplErr);
+      }
+
       toast({
         title: "Success",
-        description: "Task assigned successfully!",
+        description: "Task assigned successfully! Saved as template for future use.",
       });
       
       setFormData({
@@ -229,12 +259,13 @@ export function TaskAssignment() {
         assigned_to: '',
         priority: 'medium',
         due_date: '',
-        estimated_hours: '',
+        estimated_hours: '8',
         location: '',
         instructions: '',
         geofence_lat: '',
         geofence_lon: '',
         geofence_radius: '100',
+        gps_required: true,
         location_type: 'garden_coordinates',
       });
     }
@@ -242,7 +273,7 @@ export function TaskAssignment() {
     setLoading(false);
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -438,9 +469,10 @@ export function TaskAssignment() {
                   min="0"
                   value={formData.estimated_hours}
                   onChange={(e) => handleInputChange('estimated_hours', e.target.value)}
-                  placeholder="e.g., 2.5"
+                  placeholder="8"
                   disabled={aiLoading}
                 />
+                <p className="text-xs text-muted-foreground">Defaults to 8 hours</p>
               </div>
             </div>
 
@@ -455,113 +487,132 @@ export function TaskAssignment() {
               />
             </div>
 
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Location Type *</Label>
-                <Select
-                  value={formData.location_type}
-                  onValueChange={(value) => {
-                    handleInputChange('location_type', value);
-                    if (value === 'current_location') {
-                      setFormData(prev => ({ ...prev, location_type: value as any, geofence_lat: '', geofence_lon: '', geofence_radius: '100' }));
-                    }
-                  }}
+            <div className="space-y-4 rounded-lg border p-4 bg-muted/30">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="gps_required" className="text-base font-medium flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    GPS Tracking
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {formData.gps_required
+                      ? 'Worker must verify their location. 3 random GPS check-ins will appear during the task.'
+                      : 'No GPS verification required. Worker can complete the task from anywhere.'}
+                  </p>
+                </div>
+                <Switch
+                  id="gps_required"
+                  checked={formData.gps_required}
+                  onCheckedChange={(checked) => handleInputChange('gps_required', checked)}
                   disabled={aiLoading}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="garden_coordinates">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        Farm Location Coordinates
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="current_location">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        Current Location (Anywhere)
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {formData.location_type === 'garden_coordinates'
-                    ? 'Worker must be at the specified farm coordinates to start and will be re-verified randomly during work.'
-                    : 'Worker can start and work from any location. No GPS verification required.'}
-                </p>
+                />
               </div>
 
-              {formData.location_type === 'garden_coordinates' && (
+              {formData.gps_required && (
                 <>
-                  <div className="flex items-center justify-between">
-                    <Label>Geofence Coordinates</Label>
-                    <div className="flex gap-2">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleUseGardenLocation}
-                        disabled={aiLoading}
-                      >
-                        <MapPin className="w-4 h-4 mr-2" />
-                        Use Farm Location
-                      </Button>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleUseCurrentLocation}
-                        disabled={aiLoading}
-                      >
-                        <MapPin className="w-4 h-4 mr-2" />
-                        Use Current Location
-                      </Button>
-                    </div>
+                  <div className="space-y-2">
+                    <Label>Location Source *</Label>
+                    <Select
+                      value={formData.location_type}
+                      onValueChange={(value) => {
+                        handleInputChange('location_type', value);
+                        if (value === 'current_location') {
+                          setFormData(prev => ({ ...prev, location_type: value as any, geofence_lat: '', geofence_lon: '', geofence_radius: '100' }));
+                        }
+                      }}
+                      disabled={aiLoading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="garden_coordinates">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4" />
+                            Farm Location Coordinates
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="current_location">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4" />
+                            Use My Current Location
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="geofence_lat">Latitude</Label>
-                      <Input
-                        id="geofence_lat"
-                        type="number"
-                        step="any"
-                        value={formData.geofence_lat}
-                        onChange={(e) => handleInputChange('geofence_lat', e.target.value)}
-                        placeholder="e.g., -20.164235"
-                        disabled={aiLoading}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="geofence_lon">Longitude</Label>
-                      <Input
-                        id="geofence_lon"
-                        type="number"
-                        step="any"
-                        value={formData.geofence_lon}
-                        onChange={(e) => handleInputChange('geofence_lon', e.target.value)}
-                        placeholder="e.g., 28.641425"
-                        disabled={aiLoading}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="geofence_radius">Radius (meters)</Label>
-                      <Input
-                        id="geofence_radius"
-                        type="number"
-                        step="1"
-                        min="10"
-                        value={formData.geofence_radius}
-                        onChange={(e) => handleInputChange('geofence_radius', e.target.value)}
-                        placeholder="100"
-                        disabled={aiLoading}
-                      />
-                    </div>
-                  </div>
+
+                  {formData.location_type === 'garden_coordinates' && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <Label>Geofence Coordinates</Label>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleUseGardenLocation}
+                            disabled={aiLoading}
+                          >
+                            <MapPin className="w-4 h-4 mr-2" />
+                            Use Farm Location
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleUseCurrentLocation}
+                            disabled={aiLoading}
+                          >
+                            <MapPin className="w-4 h-4 mr-2" />
+                            Use Current Location
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="geofence_lat">Latitude</Label>
+                          <Input
+                            id="geofence_lat"
+                            type="number"
+                            step="any"
+                            value={formData.geofence_lat}
+                            onChange={(e) => handleInputChange('geofence_lat', e.target.value)}
+                            placeholder="e.g., -20.164235"
+                            disabled={aiLoading}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="geofence_lon">Longitude</Label>
+                          <Input
+                            id="geofence_lon"
+                            type="number"
+                            step="any"
+                            value={formData.geofence_lon}
+                            onChange={(e) => handleInputChange('geofence_lon', e.target.value)}
+                            placeholder="e.g., 28.641425"
+                            disabled={aiLoading}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="geofence_radius">Radius (meters)</Label>
+                          <Input
+                            id="geofence_radius"
+                            type="number"
+                            step="1"
+                            min="10"
+                            value={formData.geofence_radius}
+                            onChange={(e) => handleInputChange('geofence_radius', e.target.value)}
+                            placeholder="100"
+                            disabled={aiLoading}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </div>

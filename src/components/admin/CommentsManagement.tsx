@@ -147,7 +147,7 @@ export function CommentsManagement() {
             User Comments & Feedback
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            View all comments from students and farm workers
+            View all comments from farm workers
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -167,30 +167,23 @@ export function CommentsManagement() {
                 <SelectValue placeholder="Filter by role" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Workers</SelectItem>
-                <SelectItem value="student">Students</SelectItem>
+                <SelectItem value="all">All Farm Workers</SelectItem>
                 <SelectItem value="garden_worker">Farm Workers</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="text-center p-3 bg-muted rounded-lg">
               <div className="text-2xl font-bold">{filteredComments.length}</div>
               <div className="text-sm text-muted-foreground">Total Comments</div>
             </div>
             <div className="text-center p-3 bg-muted rounded-lg">
               <div className="text-2xl font-bold">
-                {filteredComments.filter((c) => c.profile?.role === 'student').length}
+                {filteredComments.filter((c) => c.profile?.role === 'garden_worker' || c.profile?.role === 'student').length}
               </div>
-              <div className="text-sm text-muted-foreground">Student Comments</div>
-            </div>
-            <div className="text-center p-3 bg-muted rounded-lg">
-              <div className="text-2xl font-bold">
-                {filteredComments.filter((c) => c.profile?.role === 'garden_worker').length}
-              </div>
-              <div className="text-sm text-muted-foreground">Worker Comments</div>
+              <div className="text-sm text-muted-foreground">Farm Worker Comments</div>
             </div>
           </div>
 

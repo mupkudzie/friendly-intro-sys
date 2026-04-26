@@ -47,7 +47,7 @@ const Index = () => {
     {
       icon: Users,
       title: 'Team Management',
-      description: 'Organize students and workers with role-based access, approvals, and real-time activity tracking.',
+      description: 'Organize farm workers with role-based access, approvals, and real-time activity tracking.',
       color: 'bg-blue-50 text-blue-600',
     },
     {
@@ -142,7 +142,7 @@ const Index = () => {
               Everything you need to run your farm
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              From task assignment to performance analytics, FarmFlow gives supervisors and students the tools they need.
+              From task assignment to performance analytics, FarmFlow gives supervisors and farm workers the tools they need.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
