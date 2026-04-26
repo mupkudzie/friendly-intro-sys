@@ -10,12 +10,6 @@ interface GeofenceCheckProps {
   onLocationVerified: (location: { latitude: number; longitude: number }) => void;
 }
 
-const FARM_LOCATION = {
-  latitude: -20.164235,
-  longitude: 28.641425,
-  name: 'Bulawayo North Farm'
-};
-
 export function GeofenceCheck({ taskLocation, onLocationVerified }: GeofenceCheckProps) {
   const [checking, setChecking] = useState(false);
   const [verified, setVerified] = useState<boolean | null>(null);
