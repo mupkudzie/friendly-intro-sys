@@ -10,12 +10,6 @@ interface GeofenceCheckProps {
   onLocationVerified: (location: { latitude: number; longitude: number }) => void;
 }
 
-const FARM_LOCATION = {
-  latitude: -20.164235,
-  longitude: 28.641425,
-  name: 'Bulawayo North Farm'
-};
-
 export function GeofenceCheck({ taskLocation, onLocationVerified }: GeofenceCheckProps) {
   const [checking, setChecking] = useState(false);
   const [verified, setVerified] = useState<boolean | null>(null);
@@ -81,23 +75,6 @@ export function GeofenceCheck({ taskLocation, onLocationVerified }: GeofenceChec
     }
   };
 
-  const useFarmLocation = () => {
-    setChecking(true);
-    setVerified(true);
-
-    toast({
-      title: "Location verified",
-      description: `Using ${FARM_LOCATION.name} location`,
-    });
-    
-    onLocationVerified({
-      latitude: FARM_LOCATION.latitude,
-      longitude: FARM_LOCATION.longitude,
-    });
-
-    setChecking(false);
-  };
-
   return (
     <Card className="p-6">
       <div className="flex items-center gap-2 mb-4">
@@ -106,7 +83,7 @@ export function GeofenceCheck({ taskLocation, onLocationVerified }: GeofenceChec
       </div>
 
       <p className="text-sm text-muted-foreground mb-4">
-        Verify you're at the work site (within {taskLocation.radius}m radius)
+        You must be physically at the work site (within {taskLocation.radius}m radius) to start this task.
       </p>
 
       <div className="space-y-2">
@@ -115,17 +92,8 @@ export function GeofenceCheck({ taskLocation, onLocationVerified }: GeofenceChec
           disabled={checking}
           className="w-full"
         >
-          {checking ? 'Checking Location...' : 'Use GPS Location'}
-        </Button>
-
-        <Button
-          onClick={useFarmLocation}
-          disabled={checking}
-          variant="outline"
-          className="w-full"
-        >
           <MapPin className="h-4 w-4 mr-2" />
-          Use {FARM_LOCATION.name}
+          {checking ? 'Checking Location...' : 'Use GPS Location'}
         </Button>
       </div>
 

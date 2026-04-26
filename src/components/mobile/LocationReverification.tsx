@@ -22,11 +22,15 @@ interface LocationReverificationProps {
   isTaskActive: boolean;
   locationTypeIsFarm: boolean;
   supervisorId?: string;
+  taskStartTime?: string | null;
+  verifyTime1Min?: number | null;
+  verifyTime2Min?: number | null;
   onVerificationFailed?: () => void;
 }
 
-const MAX_VERIFICATIONS = 3;
+const MAX_VERIFICATIONS = 2;
 const TIMEOUT_DURATION = 2 * 60 * 1000; // 2 minutes
+
 
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371e3;
@@ -71,6 +75,9 @@ export function LocationReverification({
   isTaskActive,
   locationTypeIsFarm,
   supervisorId,
+  taskStartTime,
+  verifyTime1Min,
+  verifyTime2Min,
   onVerificationFailed,
 }: LocationReverificationProps) {
   const [showDialog, setShowDialog] = useState(false);
@@ -122,11 +129,22 @@ export function LocationReverification({
     clearAllTimers();
     if (!isTaskActive || !locationTypeIsFarm || verificationsCompleted >= MAX_VERIFICATIONS) return;
 
-    // Random interval: spread 3 checks across the work session
-    // Use 3-8 minute intervals for reasonable spacing
-    const minInterval = 3 * 60 * 1000;
-    const maxInterval = 8 * 60 * 1000;
-    const interval = Math.floor(Math.random() * (maxInterval - minInterval) + minInterval);
+    // Determine interval
+    const customTimes = [verifyTime1Min, verifyTime2Min];
+    const customForThis = customTimes[verificationsCompleted];
+    let interval: number;
+
+    if (customForThis && customForThis > 0 && taskStartTime) {
+      // Supervisor specified an exact minute mark — schedule relative to task start
+      const elapsed = Date.now() - new Date(taskStartTime).getTime();
+      const targetMs = customForThis * 60 * 1000;
+      interval = Math.max(targetMs - elapsed, 5000); // at least 5s in the future
+    } else {
+      // Random interval (3-8 minutes)
+      const minInterval = 3 * 60 * 1000;
+      const maxInterval = 8 * 60 * 1000;
+      interval = Math.floor(Math.random() * (maxInterval - minInterval) + minInterval);
+    }
 
     timerRef.current = setTimeout(() => {
       playNotificationSound();
@@ -157,7 +175,7 @@ export function LocationReverification({
         });
       }, TIMEOUT_DURATION);
     }, interval);
-  }, [isTaskActive, locationTypeIsFarm, verificationsCompleted, clearAllTimers, notifySupervisor]);
+  }, [isTaskActive, locationTypeIsFarm, verificationsCompleted, clearAllTimers, notifySupervisor, taskStartTime, verifyTime1Min, verifyTime2Min]);
 
   useEffect(() => {
     if (isTaskActive && locationTypeIsFarm && verificationsCompleted < MAX_VERIFICATIONS) {

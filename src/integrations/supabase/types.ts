@@ -591,6 +591,8 @@ export type Database = {
           status: Database["public"]["Enums"]["task_status"]
           title: string
           updated_at: string
+          verify_time_1_min: number | null
+          verify_time_2_min: number | null
         }
         Insert: {
           assigned_by: string
@@ -610,6 +612,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["task_status"]
           title: string
           updated_at?: string
+          verify_time_1_min?: number | null
+          verify_time_2_min?: number | null
         }
         Update: {
           assigned_by?: string
@@ -629,6 +633,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["task_status"]
           title?: string
           updated_at?: string
+          verify_time_1_min?: number | null
+          verify_time_2_min?: number | null
         }
         Relationships: [
           {
