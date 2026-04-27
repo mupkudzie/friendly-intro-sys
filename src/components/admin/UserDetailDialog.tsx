@@ -33,6 +33,11 @@ import {
   CheckCircle,
   XCircle,
   MessageSquare,
+  Download,
+  ShieldCheck,
+  ListChecks,
+  TrendingUp,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -44,6 +49,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { format } from 'date-fns';
+import {
+  createBrandedPDF,
+  addSectionTitle,
+  addKeyValueGrid,
+  addTable,
+  addApprovalBlock,
+  addFooterToAllPages,
+  downloadPDF,
+} from '@/lib/pdf';
+import { Badge as BadgeUI } from '@/components/ui/badge';
 
 interface UserDetailDialogProps {
   user: any;
@@ -87,14 +103,44 @@ export function UserDetailDialog({
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [workerTasks, setWorkerTasks] = useState<any[]>([]);
+  const [workerTimeLogs, setWorkerTimeLogs] = useState<any[]>([]);
+  const [workerVerifications, setWorkerVerifications] = useState<any[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
     if (open) {
       fetchActivityLogs();
       fetchAuditLogs();
+      fetchWorkerData();
     }
   }, [open, user.user_id]);
+
+  const fetchWorkerData = async () => {
+    const [tasksRes, timeRes, verifRes] = await Promise.all([
+      supabase
+        .from('tasks')
+        .select('id, title, status, priority, created_at, updated_at, due_date, estimated_hours')
+        .eq('assigned_to', user.user_id)
+        .order('created_at', { ascending: false })
+        .limit(200),
+      supabase
+        .from('time_logs')
+        .select('id, start_time, end_time, total_hours, break_time, task_id')
+        .eq('user_id', user.user_id)
+        .order('start_time', { ascending: false })
+        .limit(200),
+      supabase
+        .from('verification_logs')
+        .select('id, verification_number, status, latitude, longitude, distance_from_target, triggered_at, responded_at, task_id')
+        .eq('user_id', user.user_id)
+        .order('triggered_at', { ascending: false })
+        .limit(200),
+    ]);
+    if (tasksRes.data) setWorkerTasks(tasksRes.data);
+    if (timeRes.data) setWorkerTimeLogs(timeRes.data);
+    if (verifRes.data) setWorkerVerifications(verifRes.data);
+  };
 
   const fetchActivityLogs = async () => {
     const { data } = await supabase
@@ -287,12 +333,183 @@ export function UserDetailDialog({
             </DialogTitle>
           </DialogHeader>
 
+          {/* Quick stats + PDF download */}
+          {(() => {
+            const totalHours = workerTimeLogs.reduce((s, l) => s + (l.total_hours || 0), 0);
+            const completed = workerTasks.filter(t => t.status === 'approved').length;
+            const inProgress = workerTasks.filter(t => t.status === 'in_progress' || t.status === 'pending').length;
+            const verifSuccess = workerVerifications.filter(v => v.status === 'success').length;
+            const verifTotal = workerVerifications.length;
+            const compliance = verifTotal > 0 ? Math.round((verifSuccess / verifTotal) * 100) : 100;
+
+            const handleDownloadWorkerPDF = () => {
+              try {
+                const doc = createBrandedPDF({
+                  title: 'Farm Worker Report',
+                  subtitle: `${user.full_name} • ${user.email || ''}`,
+                });
+                let y = 50;
+                y = addSectionTitle(doc, 'Personal Information', y);
+                y = addKeyValueGrid(doc, [
+                  { label: 'Full Name', value: user.full_name },
+                  { label: 'Email', value: user.email || '—' },
+                  { label: 'Contact', value: user.contact_number || '—' },
+                  { label: 'Department', value: user.department || '—' },
+                  { label: 'Role', value: String(user.role).replace('_', ' ') },
+                  { label: 'Member Since', value: format(new Date(user.created_at), 'MMM d, yyyy') },
+                ], y);
+
+                y = addSectionTitle(doc, 'Performance Summary', y + 2);
+                y = addKeyValueGrid(doc, [
+                  { label: 'Total Hours', value: `${totalHours.toFixed(2)} h` },
+                  { label: 'Tasks Completed', value: String(completed) },
+                  { label: 'Active Tasks', value: String(inProgress) },
+                  { label: 'Verification Compliance', value: `${compliance}%` },
+                ], y);
+
+                if (workerTasks.length) {
+                  y = addSectionTitle(doc, 'Recent Task History', y + 2);
+                  y = addTable(doc,
+                    ['Date', 'Task', 'Priority', 'Status'],
+                    workerTasks.slice(0, 30).map(t => [
+                      format(new Date(t.created_at), 'MMM d, yyyy'),
+                      t.title,
+                      t.priority,
+                      String(t.status).replace('_', ' '),
+                    ]), y);
+                }
+
+                if (workerVerifications.length) {
+                  y = addSectionTitle(doc, 'Verification Log', y);
+                  y = addTable(doc,
+                    ['Triggered', '#', 'Status', 'Distance (m)'],
+                    workerVerifications.slice(0, 30).map(v => [
+                      format(new Date(v.triggered_at), 'MMM d HH:mm'),
+                      String(v.verification_number),
+                      v.status,
+                      v.distance_from_target != null ? Math.round(v.distance_from_target).toString() : '—',
+                    ]), y);
+                }
+
+                addApprovalBlock(doc, y);
+                addFooterToAllPages(doc);
+                downloadPDF(doc, `Worker_Report_${user.full_name.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+                toast({ title: 'Worker report downloaded' });
+              } catch (e: any) {
+                toast({ title: 'Failed to generate report', description: e.message, variant: 'destructive' });
+              }
+            };
+
+            return (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">Total Hours</p>
+                    <p className="text-xl font-bold">{totalHours.toFixed(1)}</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">Completed</p>
+                    <p className="text-xl font-bold text-emerald-600">{completed}</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">Active</p>
+                    <p className="text-xl font-bold text-blue-600">{inProgress}</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">Compliance</p>
+                    <p className="text-xl font-bold">{compliance}%</p>
+                  </div>
+                </div>
+                <Button onClick={handleDownloadWorkerPDF} className="mb-4 gap-2" size="sm">
+                  <Download className="w-4 h-4" />
+                  Download Worker Report (PDF)
+                </Button>
+              </>
+            );
+          })()}
+
           <Tabs defaultValue="info" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="info">Info</TabsTrigger>
+              <TabsTrigger value="tasks">
+                <ListChecks className="w-3.5 h-3.5 mr-1" />Tasks
+              </TabsTrigger>
+              <TabsTrigger value="verifications">
+                <ShieldCheck className="w-3.5 h-3.5 mr-1" />Verifications
+              </TabsTrigger>
               <TabsTrigger value="activity">Activity</TabsTrigger>
               <TabsTrigger value="actions">Actions</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="tasks" className="space-y-2">
+              <Card>
+                <CardHeader><CardTitle className="text-base">Task History</CardTitle></CardHeader>
+                <CardContent>
+                  {workerTasks.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">No tasks yet.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                      {workerTasks.map(t => (
+                        <div key={t.id} className="flex items-center justify-between p-2 rounded border">
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm truncate">{t.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(t.created_at), 'MMM d, yyyy')} • {t.priority}
+                            </p>
+                          </div>
+                          <BadgeUI variant="outline" className="ml-2 shrink-0">{String(t.status).replace('_', ' ')}</BadgeUI>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="verifications" className="space-y-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4" />
+                    Verification Log
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {workerVerifications.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">No verification events recorded.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                      {workerVerifications.map(v => {
+                        const statusColor =
+                          v.status === 'success' ? 'border-emerald-500 text-emerald-700' :
+                          v.status === 'failed' ? 'border-amber-500 text-amber-700' :
+                          'border-red-500 text-red-700';
+                        return (
+                          <div key={v.id} className="flex items-center justify-between p-2 rounded border">
+                            <div className="min-w-0">
+                              <p className="text-sm">
+                                Verification #{v.verification_number}
+                                {v.distance_from_target != null && (
+                                  <span className="text-muted-foreground"> • {Math.round(v.distance_from_target)}m</span>
+                                )}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {format(new Date(v.triggered_at), 'MMM d, yyyy HH:mm')}
+                              </p>
+                            </div>
+                            <BadgeUI variant="outline" className={`ml-2 shrink-0 ${statusColor}`}>
+                              {v.status === 'missed' && <AlertTriangle className="w-3 h-3 mr-1" />}
+                              {v.status}
+                            </BadgeUI>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
 
             <TabsContent value="info" className="space-y-4">
               <Card>
