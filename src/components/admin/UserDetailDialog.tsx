@@ -33,6 +33,11 @@ import {
   CheckCircle,
   XCircle,
   MessageSquare,
+  Download,
+  ShieldCheck,
+  ListChecks,
+  TrendingUp,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -44,6 +49,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { format } from 'date-fns';
+import {
+  createBrandedPDF,
+  addSectionTitle,
+  addKeyValueGrid,
+  addTable,
+  addApprovalBlock,
+  addFooterToAllPages,
+  downloadPDF,
+} from '@/lib/pdf';
+import { Badge as BadgeUI } from '@/components/ui/badge';
 
 interface UserDetailDialogProps {
   user: any;
