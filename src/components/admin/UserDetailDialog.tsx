@@ -103,14 +103,44 @@ export function UserDetailDialog({
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [workerTasks, setWorkerTasks] = useState<any[]>([]);
+  const [workerTimeLogs, setWorkerTimeLogs] = useState<any[]>([]);
+  const [workerVerifications, setWorkerVerifications] = useState<any[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
     if (open) {
       fetchActivityLogs();
       fetchAuditLogs();
+      fetchWorkerData();
     }
   }, [open, user.user_id]);
+
+  const fetchWorkerData = async () => {
+    const [tasksRes, timeRes, verifRes] = await Promise.all([
+      supabase
+        .from('tasks')
+        .select('id, title, status, priority, created_at, updated_at, due_date, estimated_hours')
+        .eq('assigned_to', user.user_id)
+        .order('created_at', { ascending: false })
+        .limit(200),
+      supabase
+        .from('time_logs')
+        .select('id, start_time, end_time, total_hours, break_time, task_id')
+        .eq('user_id', user.user_id)
+        .order('start_time', { ascending: false })
+        .limit(200),
+      supabase
+        .from('verification_logs')
+        .select('id, verification_number, status, latitude, longitude, distance_from_target, triggered_at, responded_at, task_id')
+        .eq('user_id', user.user_id)
+        .order('triggered_at', { ascending: false })
+        .limit(200),
+    ]);
+    if (tasksRes.data) setWorkerTasks(tasksRes.data);
+    if (timeRes.data) setWorkerTimeLogs(timeRes.data);
+    if (verifRes.data) setWorkerVerifications(verifRes.data);
+  };
 
   const fetchActivityLogs = async () => {
     const { data } = await supabase
