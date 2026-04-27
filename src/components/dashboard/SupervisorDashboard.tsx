@@ -17,7 +17,7 @@ import { AITaskPrioritization } from '@/components/tasks/AITaskPrioritization';
 import { WorkerActivityTracker } from '@/components/workers/WorkerActivityTracker';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { ClockInOutView } from '@/components/time/ClockInOutView';
-import { WeeklyTimesheetView } from '@/components/time/WeeklyTimesheetView';
+import { TimesheetReports } from '@/components/time/TimesheetReports';
 import { PhotoGallery } from '@/components/gallery/PhotoGallery';
 import { cn } from '@/lib/utils';
 import { UserManagementDashboard } from '@/components/admin/UserManagementDashboard';
@@ -134,7 +134,7 @@ export function SupervisorDashboard() {
       case 'clockinout':
         return <ClockInOutView />;
       case 'timesheet':
-        return <WeeklyTimesheetView />;
+        return <TimesheetReports />;
       case 'notifications':
         return <NotificationCenter />;
       case 'usermanagement':
