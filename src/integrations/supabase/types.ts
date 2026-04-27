@@ -725,6 +725,63 @@ export type Database = {
         }
         Relationships: []
       }
+      verification_logs: {
+        Row: {
+          accuracy: number | null
+          created_at: string
+          distance_from_target: number | null
+          expected_latitude: number | null
+          expected_longitude: number | null
+          expected_radius: number | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          notes: string | null
+          responded_at: string | null
+          status: string
+          task_id: string
+          triggered_at: string
+          user_id: string
+          verification_number: number
+        }
+        Insert: {
+          accuracy?: number | null
+          created_at?: string
+          distance_from_target?: number | null
+          expected_latitude?: number | null
+          expected_longitude?: number | null
+          expected_radius?: number | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          responded_at?: string | null
+          status: string
+          task_id: string
+          triggered_at?: string
+          user_id: string
+          verification_number: number
+        }
+        Update: {
+          accuracy?: number | null
+          created_at?: string
+          distance_from_target?: number | null
+          expected_latitude?: number | null
+          expected_longitude?: number | null
+          expected_radius?: number | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          responded_at?: string | null
+          status?: string
+          task_id?: string
+          triggered_at?: string
+          user_id?: string
+          verification_number?: number
+        }
+        Relationships: []
+      }
       worker_activities: {
         Row: {
           activity: string | null
