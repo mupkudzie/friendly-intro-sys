@@ -68,6 +68,8 @@ export function TaskAssignment() {
     location_type: 'garden_coordinates' as 'garden_coordinates' | 'current_location',
     verify_time_1_min: '',
     verify_time_2_min: '',
+    verify_time_1_at: '',
+    verify_time_2_at: '',
   });
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState(true);
