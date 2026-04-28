@@ -83,7 +83,12 @@ Return ONLY the JSON array, no other text.`;
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
-        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 800,
+        temperature: 0.4,
+        messages: [
+          { role: 'system', content: 'You output ONLY a JSON array. Each template field must be SHORT and PRECISE: title ≤ 6 words, description ≤ 25 words, requirements ≤ 15 words. No filler.' },
+          { role: 'user', content: prompt },
+        ],
       }),
     });
 
