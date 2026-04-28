@@ -242,10 +242,26 @@ export function LocationReverification({
     setChecking(true);
     const verificationNumber = verificationsCompleted + 1;
     try {
-      const position = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true,
-        timeout: 10000,
-      });
+      let position: any;
+      try {
+        position = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 });
+      } catch {
+        try {
+          position = await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 20000 });
+        } catch {
+          if (typeof navigator !== 'undefined' && navigator.geolocation) {
+            position = await new Promise((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(
+                (p) => resolve(p),
+                (err) => reject(err),
+                { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 }
+              );
+            });
+          } else {
+            throw new Error('Geolocation unavailable');
+          }
+        }
+      }
 
       const distance = calculateDistance(
         position.coords.latitude,
