@@ -332,27 +332,49 @@ export function TaskAssignment() {
   };
 
   const handleUseCurrentLocation = async () => {
-    try {
-      const position = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true,
-        timeout: 10000,
-      });
+    const tryGetPosition = async (): Promise<{ latitude: number; longitude: number }> => {
+      try {
+        const p = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 });
+        return { latitude: p.coords.latitude, longitude: p.coords.longitude };
+      } catch {
+        try {
+          const p = await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 20000 });
+          return { latitude: p.coords.latitude, longitude: p.coords.longitude };
+        } catch {
+          if (typeof navigator !== 'undefined' && navigator.geolocation) {
+            return await new Promise((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(
+                (p) => resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude }),
+                (err) => reject(err),
+                { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 }
+              );
+            });
+          }
+          throw new Error('Geolocation unavailable');
+        }
+      }
+    };
 
+    try {
+      const coords = await tryGetPosition();
       setFormData(prev => ({
         ...prev,
-        geofence_lat: position.coords.latitude.toString(),
-        geofence_lon: position.coords.longitude.toString(),
+        geofence_lat: coords.latitude.toString(),
+        geofence_lon: coords.longitude.toString(),
       }));
-
       toast({
-        title: "Location captured",
-        description: `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}`,
+        title: 'Location captured',
+        description: `Lat: ${coords.latitude.toFixed(6)}, Lon: ${coords.longitude.toFixed(6)}`,
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Geolocation error:', error);
       toast({
-        title: "Location error",
-        description: "Failed to get current location. Please enable GPS.",
-        variant: "destructive",
+        title: 'Location error',
+        description:
+          error?.code === 1
+            ? 'Permission denied. Allow location access in your browser settings.'
+            : 'Could not get your location. Ensure GPS/Location is enabled and try again.',
+        variant: 'destructive',
       });
     }
   };
