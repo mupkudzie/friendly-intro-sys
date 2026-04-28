@@ -174,11 +174,17 @@ export function LocationReverification({
       return;
     }
 
+    const exactTimes = [verifyTime1At, verifyTime2At];
+    const exactForThis = exactTimes[verificationsCompleted];
     const customTimes = [verifyTime1Min, verifyTime2Min];
     const customForThis = customTimes[verificationsCompleted];
     let interval: number;
 
-    if (customForThis && customForThis > 0 && taskStartTime) {
+    if (exactForThis) {
+      // Exact wall-clock time wins — fire at that moment (or immediately if already past)
+      const targetMs = new Date(exactForThis).getTime();
+      interval = Math.max(targetMs - Date.now(), 1000);
+    } else if (customForThis && customForThis > 0 && taskStartTime) {
       const elapsed = Date.now() - new Date(taskStartTime).getTime();
       const targetMs = customForThis * 60 * 1000;
       interval = Math.max(targetMs - elapsed, 5000);
