@@ -263,6 +263,8 @@ export function TaskAssignment() {
       geofence_radius: isGardenLocation && formData.geofence_radius ? parseFloat(formData.geofence_radius) : 100,
       verify_time_1_min: gpsEnabled && formData.verify_time_1_min ? parseInt(formData.verify_time_1_min) : null,
       verify_time_2_min: gpsEnabled && formData.verify_time_2_min ? parseInt(formData.verify_time_2_min) : null,
+      verify_time_1_at: gpsEnabled && formData.verify_time_1_at ? new Date(formData.verify_time_1_at).toISOString() : null,
+      verify_time_2_at: gpsEnabled && formData.verify_time_2_at ? new Date(formData.verify_time_2_at).toISOString() : null,
     };
 
     const { error } = await supabase
