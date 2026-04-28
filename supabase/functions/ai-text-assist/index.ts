@@ -21,56 +21,46 @@ serve(async (req) => {
     let systemPrompt = "";
     let userPrompt = "";
 
+    // Global rule: ALL outputs must be short and precise.
+    const BREVITY = `STRICT RULES:
+- Be SHORT and PRECISE. Maximum 2-3 short sentences (≤ 50 words total).
+- No filler, no headings, no bullet lists unless absolutely needed (max 3 bullets, ≤8 words each).
+- Plain professional tone. No greetings, no sign-offs, no "Sure!" / "Here is".
+- Return ONLY the requested text. Nothing else.`;
+
     switch (type) {
       case "improve":
-        systemPrompt = `You are a helpful writing assistant for a farm/garden management application. 
-Your task is to improve the user's text to be more professional, clear, and well-structured while maintaining their original meaning.
-Keep the improved text concise and appropriate for a work context.
-Only return the improved text, no explanations or additional commentary.`;
-        userPrompt = `Improve this text:\n\n"${text}"`;
+        systemPrompt = `Farm task writing assistant. Improve clarity and grammar without changing meaning.\n${BREVITY}`;
+        userPrompt = `Improve:\n"${text}"`;
         break;
 
       case "expand":
-        systemPrompt = `You are a helpful writing assistant for a farm/garden management application.
-Your task is to expand the user's brief notes into a more detailed and comprehensive description.
-Keep it professional and relevant to garden/farm work context.
-Only return the expanded text, no explanations or additional commentary.`;
-        userPrompt = `Expand this text into a more detailed description:\n\n"${text}"`;
+        systemPrompt = `Farm task writing assistant. Turn brief notes into a clear, concrete description.\n${BREVITY}`;
+        userPrompt = `Expand briefly:\n"${text}"`;
         break;
 
       case "report":
-        systemPrompt = `You are a helpful writing assistant for a farm/garden management application.
-Your task is to help format and improve task completion reports.
-Make the report clear, professional, and well-structured with proper grammar.
-Include relevant details about work accomplished, challenges faced, and outcomes.
-Only return the improved report text, no explanations.`;
-        userPrompt = context 
-          ? `Improve this task report for the task "${context}":\n\n"${text}"`
-          : `Improve this task report:\n\n"${text}"`;
+        systemPrompt = `Farm task report assistant. Output a tight summary: what was done, any issues, outcome.\n${BREVITY}`;
+        userPrompt = context
+          ? `Refine this report for "${context}":\n"${text}"`
+          : `Refine this report:\n"${text}"`;
         break;
 
       case "justification":
-        systemPrompt = `You are a helpful writing assistant for a farm/garden management application.
-Your task is to help write compelling task request justifications.
-Make the justification clear, professional, and persuasive.
-Focus on why the task is needed and the benefits it will bring.
-Only return the improved justification, no explanations.`;
+        systemPrompt = `Farm task request assistant. Write a compact justification: need + benefit.\n${BREVITY}`;
         userPrompt = context
-          ? `Improve this justification for requesting the task "${context}":\n\n"${text}"`
-          : `Improve this task request justification:\n\n"${text}"`;
+          ? `Refine justification for "${context}":\n"${text}"`
+          : `Refine justification:\n"${text}"`;
         break;
 
       case "suggest":
-        systemPrompt = `You are a helpful writing assistant for a farm/garden management application.
-Based on the context provided, suggest what the user might want to write.
-Provide a concise, relevant suggestion that fits the farm/garden work context.
-Only return the suggested text, no explanations.`;
-        userPrompt = `The user is writing a ${context || "description"}. They've started with:\n\n"${text}"\n\nSuggest how they might complete or continue this.`;
+        systemPrompt = `Farm task writing assistant. Suggest a brief continuation that fits the context.\n${BREVITY}`;
+        userPrompt = `Field: ${context || "description"}. Current: "${text}". Suggest a short completion.`;
         break;
 
       default:
-        systemPrompt = `You are a helpful writing assistant. Improve the given text to be more clear and professional.`;
-        userPrompt = `Improve this text:\n\n"${text}"`;
+        systemPrompt = `Writing assistant. Improve clarity.\n${BREVITY}`;
+        userPrompt = `Improve:\n"${text}"`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -81,6 +71,8 @@ Only return the suggested text, no explanations.`;
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
+        max_tokens: 180,
+        temperature: 0.4,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },

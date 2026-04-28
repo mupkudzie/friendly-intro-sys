@@ -68,6 +68,8 @@ export function TaskAssignment() {
     location_type: 'garden_coordinates' as 'garden_coordinates' | 'current_location',
     verify_time_1_min: '',
     verify_time_2_min: '',
+    verify_time_1_at: '',
+    verify_time_2_at: '',
   });
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState(true);
@@ -261,6 +263,8 @@ export function TaskAssignment() {
       geofence_radius: isGardenLocation && formData.geofence_radius ? parseFloat(formData.geofence_radius) : 100,
       verify_time_1_min: gpsEnabled && formData.verify_time_1_min ? parseInt(formData.verify_time_1_min) : null,
       verify_time_2_min: gpsEnabled && formData.verify_time_2_min ? parseInt(formData.verify_time_2_min) : null,
+      verify_time_1_at: gpsEnabled && formData.verify_time_1_at ? new Date(formData.verify_time_1_at).toISOString() : null,
+      verify_time_2_at: gpsEnabled && formData.verify_time_2_at ? new Date(formData.verify_time_2_at).toISOString() : null,
     };
 
     const { error } = await supabase
@@ -321,6 +325,8 @@ export function TaskAssignment() {
         location_type: 'garden_coordinates',
         verify_time_1_min: '',
         verify_time_2_min: '',
+        verify_time_1_at: '',
+        verify_time_2_at: '',
       });
     }
 
@@ -332,27 +338,49 @@ export function TaskAssignment() {
   };
 
   const handleUseCurrentLocation = async () => {
-    try {
-      const position = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true,
-        timeout: 10000,
-      });
+    const tryGetPosition = async (): Promise<{ latitude: number; longitude: number }> => {
+      try {
+        const p = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 });
+        return { latitude: p.coords.latitude, longitude: p.coords.longitude };
+      } catch {
+        try {
+          const p = await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 20000 });
+          return { latitude: p.coords.latitude, longitude: p.coords.longitude };
+        } catch {
+          if (typeof navigator !== 'undefined' && navigator.geolocation) {
+            return await new Promise((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(
+                (p) => resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude }),
+                (err) => reject(err),
+                { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 }
+              );
+            });
+          }
+          throw new Error('Geolocation unavailable');
+        }
+      }
+    };
 
+    try {
+      const coords = await tryGetPosition();
       setFormData(prev => ({
         ...prev,
-        geofence_lat: position.coords.latitude.toString(),
-        geofence_lon: position.coords.longitude.toString(),
+        geofence_lat: coords.latitude.toString(),
+        geofence_lon: coords.longitude.toString(),
       }));
-
       toast({
-        title: "Location captured",
-        description: `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}`,
+        title: 'Location captured',
+        description: `Lat: ${coords.latitude.toFixed(6)}, Lon: ${coords.longitude.toFixed(6)}`,
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Geolocation error:', error);
       toast({
-        title: "Location error",
-        description: "Failed to get current location. Please enable GPS.",
-        variant: "destructive",
+        title: 'Location error',
+        description:
+          error?.code === 1
+            ? 'Permission denied. Allow location access in your browser settings.'
+            : 'Could not get your location. Ensure GPS/Location is enabled and try again.',
+        variant: 'destructive',
       });
     }
   };
@@ -550,7 +578,7 @@ export function TaskAssignment() {
                   </Label>
                   <p className="text-xs text-muted-foreground">
                     {formData.gps_required
-                      ? 'Worker must be inside the geofence to start. 2 GPS check-ins will appear during the task — set times below or leave blank for random.'
+                      ? 'Worker must be inside the geofence to start. 2 GPS check-ins will appear during the task — set exact times below or leave blank for random.'
                       : 'No GPS verification required. Worker can complete the task from anywhere.'}
                   </p>
                 </div>
@@ -669,32 +697,28 @@ export function TaskAssignment() {
                   )}
 
                   <div className="space-y-2 pt-2 border-t">
-                    <Label className="text-sm font-medium">GPS Re-verification Times (optional)</Label>
+                    <Label className="text-sm font-medium">GPS Re-verification Schedule</Label>
                     <p className="text-xs text-muted-foreground">
-                      Set the minutes (after task start) when each pop-up should appear. Leave blank to trigger them randomly.
+                      Pick the exact date &amp; time each verification pop-up should appear on the worker's screen. Leave both blank to trigger them randomly during the task.
                     </p>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <Label htmlFor="verify_time_1_min" className="text-xs">Verification 1 (min)</Label>
+                        <Label htmlFor="verify_time_1_at" className="text-xs">Verification 1 — exact time</Label>
                         <Input
-                          id="verify_time_1_min"
-                          type="number"
-                          min="1"
-                          value={formData.verify_time_1_min}
-                          onChange={(e) => handleInputChange('verify_time_1_min', e.target.value)}
-                          placeholder="e.g., 30"
+                          id="verify_time_1_at"
+                          type="datetime-local"
+                          value={formData.verify_time_1_at}
+                          onChange={(e) => handleInputChange('verify_time_1_at', e.target.value)}
                           disabled={aiLoading}
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label htmlFor="verify_time_2_min" className="text-xs">Verification 2 (min)</Label>
+                        <Label htmlFor="verify_time_2_at" className="text-xs">Verification 2 — exact time</Label>
                         <Input
-                          id="verify_time_2_min"
-                          type="number"
-                          min="1"
-                          value={formData.verify_time_2_min}
-                          onChange={(e) => handleInputChange('verify_time_2_min', e.target.value)}
-                          placeholder="e.g., 90"
+                          id="verify_time_2_at"
+                          type="datetime-local"
+                          value={formData.verify_time_2_at}
+                          onChange={(e) => handleInputChange('verify_time_2_at', e.target.value)}
                           disabled={aiLoading}
                         />
                       </div>

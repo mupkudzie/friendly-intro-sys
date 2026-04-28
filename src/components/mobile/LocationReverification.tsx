@@ -25,6 +25,8 @@ interface LocationReverificationProps {
   taskStartTime?: string | null;
   verifyTime1Min?: number | null;
   verifyTime2Min?: number | null;
+  verifyTime1At?: string | null;
+  verifyTime2At?: string | null;
   onVerificationFailed?: () => void;
 }
 
@@ -79,6 +81,8 @@ export function LocationReverification({
   taskStartTime,
   verifyTime1Min,
   verifyTime2Min,
+  verifyTime1At,
+  verifyTime2At,
   onVerificationFailed,
 }: LocationReverificationProps) {
   const [showDialog, setShowDialog] = useState(false);
@@ -170,11 +174,17 @@ export function LocationReverification({
       return;
     }
 
+    const exactTimes = [verifyTime1At, verifyTime2At];
+    const exactForThis = exactTimes[verificationsCompleted];
     const customTimes = [verifyTime1Min, verifyTime2Min];
     const customForThis = customTimes[verificationsCompleted];
     let interval: number;
 
-    if (customForThis && customForThis > 0 && taskStartTime) {
+    if (exactForThis) {
+      // Exact wall-clock time wins — fire at that moment (or immediately if already past)
+      const targetMs = new Date(exactForThis).getTime();
+      interval = Math.max(targetMs - Date.now(), 1000);
+    } else if (customForThis && customForThis > 0 && taskStartTime) {
       const elapsed = Date.now() - new Date(taskStartTime).getTime();
       const targetMs = customForThis * 60 * 1000;
       interval = Math.max(targetMs - elapsed, 5000);
@@ -229,7 +239,7 @@ export function LocationReverification({
         });
       }, TIMEOUT_DURATION);
     }, interval);
-  }, [isTaskActive, locationTypeIsFarm, verificationsCompleted, clearAllTimers, notifySupervisor, taskStartTime, verifyTime1Min, verifyTime2Min, logVerification]);
+  }, [isTaskActive, locationTypeIsFarm, verificationsCompleted, clearAllTimers, notifySupervisor, taskStartTime, verifyTime1Min, verifyTime2Min, verifyTime1At, verifyTime2At, logVerification]);
 
   useEffect(() => {
     if (isTaskActive && locationTypeIsFarm && verificationsCompleted < MAX_VERIFICATIONS) {
@@ -242,10 +252,26 @@ export function LocationReverification({
     setChecking(true);
     const verificationNumber = verificationsCompleted + 1;
     try {
-      const position = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true,
-        timeout: 10000,
-      });
+      let position: any;
+      try {
+        position = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 });
+      } catch {
+        try {
+          position = await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 20000 });
+        } catch {
+          if (typeof navigator !== 'undefined' && navigator.geolocation) {
+            position = await new Promise((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(
+                (p) => resolve(p),
+                (err) => reject(err),
+                { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 }
+              );
+            });
+          } else {
+            throw new Error('Geolocation unavailable');
+          }
+        }
+      }
 
       const distance = calculateDistance(
         position.coords.latitude,

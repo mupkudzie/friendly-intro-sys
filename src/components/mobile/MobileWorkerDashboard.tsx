@@ -5,7 +5,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MobileTaskDetail } from './MobileTaskDetail';
 import { RequestTask } from '../tasks/RequestTask';
 import { WorkerProfile } from './WorkerProfile';
@@ -18,7 +17,6 @@ import {
   CheckCircle2,
   TrendingUp,
   Plus,
-  AlertCircle,
   LogOut,
   User,
   MapPin,
@@ -28,6 +26,9 @@ import {
   CheckCheck,
   Calendar,
   ChevronRight,
+  Home,
+  Archive,
+  Leaf,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -66,9 +67,11 @@ const PRIORITY_LABEL: Record<string, string> = {
   low: 'Low',
 };
 
+type Screen = 'home' | 'tasks' | 'completed' | 'zones' | 'profile';
+
 export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboardProps) {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, userProfile } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [stats, setStats] = useState({
     totalHours: 0,
@@ -77,7 +80,8 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
   });
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showRequestTask, setShowRequestTask] = useState(false);
-  const [taskTab, setTaskTab] = useState<'pending' | 'review' | 'done'>('pending');
+  const [activeScreen, setActiveScreen] = useState<Screen>('home');
+  const [taskFilter, setTaskFilter] = useState<'pending' | 'review'>('pending');
 
   useEffect(() => {
     fetchTasks();
@@ -220,212 +224,317 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
     );
   };
 
-  const renderEmptyState = (variant: 'pending' | 'review' | 'done') => {
-    const config = {
-      pending: {
-        icon: <ClipboardList className="h-10 w-10 text-amber-500" />,
-        title: 'No active tasks',
-        description: 'You have no pending or in-progress tasks right now.',
-        action: (
-          <Button
-            onClick={() => setShowRequestTask(true)}
-            variant="outline"
-            size="sm"
-            className="mt-4"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Request a Task
-          </Button>
-        ),
-      },
-      review: {
-        icon: <HourglassIcon className="h-10 w-10 text-purple-500" />,
-        title: 'Nothing waiting for approval',
-        description: 'Tasks you submit will appear here while supervisors review them.',
-        action: null,
-      },
-      done: {
-        icon: <CheckCheck className="h-10 w-10 text-emerald-500" />,
-        title: 'No approved tasks yet',
-        description: 'Completed and approved tasks will be listed here.',
-        action: null,
-      },
-    }[variant];
-
-    return (
-      <Card className="p-8 text-center bg-muted/30 border-dashed">
-        <div className="inline-flex items-center justify-center mb-3 rounded-full bg-background p-3 shadow-sm">
-          {config.icon}
-        </div>
-        <h3 className="font-semibold mb-1">{config.title}</h3>
-        <p className="text-sm text-muted-foreground">{config.description}</p>
-        {config.action}
-      </Card>
-    );
-  };
-
-  return (
-    <div className="p-4 space-y-4 pb-20 max-w-2xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <h1 className="text-2xl font-bold">My Work</h1>
-          <p className="text-sm text-muted-foreground">Farm Worker Dashboard</p>
-        </div>
-        <div className="flex gap-2 items-center">
-          <OfflineSyncIndicator />
-          <Button onClick={() => setShowRequestTask(true)} size="sm" className="gap-1">
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Request</span>
-          </Button>
-          <Button
-            onClick={async () => {
-              await signOut();
-              navigate('/auth');
-            }}
-            size="sm"
-            variant="outline"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </div>
+  const renderEmpty = (icon: React.ReactNode, title: string, description: string, action?: React.ReactNode) => (
+    <Card className="p-8 text-center bg-muted/30 border-dashed">
+      <div className="inline-flex items-center justify-center mb-3 rounded-full bg-background p-3 shadow-sm">
+        {icon}
       </div>
+      <h3 className="font-semibold mb-1">{title}</h3>
+      <p className="text-sm text-muted-foreground">{description}</p>
+      {action}
+    </Card>
+  );
+
+  // ================= Screens =================
+
+  const HomeScreen = () => (
+    <div className="space-y-4">
+      {/* Greeting */}
+      <Card className="p-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground">Welcome back</p>
+            <h2 className="text-xl font-bold leading-tight">{userProfile?.full_name || 'Farm Worker'}</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {format(new Date(), 'EEEE, MMM d')}
+            </p>
+          </div>
+          <div className="rounded-full bg-primary/15 p-3">
+            <Leaf className="w-7 h-7 text-primary" />
+          </div>
+        </div>
+      </Card>
 
       <AutoCheckInOut userId={userId} />
 
-      <Tabs defaultValue="tasks" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="tasks">
-            <ClipboardList className="w-4 h-4 sm:mr-2" />
-            <span className="hidden sm:inline">Tasks</span>
-          </TabsTrigger>
-          <TabsTrigger value="zones">
-            <MapPin className="w-4 h-4 sm:mr-2" />
-            <span className="hidden sm:inline">Zones</span>
-          </TabsTrigger>
-          <TabsTrigger value="profile">
-            <User className="w-4 h-4 sm:mr-2" />
-            <span className="hidden sm:inline">Profile</span>
-          </TabsTrigger>
-          <TabsTrigger value="stats">
-            <TrendingUp className="w-4 h-4 sm:mr-2" />
-            <span className="hidden sm:inline">Stats</span>
-          </TabsTrigger>
-        </TabsList>
+      {/* Stat tiles */}
+      <div className="grid grid-cols-3 gap-2">
+        <Card className="p-3 text-center">
+          <Clock className="h-5 w-5 text-primary mx-auto mb-1" />
+          <p className="text-lg font-bold leading-none">{stats.totalHours.toFixed(1)}</p>
+          <p className="text-[10px] text-muted-foreground mt-1">Hours</p>
+        </Card>
+        <Card className="p-3 text-center">
+          <PlayCircle className="h-5 w-5 text-blue-600 mx-auto mb-1" />
+          <p className="text-lg font-bold leading-none">{pendingTasks.length}</p>
+          <p className="text-[10px] text-muted-foreground mt-1">Active</p>
+        </Card>
+        <Card className="p-3 text-center">
+          <CheckCircle2 className="h-5 w-5 text-emerald-600 mx-auto mb-1" />
+          <p className="text-lg font-bold leading-none">{stats.completedTasks}</p>
+          <p className="text-[10px] text-muted-foreground mt-1">Done</p>
+        </Card>
+      </div>
 
-        <TabsContent value="tasks" className="space-y-4 mt-4">
-          {/* Section selector */}
-          <div className="grid grid-cols-3 gap-2">
+      {/* Quick actions grid */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => { setActiveScreen('tasks'); setTaskFilter('pending'); }}
+          className="rounded-2xl border bg-card p-4 text-left hover:shadow-md active:scale-[0.98] transition-all"
+        >
+          <div className="rounded-xl bg-amber-100 w-10 h-10 flex items-center justify-center mb-3">
+            <ClipboardList className="w-5 h-5 text-amber-700" />
+          </div>
+          <p className="font-semibold">My Tasks</p>
+          <p className="text-xs text-muted-foreground">{pendingTasks.length} active · {reviewTasks.length} in review</p>
+        </button>
+        <button
+          onClick={() => setActiveScreen('completed')}
+          className="rounded-2xl border bg-card p-4 text-left hover:shadow-md active:scale-[0.98] transition-all"
+        >
+          <div className="rounded-xl bg-emerald-100 w-10 h-10 flex items-center justify-center mb-3">
+            <Archive className="w-5 h-5 text-emerald-700" />
+          </div>
+          <p className="font-semibold">Completed</p>
+          <p className="text-xs text-muted-foreground">{doneTasks.length} approved tasks</p>
+        </button>
+        <button
+          onClick={() => setActiveScreen('zones')}
+          className="rounded-2xl border bg-card p-4 text-left hover:shadow-md active:scale-[0.98] transition-all"
+        >
+          <div className="rounded-xl bg-blue-100 w-10 h-10 flex items-center justify-center mb-3">
+            <MapPin className="w-5 h-5 text-blue-700" />
+          </div>
+          <p className="font-semibold">Farm Zones</p>
+          <p className="text-xs text-muted-foreground">View work areas</p>
+        </button>
+        <button
+          onClick={() => setShowRequestTask(true)}
+          className="rounded-2xl border bg-card p-4 text-left hover:shadow-md active:scale-[0.98] transition-all"
+        >
+          <div className="rounded-xl bg-primary/15 w-10 h-10 flex items-center justify-center mb-3">
+            <Plus className="w-5 h-5 text-primary" />
+          </div>
+          <p className="font-semibold">Request Task</p>
+          <p className="text-xs text-muted-foreground">Ask supervisor</p>
+        </button>
+      </div>
+
+      {/* Up next preview */}
+      {pendingTasks.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-sm">Up next</h3>
             <button
-              onClick={() => setTaskTab('pending')}
-              className={cn(
-                'flex flex-col items-center justify-center p-3 rounded-xl border transition-all',
-                taskTab === 'pending'
-                  ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/20 shadow-sm'
-                  : 'border-border bg-card hover:bg-muted/50'
-              )}
+              onClick={() => { setActiveScreen('tasks'); setTaskFilter('pending'); }}
+              className="text-xs text-primary font-medium"
             >
-              <Clock className={cn('w-5 h-5 mb-1', taskTab === 'pending' ? 'text-amber-600' : 'text-muted-foreground')} />
-              <span className="text-2xl font-bold leading-none">{pendingTasks.length}</span>
-              <span className="text-[10px] sm:text-xs text-muted-foreground mt-1 text-center leading-tight">Pending</span>
-            </button>
-            <button
-              onClick={() => setTaskTab('review')}
-              className={cn(
-                'flex flex-col items-center justify-center p-3 rounded-xl border transition-all',
-                taskTab === 'review'
-                  ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/20 shadow-sm'
-                  : 'border-border bg-card hover:bg-muted/50'
-              )}
-            >
-              <HourglassIcon className={cn('w-5 h-5 mb-1', taskTab === 'review' ? 'text-purple-600' : 'text-muted-foreground')} />
-              <span className="text-2xl font-bold leading-none">{reviewTasks.length}</span>
-              <span className="text-[10px] sm:text-xs text-muted-foreground mt-1 text-center leading-tight">Awaiting Approval</span>
-            </button>
-            <button
-              onClick={() => setTaskTab('done')}
-              className={cn(
-                'flex flex-col items-center justify-center p-3 rounded-xl border transition-all',
-                taskTab === 'done'
-                  ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 shadow-sm'
-                  : 'border-border bg-card hover:bg-muted/50'
-              )}
-            >
-              <CheckCheck className={cn('w-5 h-5 mb-1', taskTab === 'done' ? 'text-emerald-600' : 'text-muted-foreground')} />
-              <span className="text-2xl font-bold leading-none">{doneTasks.length}</span>
-              <span className="text-[10px] sm:text-xs text-muted-foreground mt-1 text-center leading-tight">Finished</span>
+              See all
             </button>
           </div>
+          {pendingTasks.slice(0, 2).map(t => renderTaskCard(t, 'pending'))}
+        </div>
+      )}
+    </div>
+  );
 
-          {/* Section header */}
-          <div className="flex items-center justify-between pt-1">
-            <h2 className="font-semibold text-lg">
-              {taskTab === 'pending' && 'Pending Tasks'}
-              {taskTab === 'review' && 'Pending Approval'}
-              {taskTab === 'done' && 'Finished & Approved'}
-            </h2>
+  const TasksScreen = () => (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-2xl font-bold">My Tasks</h2>
+        <p className="text-sm text-muted-foreground">Active and awaiting approval</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          onClick={() => setTaskFilter('pending')}
+          className={cn(
+            'flex items-center justify-between p-3 rounded-xl border transition-all',
+            taskFilter === 'pending'
+              ? 'border-amber-500 bg-amber-50 shadow-sm'
+              : 'border-border bg-card'
+          )}
+        >
+          <div className="flex items-center gap-2">
+            <Clock className={cn('w-4 h-4', taskFilter === 'pending' ? 'text-amber-600' : 'text-muted-foreground')} />
+            <span className="text-sm font-medium">Pending</span>
           </div>
-
-          {/* Task list */}
-          {taskTab === 'pending' && (
-            <div className="space-y-3">
-              {pendingTasks.length === 0
-                ? renderEmptyState('pending')
-                : pendingTasks.map(t => renderTaskCard(t, 'pending'))}
-            </div>
+          <Badge variant="secondary">{pendingTasks.length}</Badge>
+        </button>
+        <button
+          onClick={() => setTaskFilter('review')}
+          className={cn(
+            'flex items-center justify-between p-3 rounded-xl border transition-all',
+            taskFilter === 'review'
+              ? 'border-purple-500 bg-purple-50 shadow-sm'
+              : 'border-border bg-card'
           )}
-          {taskTab === 'review' && (
-            <div className="space-y-3">
-              {reviewTasks.length === 0
-                ? renderEmptyState('review')
-                : reviewTasks.map(t => renderTaskCard(t, 'review'))}
-            </div>
-          )}
-          {taskTab === 'done' && (
-            <div className="space-y-3">
-              {doneTasks.length === 0
-                ? renderEmptyState('done')
-                : doneTasks.map(t => renderTaskCard(t, 'done'))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="zones">
-          <FarmZonesMap />
-        </TabsContent>
-
-        <TabsContent value="profile">
-          <WorkerProfile />
-        </TabsContent>
-
-        <TabsContent value="stats">
-          <div className="grid grid-cols-3 gap-3 mt-4">
-            <Card className="p-4">
-              <div className="flex flex-col items-center text-center">
-                <Clock className="h-6 w-6 text-primary mb-2" />
-                <p className="text-2xl font-bold">{stats.totalHours.toFixed(1)}</p>
-                <p className="text-xs text-muted-foreground">Total Hours</p>
-              </div>
-            </Card>
-
-            <Card className="p-4">
-              <div className="flex flex-col items-center text-center">
-                <CheckCircle2 className="h-6 w-6 text-green-600 mb-2" />
-                <p className="text-2xl font-bold">{stats.completedTasks}</p>
-                <p className="text-xs text-muted-foreground">Completed</p>
-              </div>
-            </Card>
-
-            <Card className="p-4">
-              <div className="flex flex-col items-center text-center">
-                <TrendingUp className="h-6 w-6 text-blue-600 mb-2" />
-                <p className="text-2xl font-bold">{stats.pendingTasks}</p>
-                <p className="text-xs text-muted-foreground">Active</p>
-              </div>
-            </Card>
+        >
+          <div className="flex items-center gap-2">
+            <HourglassIcon className={cn('w-4 h-4', taskFilter === 'review' ? 'text-purple-600' : 'text-muted-foreground')} />
+            <span className="text-sm font-medium">In Review</span>
           </div>
-        </TabsContent>
-      </Tabs>
+          <Badge variant="secondary">{reviewTasks.length}</Badge>
+        </button>
+      </div>
+
+      {taskFilter === 'pending' && (
+        <div className="space-y-3">
+          {pendingTasks.length === 0
+            ? renderEmpty(
+                <ClipboardList className="h-10 w-10 text-amber-500" />,
+                'No active tasks',
+                'You have no pending or in-progress tasks right now.',
+                <Button onClick={() => setShowRequestTask(true)} variant="outline" size="sm" className="mt-4">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Request a Task
+                </Button>
+              )
+            : pendingTasks.map(t => renderTaskCard(t, 'pending'))}
+        </div>
+      )}
+      {taskFilter === 'review' && (
+        <div className="space-y-3">
+          {reviewTasks.length === 0
+            ? renderEmpty(
+                <HourglassIcon className="h-10 w-10 text-purple-500" />,
+                'Nothing waiting for approval',
+                'Tasks you submit will appear here while supervisors review them.'
+              )
+            : reviewTasks.map(t => renderTaskCard(t, 'review'))}
+        </div>
+      )}
+    </div>
+  );
+
+  const CompletedScreen = () => (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-2xl font-bold">Completed</h2>
+        <p className="text-sm text-muted-foreground">Approved &amp; finished tasks</p>
+      </div>
+      <Card className="p-4 bg-emerald-50 border-emerald-200">
+        <div className="flex items-center gap-3">
+          <div className="rounded-full bg-emerald-100 p-2.5">
+            <CheckCheck className="h-5 w-5 text-emerald-700" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-emerald-800 leading-none">{doneTasks.length}</p>
+            <p className="text-xs text-emerald-700 mt-1">Tasks approved by supervisor</p>
+          </div>
+        </div>
+      </Card>
+      <div className="space-y-3">
+        {doneTasks.length === 0
+          ? renderEmpty(
+              <CheckCheck className="h-10 w-10 text-emerald-500" />,
+              'No approved tasks yet',
+              'Completed and approved tasks will be listed here.'
+            )
+          : doneTasks.map(t => renderTaskCard(t, 'done'))}
+      </div>
+    </div>
+  );
+
+  // ================= Bottom nav =================
+
+  const BottomNav = () => {
+    const navItems: { id: Screen; label: string; icon: React.ElementType; badge?: number }[] = [
+      { id: 'home', label: 'Home', icon: Home },
+      { id: 'tasks', label: 'Tasks', icon: ClipboardList, badge: pendingTasks.length + reviewTasks.length },
+      { id: 'completed', label: 'Done', icon: Archive, badge: doneTasks.length },
+      { id: 'zones', label: 'Zones', icon: MapPin },
+      { id: 'profile', label: 'Profile', icon: User },
+    ];
+
+    return (
+      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <div className="max-w-2xl mx-auto grid grid-cols-5">
+          {navItems.map(item => {
+            const Icon = item.icon;
+            const active = activeScreen === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveScreen(item.id)}
+                className={cn(
+                  'flex flex-col items-center justify-center gap-0.5 py-2.5 px-1 transition-colors relative',
+                  active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <div className="relative">
+                  <Icon className={cn('w-5 h-5', active && 'scale-110')} />
+                  {item.badge !== undefined && item.badge > 0 && (
+                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                      {item.badge > 9 ? '9+' : item.badge}
+                    </span>
+                  )}
+                </div>
+                <span className={cn('text-[10px]', active && 'font-semibold')}>{item.label}</span>
+                {active && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-b-full" />}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+    );
+  };
+
+  // ================= Layout =================
+
+  return (
+    <div className="min-h-screen bg-muted/20 pb-24">
+      {/* Top app bar */}
+      <header className="sticky top-0 z-20 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <div className="max-w-2xl mx-auto flex items-center justify-between px-4 h-14">
+          <div className="flex items-center gap-2">
+            <div className="rounded-lg bg-primary/15 p-1.5">
+              <Leaf className="w-4 h-4 text-primary" />
+            </div>
+            <span className="font-semibold text-sm">FarmFlow</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <OfflineSyncIndicator />
+            <Button
+              onClick={async () => {
+                await signOut();
+                navigate('/auth');
+              }}
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-2xl mx-auto p-4">
+        {activeScreen === 'home' && <HomeScreen />}
+        {activeScreen === 'tasks' && <TasksScreen />}
+        {activeScreen === 'completed' && <CompletedScreen />}
+        {activeScreen === 'zones' && (
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-2xl font-bold">Farm Zones</h2>
+              <p className="text-sm text-muted-foreground">Work areas and locations</p>
+            </div>
+            <FarmZonesMap />
+          </div>
+        )}
+        {activeScreen === 'profile' && (
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-2xl font-bold">Profile</h2>
+              <p className="text-sm text-muted-foreground">Your details and stats</p>
+            </div>
+            <WorkerProfile />
+          </div>
+        )}
+      </main>
+
+      <BottomNav />
 
       {selectedTask && (
         <MobileTaskDetail
