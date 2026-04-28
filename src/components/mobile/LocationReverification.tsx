@@ -25,6 +25,8 @@ interface LocationReverificationProps {
   taskStartTime?: string | null;
   verifyTime1Min?: number | null;
   verifyTime2Min?: number | null;
+  verifyTime1At?: string | null;
+  verifyTime2At?: string | null;
   onVerificationFailed?: () => void;
 }
 
