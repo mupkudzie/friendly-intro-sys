@@ -81,6 +81,8 @@ export function LocationReverification({
   taskStartTime,
   verifyTime1Min,
   verifyTime2Min,
+  verifyTime1At,
+  verifyTime2At,
   onVerificationFailed,
 }: LocationReverificationProps) {
   const [showDialog, setShowDialog] = useState(false);
