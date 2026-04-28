@@ -325,6 +325,8 @@ export function TaskAssignment() {
         location_type: 'garden_coordinates',
         verify_time_1_min: '',
         verify_time_2_min: '',
+        verify_time_1_at: '',
+        verify_time_2_at: '',
       });
     }
 
