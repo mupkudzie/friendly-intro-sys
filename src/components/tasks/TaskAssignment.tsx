@@ -578,7 +578,7 @@ export function TaskAssignment() {
                   </Label>
                   <p className="text-xs text-muted-foreground">
                     {formData.gps_required
-                      ? 'Worker must be inside the geofence to start. 2 GPS check-ins will appear during the task — set times below or leave blank for random.'
+                      ? 'Worker must be inside the geofence to start. 2 GPS check-ins will appear during the task — set exact times below or leave blank for random.'
                       : 'No GPS verification required. Worker can complete the task from anywhere.'}
                   </p>
                 </div>
