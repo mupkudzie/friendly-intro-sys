@@ -39,6 +39,8 @@ interface Task {
   location_type?: string;
   verify_time_1_min?: number | null;
   verify_time_2_min?: number | null;
+  verify_time_1_at?: string | null;
+  verify_time_2_at?: string | null;
 }
 
 interface MobileTaskDetailProps {
