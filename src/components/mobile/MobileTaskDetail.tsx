@@ -254,6 +254,8 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
               taskStartTime={taskStartTime}
               verifyTime1Min={task.verify_time_1_min ?? null}
               verifyTime2Min={task.verify_time_2_min ?? null}
+              verifyTime1At={task.verify_time_1_at ?? null}
+              verifyTime2At={task.verify_time_2_at ?? null}
             />
 
             <Card className="p-4">
