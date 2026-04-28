@@ -239,7 +239,7 @@ export function LocationReverification({
         });
       }, TIMEOUT_DURATION);
     }, interval);
-  }, [isTaskActive, locationTypeIsFarm, verificationsCompleted, clearAllTimers, notifySupervisor, taskStartTime, verifyTime1Min, verifyTime2Min, logVerification]);
+  }, [isTaskActive, locationTypeIsFarm, verificationsCompleted, clearAllTimers, notifySupervisor, taskStartTime, verifyTime1Min, verifyTime2Min, verifyTime1At, verifyTime2At, logVerification]);
 
   useEffect(() => {
     if (isTaskActive && locationTypeIsFarm && verificationsCompleted < MAX_VERIFICATIONS) {
