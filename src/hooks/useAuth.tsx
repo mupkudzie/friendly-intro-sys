@@ -65,6 +65,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (initialSession?.user) {
           await fetchProfile(initialSession.user.id);
+        } else {
+          setProfileLoading(false);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -94,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }, 100);
         } else {
           setUserProfile(null);
+          setProfileLoading(false);
         }
         
         setLoading(false);
