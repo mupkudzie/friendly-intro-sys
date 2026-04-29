@@ -19,7 +19,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   const fetchProfile = useCallback(async (userId: string) => {
     setProfileLoading(true);
@@ -65,6 +65,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (initialSession?.user) {
           await fetchProfile(initialSession.user.id);
+        } else {
+          setProfileLoading(false);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -94,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }, 100);
         } else {
           setUserProfile(null);
+          setProfileLoading(false);
         }
         
         setLoading(false);
