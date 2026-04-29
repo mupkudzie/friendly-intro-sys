@@ -178,34 +178,23 @@ export function LocationReverification({
     const exactForThis = exactTimes[verificationsCompleted];
     const customTimes = [verifyTime1Min, verifyTime2Min];
     const customForThis = customTimes[verificationsCompleted];
-    let interval: number;
+    let fireAt: number;
 
     if (exactForThis) {
-      // Exact wall-clock time wins — fire at that moment (or immediately if already past)
+      // Exact wall-clock time — fire at that moment (or in 2s if already past)
       const targetMs = new Date(exactForThis).getTime();
-      interval = Math.max(targetMs - Date.now(), 1000);
+      fireAt = targetMs <= Date.now() ? Date.now() + 2000 : targetMs;
     } else if (customForThis && customForThis > 0 && taskStartTime) {
-      const elapsed = Date.now() - new Date(taskStartTime).getTime();
-      const targetMs = customForThis * 60 * 1000;
-      interval = Math.max(targetMs - elapsed, 5000);
+      const startMs = new Date(taskStartTime).getTime();
+      fireAt = Math.max(startMs + customForThis * 60 * 1000, Date.now() + 5000);
     } else {
-      interval = Math.floor(Math.random() * (RANDOM_MAX_MS - RANDOM_MIN_MS) + RANDOM_MIN_MS);
+      fireAt = Date.now() + Math.floor(Math.random() * (RANDOM_MAX_MS - RANDOM_MIN_MS) + RANDOM_MIN_MS);
     }
 
-    const fireAt = Date.now() + interval;
     setNextCheckAt(fireAt);
-    setSecondsToNext(Math.ceil(interval / 1000));
+    setSecondsToNext(Math.max(0, Math.ceil((fireAt - Date.now()) / 1000)));
 
-    // Tick the visible "next verification in X" countdown every second
-    nextTickRef.current = setInterval(() => {
-      const remaining = Math.max(0, Math.ceil((fireAt - Date.now()) / 1000));
-      setSecondsToNext(remaining);
-      if (remaining <= 0 && nextTickRef.current) {
-        clearInterval(nextTickRef.current);
-      }
-    }, 1000);
-
-    timerRef.current = setTimeout(() => {
+    const triggerPopup = () => {
       playNotificationSound();
       setShowDialog(true);
       setResult(null);
@@ -238,7 +227,18 @@ export function LocationReverification({
           variant: 'destructive',
         });
       }, TIMEOUT_DURATION);
-    }, interval);
+    };
+
+    // Poll every second so wall-clock targets fire reliably even after
+    // long sleeps or tab throttling — popup appears exactly at scheduled time.
+    nextTickRef.current = setInterval(() => {
+      const remaining = Math.ceil((fireAt - Date.now()) / 1000);
+      setSecondsToNext(Math.max(0, remaining));
+      if (Date.now() >= fireAt) {
+        if (nextTickRef.current) clearInterval(nextTickRef.current);
+        triggerPopup();
+      }
+    }, 1000);
   }, [isTaskActive, locationTypeIsFarm, verificationsCompleted, clearAllTimers, notifySupervisor, taskStartTime, verifyTime1Min, verifyTime2Min, verifyTime1At, verifyTime2At, logVerification]);
 
   useEffect(() => {
