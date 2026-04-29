@@ -13,8 +13,9 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
-    VitePWA({
-      registerType: 'autoUpdate',
+    mode === "production" && VitePWA({
+      registerType: 'prompt',
+      injectRegister: null,
       devOptions: {
         enabled: false,
       },
