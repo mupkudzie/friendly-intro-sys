@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MobileTaskDetail } from './MobileTaskDetail';
+import { LocationReverification } from './LocationReverification';
 import { RequestTask } from '../tasks/RequestTask';
 import { WorkerProfile } from './WorkerProfile';
 import { FarmZonesMap } from './FarmZonesMap';
@@ -38,6 +39,7 @@ interface Task {
   title: string;
   description: string;
   location?: string;
+  location_type?: string;
   due_date?: string;
   estimated_hours?: number;
   status: string;
@@ -46,6 +48,11 @@ interface Task {
   geofence_lon?: number;
   geofence_radius?: number;
   instructions?: string;
+  verify_time_1_min?: number | null;
+  verify_time_2_min?: number | null;
+  verify_time_1_at?: string | null;
+  verify_time_2_at?: string | null;
+  started_at?: string | null;
 }
 
 interface MobileWorkerDashboardProps {
@@ -548,6 +555,33 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
           }}
         />
       )}
+
+      {/* Global location re-verification: fires on any screen while a task is in progress */}
+      {(() => {
+        const activeTask = tasks.find(t => t.status === 'in_progress');
+        if (!activeTask) return null;
+        return (
+          <div className="fixed bottom-20 left-0 right-0 z-40 px-4 pointer-events-none">
+            <div className="pointer-events-auto max-w-md mx-auto">
+              <LocationReverification
+                taskId={activeTask.id}
+                taskLocation={{
+                  latitude: activeTask.geofence_lat || 0,
+                  longitude: activeTask.geofence_lon || 0,
+                  radius: activeTask.geofence_radius || 100,
+                }}
+                isTaskActive={true}
+                locationTypeIsFarm={activeTask.location_type !== 'current_location'}
+                taskStartTime={activeTask.started_at ?? null}
+                verifyTime1Min={activeTask.verify_time_1_min ?? null}
+                verifyTime2Min={activeTask.verify_time_2_min ?? null}
+                verifyTime1At={activeTask.verify_time_1_at ?? null}
+                verifyTime2At={activeTask.verify_time_2_at ?? null}
+              />
+            </div>
+          </div>
+        );
+      })()}
 
       <Dialog open={showRequestTask} onOpenChange={setShowRequestTask}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
