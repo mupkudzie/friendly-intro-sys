@@ -60,11 +60,12 @@ export function GeofenceCheck({ taskLocation, onLocationVerified }: GeofenceChec
           variant: "destructive",
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Geolocation error:', error);
-      const msg = error?.code === 1
+      const gpsError = error as { code?: number; message?: string };
+      const msg = gpsError?.code === 1
         ? 'Location permission denied. Please allow location access in your browser settings.'
-        : error?.code === 3 || /timeout/i.test(error?.message || '')
+        : gpsError?.code === 3 || /timeout/i.test(gpsError?.message || '')
         ? 'GPS is still unavailable. Turn on location services, allow precise location, then try again.'
         : 'Failed to get your location. Please ensure GPS/Location is enabled.';
       toast({
