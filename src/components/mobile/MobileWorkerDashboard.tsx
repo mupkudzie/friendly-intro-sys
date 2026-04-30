@@ -89,11 +89,34 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
   const [showRequestTask, setShowRequestTask] = useState(false);
   const [activeScreen, setActiveScreen] = useState<Screen>('home');
   const [taskFilter, setTaskFilter] = useState<'pending' | 'review'>('pending');
+  const [activeTaskStartTime, setActiveTaskStartTime] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTasks();
     fetchStats();
   }, [userId]);
+
+  // Look up the open time_log start_time for any in-progress task so the
+  // re-verification scheduler knows when the worker actually clocked in.
+  useEffect(() => {
+    const activeTask = tasks.find(t => t.status === 'in_progress');
+    if (!activeTask) {
+      setActiveTaskStartTime(null);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase
+        .from('time_logs')
+        .select('start_time')
+        .eq('task_id', activeTask.id)
+        .eq('user_id', userId)
+        .is('end_time', null)
+        .order('start_time', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setActiveTaskStartTime(data?.start_time ?? null);
+    })();
+  }, [tasks, userId]);
 
   const fetchTasks = async () => {
     const { data, error } = await supabase
