@@ -33,8 +33,8 @@ const Index = () => {
           {showTimeout && (
             <div className="text-center text-sm text-muted-foreground">
               <p>Taking longer than expected...</p>
-              <Button variant="link" onClick={() => window.location.reload()} className="mt-2">
-                Refresh page
+              <Button variant="link" onClick={() => setShowTimeout(false)} className="mt-2">
+                Try again
               </Button>
             </div>
           )}

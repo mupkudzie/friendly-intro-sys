@@ -60,8 +60,10 @@ export function AutoCheckInOut({ userId }: AutoCheckInOutProps) {
 
   const startLocationTracking = () => {
     if ('geolocation' in navigator) {
+      let stopped = false;
       const watchId = navigator.geolocation.watchPosition(
         async (position) => {
+          if (stopped) return;
           const location = {
             lat: position.coords.latitude,
             lon: position.coords.longitude,
@@ -70,16 +72,25 @@ export function AutoCheckInOut({ userId }: AutoCheckInOutProps) {
           await checkGeofence(location);
         },
         (error) => {
-          console.error('Geolocation error:', error);
+          // Stop watching on permission denied to avoid infinite error spam.
+          if (error?.code === 1) {
+            stopped = true;
+            navigator.geolocation.clearWatch(watchId);
+            return;
+          }
+          // Silently ignore transient timeouts/unavailable to keep console clean.
         },
         {
-          enableHighAccuracy: true,
-          maximumAge: 10000,
-          timeout: 5000,
+          enableHighAccuracy: false,
+          maximumAge: 30000,
+          timeout: 30000,
         }
       );
 
-      return () => navigator.geolocation.clearWatch(watchId);
+      return () => {
+        stopped = true;
+        navigator.geolocation.clearWatch(watchId);
+      };
     }
   };
 
