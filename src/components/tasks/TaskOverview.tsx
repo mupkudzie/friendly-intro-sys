@@ -31,6 +31,10 @@ export function TaskOverview({ userRole }: TaskOverviewProps) {
   const [unassignedTasks, setUnassignedTasks] = useState<TaskOverview[]>([]);
   const [loading, setLoading] = useState(true);
   const today = format(new Date(), 'yyyy-MM-dd');
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const startOfTomorrow = new Date(startOfToday);
+  startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
 
   useEffect(() => {
     if (userProfile) {
@@ -51,7 +55,7 @@ export function TaskOverview({ userRole }: TaskOverviewProps) {
     // Admin and supervisors see all tasks
     if (userRole === 'admin' || userRole === 'supervisor') {
       const { data, error } = await query
-        .eq('due_date', today)
+        .or(`due_date.eq.${today},and(created_at.gte.${startOfToday.toISOString()},created_at.lt.${startOfTomorrow.toISOString()})`)
         .order('created_at', { ascending: false });
       
       if (!error && data) {
