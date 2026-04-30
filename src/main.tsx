@@ -18,10 +18,12 @@ const isPreviewHost =
 
 if (isPreviewHost || isInIframe) {
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.getRegistrations().then((regs) => {
-      regs.forEach((r) => r.unregister());
-    });
-    caches?.keys?.().then((keys) => keys.forEach((k) => caches.delete(k)));
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((r) => r.unregister());
+      });
+      caches?.keys?.().then((keys) => keys.forEach((k) => caches.delete(k)));
+    }, { once: true });
   }
 }
 
