@@ -139,10 +139,6 @@ export function MobileTaskStart({ task, userId, isOpen, onClose, onTaskStarted }
 
       onTaskStarted(timeLog.id, photoUrls);
       onClose();
-      
-      // Redirect to dashboard after successful photo submission
-      window.location.href = '/dashboard';
-      
     } catch (error) {
       console.error('Error starting task:', error);
       setStep('photos'); // Go back to photos step

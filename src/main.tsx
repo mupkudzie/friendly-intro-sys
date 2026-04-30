@@ -18,10 +18,14 @@ const isPreviewHost =
 
 if (isPreviewHost || isInIframe) {
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.getRegistrations().then((regs) => {
-      regs.forEach((r) => r.unregister());
-    });
-    caches?.keys?.().then((keys) => keys.forEach((k) => caches.delete(k)));
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((r) => r.unregister());
+      });
+      if ("caches" in window) {
+        window.caches.keys().then((keys) => keys.forEach((k) => window.caches.delete(k)));
+      }
+    }, { once: true });
   }
 }
 

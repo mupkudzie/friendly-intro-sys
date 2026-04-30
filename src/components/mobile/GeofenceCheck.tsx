@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Geolocation } from '@capacitor/geolocation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { MapPin, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { getReliablePosition } from '@/lib/geolocation';
 
 interface GeofenceCheckProps {
   taskLocation: { latitude: number; longitude: number; radius: number };
@@ -29,35 +29,10 @@ export function GeofenceCheck({ taskLocation, onLocationVerified }: GeofenceChec
     return R * c;
   };
 
-  const getPositionWithFallback = async (): Promise<GeolocationPosition | { coords: { latitude: number; longitude: number; accuracy?: number } }> => {
-    // Try Capacitor first (high accuracy, then low accuracy fallback)
-    try {
-      const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 });
-      return pos;
-    } catch (e1) {
-      try {
-        const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 20000 });
-        return pos;
-      } catch (e2) {
-        // Browser fallback (works on web/PWA when Capacitor plugin isn't available)
-        if (typeof navigator !== 'undefined' && navigator.geolocation) {
-          return await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(
-              (p) => resolve(p),
-              (err) => reject(err),
-              { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 }
-            );
-          });
-        }
-        throw e2;
-      }
-    }
-  };
-
   const checkLocation = async () => {
     setChecking(true);
     try {
-      const position = await getPositionWithFallback();
+      const position = await getReliablePosition();
 
       const distance = calculateDistance(
         position.coords.latitude,
@@ -85,12 +60,13 @@ export function GeofenceCheck({ taskLocation, onLocationVerified }: GeofenceChec
           variant: "destructive",
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Geolocation error:', error);
-      const msg = error?.code === 1
+      const gpsError = error as { code?: number; message?: string };
+      const msg = gpsError?.code === 1
         ? 'Location permission denied. Please allow location access in your browser settings.'
-        : error?.code === 3 || /timeout/i.test(error?.message || '')
-        ? 'GPS timed out. Move to an open area and try again.'
+        : gpsError?.code === 3 || /timeout/i.test(gpsError?.message || '')
+        ? 'GPS is still unavailable. Turn on location services, allow precise location, then try again.'
         : 'Failed to get your location. Please ensure GPS/Location is enabled.';
       toast({
         title: "Location error",
