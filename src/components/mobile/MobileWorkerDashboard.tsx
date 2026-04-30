@@ -595,7 +595,7 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
                 }}
                 isTaskActive={true}
                 locationTypeIsFarm={activeTask.location_type !== 'current_location'}
-                taskStartTime={activeTask.started_at ?? null}
+                taskStartTime={activeTaskStartTime}
                 verifyTime1Min={activeTask.verify_time_1_min ?? null}
                 verifyTime2Min={activeTask.verify_time_2_min ?? null}
                 verifyTime1At={activeTask.verify_time_1_at ?? null}
