@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Geolocation } from '@capacitor/geolocation';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +10,7 @@ import { Card } from '@/components/ui/card';
 import { MapPin, AlertTriangle, CheckCircle, XCircle, Volume2, Timer, Clock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { getReliablePosition } from '@/lib/geolocation';
 
 interface LocationReverificationProps {
   taskId: string;
@@ -252,26 +252,7 @@ export function LocationReverification({
     setChecking(true);
     const verificationNumber = verificationsCompleted + 1;
     try {
-      let position: any;
-      try {
-        position = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 });
-      } catch {
-        try {
-          position = await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 20000 });
-        } catch {
-          if (typeof navigator !== 'undefined' && navigator.geolocation) {
-            position = await new Promise((resolve, reject) => {
-              navigator.geolocation.getCurrentPosition(
-                (p) => resolve(p),
-                (err) => reject(err),
-                { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 }
-              );
-            });
-          } else {
-            throw new Error('Geolocation unavailable');
-          }
-        }
-      }
+      const position = await getReliablePosition();
 
       const distance = calculateDistance(
         position.coords.latitude,
@@ -334,7 +315,7 @@ export function LocationReverification({
       });
       toast({
         title: 'GPS Error',
-        description: 'Failed to check location. Please enable GPS.',
+        description: 'GPS is unavailable. Turn on location services, allow precise location, then try again.',
         variant: 'destructive',
       });
     } finally {
