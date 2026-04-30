@@ -45,7 +45,7 @@ export function TaskOverview({ userRole }: TaskOverviewProps) {
   const fetchTasks = async () => {
     if (!userProfile) return;
 
-    let query = supabase
+    const query = supabase
       .from('tasks')
       .select(`
         *,
