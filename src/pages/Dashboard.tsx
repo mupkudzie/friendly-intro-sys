@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 
 export default function Dashboard() {
-  const { user, userProfile, loading, profileLoading, signOut } = useAuth();
+  const { user, userProfile, loading, profileLoading, signOut, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [showRetry, setShowRetry] = useState(false);
 
@@ -84,9 +84,12 @@ export default function Dashboard() {
             )}
             {showRetry && (
               <div className="flex flex-col gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => window.location.reload()}
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowRetry(false);
+                    refreshProfile();
+                  }}
                 >
                   Retry
                 </Button>
