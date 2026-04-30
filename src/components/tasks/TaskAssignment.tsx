@@ -593,63 +593,26 @@ export function TaskAssignment() {
               {formData.gps_required && (
                 <>
                   <div className="space-y-2">
-                    <Label>Location Source *</Label>
-                    <Select
-                      value={formData.location_type}
-                      onValueChange={(value) => {
-                        handleInputChange('location_type', value);
-                        if (value === 'current_location') {
-                          setFormData(prev => ({ ...prev, location_type: value as any, geofence_lat: '', geofence_lon: '', geofence_radius: '100' }));
-                        }
-                      }}
-                      disabled={aiLoading}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="garden_coordinates">
-                          <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4" />
-                            Farm Location Coordinates
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="current_location">
-                          <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4" />
-                            Use My Current Location
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label>Location Source</Label>
+                    <div className="flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm">
+                      <MapPin className="w-4 h-4 text-primary" />
+                      Farm Location Coordinates
+                    </div>
                   </div>
 
-                  {formData.location_type === 'garden_coordinates' && (
-                    <>
+                  <>
                       <div className="flex items-center justify-between">
                         <Label>Geofence Coordinates</Label>
-                        <div className="flex gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={handleUseGardenLocation}
-                            disabled={aiLoading}
-                          >
-                            <MapPin className="w-4 h-4 mr-2" />
-                            Use Farm Location
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={handleUseCurrentLocation}
-                            disabled={aiLoading}
-                          >
-                            <MapPin className="w-4 h-4 mr-2" />
-                            Use Current Location
-                          </Button>
-                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleUseGardenLocation}
+                          disabled={aiLoading}
+                        >
+                          <MapPin className="w-4 h-4 mr-2" />
+                          Use Farm Location
+                        </Button>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -694,7 +657,6 @@ export function TaskAssignment() {
                         </div>
                       </div>
                     </>
-                  )}
 
                   <div className="space-y-2 pt-2 border-t">
                     <Label className="text-sm font-medium">GPS Re-verification Schedule</Label>
