@@ -860,21 +860,6 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role"]
       }
-      get_video_feed: {
-        Args: never
-        Returns: {
-          id: string
-          url: string
-        }[]
-      }
-      get_video_feed_v2: {
-        Args: { p_limit?: number; p_offset?: number; p_user_id?: string }
-        Returns: Json
-      }
-      get_video_feed_wrapper: {
-        Args: { p_limit?: number; p_offset?: number; p_user_id?: string }
-        Returns: Json
-      }
       get_worker_total_hours: {
         Args: { total_hours_threshold: number }
         Returns: {
@@ -891,6 +876,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      verify_access_code: {
+        Args: { _code: string; _role: string }
         Returns: boolean
       }
     }
