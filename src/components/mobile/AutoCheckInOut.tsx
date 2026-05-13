@@ -40,18 +40,21 @@ export function AutoCheckInOut({ userId }: AutoCheckInOutProps) {
 
   const checkCurrentStatus = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('time_logs')
-        .select('*')
+        .select('start_time, end_time')
         .eq('user_id', userId)
-        .gte('start_time', `${today}T00:00:00`)
         .is('end_time', null)
-        .single();
+        .order('start_time', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (!error && data) {
+      if (data) {
         setIsCheckedIn(true);
         setCheckInTime(data.start_time);
+      } else {
+        setIsCheckedIn(false);
+        setCheckInTime(null);
       }
     } catch (error) {
       console.error('Error checking status:', error);
@@ -122,13 +125,22 @@ export function AutoCheckInOut({ userId }: AutoCheckInOutProps) {
 
       setIsInGeofence(inAnyZone);
 
-      // Auto check-in when entering geofence
-      if (inAnyZone && !isCheckedIn) {
+      // Check for an active task — never auto-checkout while a task is in progress
+      const { data: activeTask } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('assigned_to', userId)
+        .eq('status', 'in_progress')
+        .limit(1)
+        .maybeSingle();
+
+      // Auto check-in when entering geofence (only if no task already running)
+      if (inAnyZone && !isCheckedIn && !activeTask) {
         await handleAutoCheckIn();
       }
 
-      // Auto check-out when leaving geofence
-      if (!inAnyZone && isCheckedIn) {
+      // Auto check-out when leaving geofence — disabled while a task is active
+      if (!inAnyZone && isCheckedIn && !activeTask) {
         await handleAutoCheckOut();
       }
     } catch (error) {
