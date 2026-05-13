@@ -133,18 +133,13 @@ export default function Auth() {
     setError('');
 
     try {
-      // Verify access code for admin/supervisor roles
+      // Verify access code for admin/supervisor roles via secure RPC
       if (requiresAccessCode) {
         const roleToCheck = role === 'admin' ? 'admin' : 'supervisor';
-        const { data: codeData, error: codeError } = await supabase
-          .from('access_codes')
-          .select('id')
-          .eq('role', roleToCheck)
-          .eq('code', accessCode)
-          .eq('active', true)
-          .maybeSingle();
+        const { data: isValid, error: codeError } = await supabase
+          .rpc('verify_access_code', { _code: accessCode, _role: roleToCheck });
 
-        if (codeError || !codeData) {
+        if (codeError || !isValid) {
           setError(`Invalid access code for ${roleToCheck} registration. Please contact an administrator.`);
           toast.error('Invalid access code');
           setLoading(false);
