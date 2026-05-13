@@ -49,6 +49,25 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 }
 
 function playNotificationSound() {
+  // 1) If the worker picked a custom sound from their music, play that.
+  try {
+    const customUrl = localStorage.getItem('reverify_sound_url');
+    if (customUrl) {
+      const audio = new Audio(customUrl);
+      audio.volume = 1.0;
+      const p = audio.play();
+      if (p && typeof (p as Promise<void>).catch === 'function') {
+        (p as Promise<void>).catch(() => fallbackBeep());
+      }
+      return;
+    }
+  } catch (e) {
+    console.warn('Custom sound failed, falling back:', e);
+  }
+  fallbackBeep();
+}
+
+function fallbackBeep() {
   try {
     const AudioContextClass = window.AudioContext || (window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioContextClass) return;
