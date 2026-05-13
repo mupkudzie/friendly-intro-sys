@@ -195,30 +195,16 @@ export function LocationReverification({
       return;
     }
 
-    const exactTimes = [verifyTime1At, verifyTime2At];
-    const exactForThis = exactTimes[verificationsCompleted];
-    const customTimes = [verifyTime1Min, verifyTime2Min];
-    const customForThis = customTimes[verificationsCompleted];
-    let fireAt: number;
-
-    if (exactForThis) {
-      // Exact wall-clock time — fire at that moment (or in 2s if already past)
-      const targetMs = new Date(exactForThis).getTime();
-      fireAt = targetMs <= Date.now() ? Date.now() + 2000 : targetMs;
-    } else if (customForThis && customForThis > 0 && taskStartTime) {
-      const startMs = new Date(taskStartTime).getTime();
-      fireAt = Math.max(startMs + customForThis * 60 * 1000, Date.now() + 5000);
-    } else {
-      // No supervisor-set time for this slot — do not schedule a popup.
-      setNextCheckAt(null);
-      setSecondsToNext(null);
-      return;
-    }
+    // Pick a random delay from now for the next popup. Each of the 3 popups
+    // fires once at its own random time — only while the task is in progress.
+    const delay = Math.floor(Math.random() * (RANDOM_MAX_MS - RANDOM_MIN_MS)) + RANDOM_MIN_MS;
+    const fireAt = Date.now() + delay;
 
     setNextCheckAt(fireAt);
-    setSecondsToNext(Math.max(0, Math.ceil((fireAt - Date.now()) / 1000)));
+    setSecondsToNext(Math.ceil(delay / 1000));
 
     const triggerPopup = () => {
+      if (!isTaskActive) return;
       playNotificationSound();
       setShowDialog(true);
       setResult(null);
@@ -253,8 +239,8 @@ export function LocationReverification({
       }, TIMEOUT_DURATION);
     };
 
-    // Poll every second so wall-clock targets fire reliably even after
-    // long sleeps or tab throttling — popup appears exactly at scheduled time.
+    // Poll every second so the popup fires at the right wall-clock time even
+    // after tab throttling or device sleep.
     nextTickRef.current = setInterval(() => {
       const remaining = Math.ceil((fireAt - Date.now()) / 1000);
       setSecondsToNext(Math.max(0, remaining));
@@ -263,7 +249,7 @@ export function LocationReverification({
         triggerPopup();
       }
     }, 1000);
-  }, [isTaskActive, locationTypeIsFarm, verificationsCompleted, clearAllTimers, notifySupervisor, taskStartTime, verifyTime1Min, verifyTime2Min, verifyTime1At, verifyTime2At, logVerification]);
+  }, [isTaskActive, locationTypeIsFarm, verificationsCompleted, clearAllTimers, notifySupervisor, logVerification]);
 
   useEffect(() => {
     if (isTaskActive && locationTypeIsFarm && verificationsCompleted < MAX_VERIFICATIONS) {
