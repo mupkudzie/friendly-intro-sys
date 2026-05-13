@@ -209,7 +209,10 @@ export function LocationReverification({
       const startMs = new Date(taskStartTime).getTime();
       fireAt = Math.max(startMs + customForThis * 60 * 1000, Date.now() + 5000);
     } else {
-      fireAt = Date.now() + Math.floor(Math.random() * (RANDOM_MAX_MS - RANDOM_MIN_MS) + RANDOM_MIN_MS);
+      // No supervisor-set time for this slot — do not schedule a popup.
+      setNextCheckAt(null);
+      setSecondsToNext(null);
+      return;
     }
 
     setNextCheckAt(fireAt);
