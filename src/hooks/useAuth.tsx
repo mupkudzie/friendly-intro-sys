@@ -76,26 +76,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initializeAuth();
 
-    // Set up auth state listener
+    // Set up auth state listener — only react to actual sign-in/sign-out.
+    // Ignore TOKEN_REFRESHED / USER_UPDATED / INITIAL_SESSION so the dashboard
+    // doesn't flash a loading screen (causing "pages to disappear") whenever
+    // Supabase silently refreshes the session in the background.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
+      (event, newSession) => {
         if (!mounted) return;
-        
+
         setSession(newSession);
         setUser(newSession?.user ?? null);
-        
-        if (newSession?.user) {
-          // Small delay to avoid potential race conditions
-          setTimeout(() => {
-            if (mounted) {
-              fetchProfile(newSession.user.id);
+
+        if (event === 'SIGNED_IN') {
+          // Only refetch profile if we don't already have one for this user
+          setUserProfile((current: any) => {
+            if (!current || current.user_id !== newSession?.user?.id) {
+              if (newSession?.user) {
+                setTimeout(() => {
+                  if (mounted) fetchProfile(newSession.user.id);
+                }, 0);
+              }
             }
-          }, 100);
-        } else {
+            return current;
+          });
+        } else if (event === 'SIGNED_OUT') {
           setUserProfile(null);
           setProfileLoading(false);
         }
-        
+
         setLoading(false);
       }
     );
