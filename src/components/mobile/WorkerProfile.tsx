@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Upload, User, Phone, Building, CreditCard } from 'lucide-react';
+import { Upload, User, Phone, Building, CreditCard, Music, Play, Trash2 } from 'lucide-react';
 
 export function WorkerProfile() {
   const { userProfile, refreshProfile } = useAuth();
@@ -19,6 +19,42 @@ export function WorkerProfile() {
     student_id: '',
   });
   const [credentialUrl, setCredentialUrl] = useState<string | null>(null);
+  const [soundName, setSoundName] = useState<string | null>(
+    typeof window !== 'undefined' ? localStorage.getItem('reverify_sound_name') : null
+  );
+
+  const handleSoundSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Please choose an audio file smaller than 2MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      localStorage.setItem('reverify_sound_url', dataUrl);
+      localStorage.setItem('reverify_sound_name', file.name);
+      setSoundName(file.name);
+      toast.success('Notification sound saved');
+    };
+    reader.onerror = () => toast.error('Failed to read audio file');
+    reader.readAsDataURL(file);
+  };
+
+  const previewSound = () => {
+    const url = localStorage.getItem('reverify_sound_url');
+    if (!url) return;
+    const audio = new Audio(url);
+    audio.play().catch(() => toast.error('Could not play sound'));
+  };
+
+  const clearSound = () => {
+    localStorage.removeItem('reverify_sound_url');
+    localStorage.removeItem('reverify_sound_name');
+    setSoundName(null);
+    toast.success('Reverted to default sound');
+  };
 
   useEffect(() => {
     if (userProfile) {
@@ -169,6 +205,33 @@ export function WorkerProfile() {
               </div>
               {credentialUrl && (
                 <p className="text-sm text-green-600">✓ Credential uploaded</p>
+              )}
+            </div>
+
+            <div className="space-y-2 pt-2 border-t">
+              <Label htmlFor="reverify-sound" className="flex items-center gap-2">
+                <Music className="h-4 w-4" />
+                Location Verification Sound
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Pick a sound from your device music to hear when location re-verification appears.
+              </p>
+              <Input
+                id="reverify-sound"
+                type="file"
+                accept="audio/*"
+                onChange={handleSoundSelect}
+              />
+              {soundName && (
+                <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/40 p-2">
+                  <span className="text-sm truncate flex-1">🎵 {soundName}</span>
+                  <Button type="button" size="sm" variant="outline" onClick={previewSound}>
+                    <Play className="h-3 w-3 mr-1" /> Preview
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={clearSound}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
               )}
             </div>
 
