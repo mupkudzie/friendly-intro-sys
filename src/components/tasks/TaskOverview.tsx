@@ -234,11 +234,12 @@ export function TaskOverview({ userRole }: TaskOverviewProps) {
             <div className="grid gap-4">
               {unassignedTasks.map((task) => (
                 <div key={task.id} className="p-4 border rounded-lg bg-yellow-50 border-yellow-200">
-                  <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-start justify-between mb-2 gap-2">
                     <h4 className="font-medium">{task.title}</h4>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
                       {getPriorityBadge(task.priority)}
                       {getStatusBadge(task.status)}
+                      {renderDeleteButton(task)}
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground mb-3">
