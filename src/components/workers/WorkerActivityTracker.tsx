@@ -3,22 +3,29 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Activity, Clock, User, CheckCircle } from 'lucide-react';
-import { format, differenceInHours } from 'date-fns';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Activity, Clock, User, AlertTriangle, LogIn, LogOut, MapPinOff } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface WorkerActivity {
   user_id: string;
   full_name: string;
   role: string;
-  current_task?: {
-    id: string;
-    title: string;
-    start_time: string;
-    status: string;
-  } | null;
-  last_activity: string;
+  clock_in?: string | null;
+  clock_out?: string | null;
   hours_today: number;
+  current_task_title?: string | null;
   is_active: boolean;
+}
+
+interface VerificationIssue {
+  id: string;
+  user_id: string;
+  worker_name: string;
+  task_id: string;
+  status: string;
+  triggered_at: string;
+  distance_from_target: number | null;
 }
 
 interface WorkerActivityTrackerProps {
@@ -27,256 +34,243 @@ interface WorkerActivityTrackerProps {
 
 export function WorkerActivityTracker({ userRole }: WorkerActivityTrackerProps) {
   const [workers, setWorkers] = useState<WorkerActivity[]>([]);
+  const [issues, setIssues] = useState<VerificationIssue[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (userRole === 'admin' || userRole === 'supervisor') {
-      fetchWorkerActivity();
-      // Set up real-time updates
-      const interval = setInterval(fetchWorkerActivity, 30000); // Update every 30 seconds
+      fetchAll();
+      const interval = setInterval(fetchAll, 30000);
       return () => clearInterval(interval);
     }
   }, [userRole]);
 
-  const fetchWorkerActivity = async () => {
+  const fetchAll = async () => {
     try {
-      // Get all workers
+      const today = new Date().toISOString().split('T')[0];
+      const startOfDay = `${today}T00:00:00`;
+      const endOfDay = `${today}T23:59:59`;
+
       const { data: workersData } = await supabase
         .from('profiles')
         .select('user_id, full_name, role')
-        .in('role', ['student', 'garden_worker']);
+        .in('role', ['student', 'garden_worker'])
+        .eq('is_deleted', false);
 
       if (!workersData) return;
+      const userIds = workersData.map(w => w.user_id);
+      const nameMap = new Map(workersData.map(w => [w.user_id, w.full_name]));
 
-      const workerActivities: WorkerActivity[] = [];
-
-      for (const worker of workersData) {
-        // Get current active task
-        const { data: currentTask } = await supabase
-          .from('tasks')
-          .select('id, title, updated_at, status')
-          .eq('assigned_to', worker.user_id)
-          .eq('status', 'in_progress')
-          .order('updated_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        // Get today's time logs
-        const today = new Date().toISOString().split('T')[0];
-        const { data: todayLogs } = await supabase
+      const [logsRes, tasksRes, verifRes] = await Promise.all([
+        supabase
           .from('time_logs')
-          .select('start_time, end_time, total_hours')
-          .eq('user_id', worker.user_id)
-          .gte('start_time', `${today}T00:00:00`)
-          .lte('start_time', `${today}T23:59:59`);
-
-        // Get last activity (most recent task update or time log)
-        const { data: lastActivity } = await supabase
+          .select('user_id, start_time, end_time, total_hours, task_id')
+          .in('user_id', userIds)
+          .gte('start_time', startOfDay)
+          .lte('start_time', endOfDay)
+          .order('start_time', { ascending: true }),
+        supabase
           .from('tasks')
-          .select('updated_at')
-          .eq('assigned_to', worker.user_id)
-          .order('updated_at', { ascending: false })
-          .limit(1)
-          .single();
+          .select('id, title, assigned_to, status')
+          .in('assigned_to', userIds)
+          .eq('status', 'in_progress'),
+        supabase
+          .from('verification_logs')
+          .select('id, user_id, task_id, status, triggered_at, distance_from_target')
+          .gte('triggered_at', startOfDay)
+          .in('status', ['missed', 'failed', 'out_of_range', 'skipped'])
+          .order('triggered_at', { ascending: false })
+          .limit(50),
+      ]);
 
-        const hoursToday = todayLogs?.reduce((sum, log) => sum + (log.total_hours || 0), 0) || 0;
-        const lastActivityTime = lastActivity?.updated_at || worker.user_id; // Fallback
-        const isActive = currentTask ? 
-          differenceInHours(new Date(), new Date(currentTask.updated_at)) < 2 : false;
+      const tasksByWorker = new Map<string, { title: string }>();
+      (tasksRes.data || []).forEach(t => tasksByWorker.set(t.assigned_to, { title: t.title }));
 
-        workerActivities.push({
-          user_id: worker.user_id,
-          full_name: worker.full_name,
-          role: worker.role,
-          current_task: currentTask ? {
-            id: currentTask.id,
-            title: currentTask.title,
-            start_time: currentTask.updated_at,
-            status: currentTask.status
-          } : null,
-          last_activity: lastActivityTime,
-          hours_today: hoursToday,
-          is_active: isActive
-        });
-      }
+      const activities: WorkerActivity[] = workersData.map(w => {
+        const logs = (logsRes.data || []).filter(l => l.user_id === w.user_id);
+        const clockIn = logs[0]?.start_time || null;
+        const lastLog = logs[logs.length - 1];
+        const allClosed = logs.length > 0 && logs.every(l => l.end_time);
+        const clockOut = allClosed ? lastLog?.end_time : null;
+        const hours = logs.reduce((s, l) => {
+          if (l.total_hours) return s + l.total_hours;
+          if (l.start_time && l.end_time) {
+            return s + (new Date(l.end_time).getTime() - new Date(l.start_time).getTime()) / 3600000;
+          }
+          return s;
+        }, 0);
+        const current = tasksByWorker.get(w.user_id);
+        return {
+          user_id: w.user_id,
+          full_name: w.full_name,
+          role: w.role,
+          clock_in: clockIn,
+          clock_out: clockOut,
+          hours_today: hours,
+          current_task_title: current?.title || null,
+          is_active: !!current || (logs.length > 0 && !allClosed),
+        };
+      });
 
-      setWorkers(workerActivities);
-    } catch (error) {
-      console.error('Error fetching worker activity:', error);
+      setWorkers(activities);
+      setIssues(
+        (verifRes.data || []).map(v => ({
+          id: v.id,
+          user_id: v.user_id,
+          worker_name: nameMap.get(v.user_id) || 'Unknown',
+          task_id: v.task_id,
+          status: v.status,
+          triggered_at: v.triggered_at,
+          distance_from_target: v.distance_from_target,
+        }))
+      );
+    } catch (e) {
+      console.error('Error fetching worker activity:', e);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
+  if (userRole !== 'admin' && userRole !== 'supervisor') {
     return (
       <Card>
-        <CardContent className="p-6">
-          <div className="text-center">Loading worker activity...</div>
+        <CardContent className="p-6 text-center text-muted-foreground">
+          Worker activity tracking is only available for supervisors and administrators.
         </CardContent>
       </Card>
     );
   }
 
-  if (userRole !== 'admin' && userRole !== 'supervisor') {
+  if (loading) {
     return (
       <Card>
-        <CardContent className="p-6">
-          <div className="text-center text-muted-foreground">
-            Worker activity tracking is only available for supervisors and administrators.
-          </div>
-        </CardContent>
+        <CardContent className="p-6 text-center">Loading worker activity...</CardContent>
       </Card>
     );
   }
 
   const activeWorkers = workers.filter(w => w.is_active);
-  const inactiveWorkers = workers.filter(w => !w.is_active);
+  const clockedIn = workers.filter(w => w.clock_in && !w.clock_out);
+  const clockedOut = workers.filter(w => w.clock_in && w.clock_out);
+  const totalHours = workers.reduce((s, w) => s + w.hours_today, 0);
 
   return (
     <div className="space-y-6">
-      {/* Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <Activity className="w-8 h-8 text-green-600 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-green-600">{activeWorkers.length}</div>
-            <div className="text-sm text-muted-foreground">Active Workers</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 text-center">
-            <User className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-gray-600">{inactiveWorkers.length}</div>
-            <div className="text-sm text-muted-foreground">Inactive Workers</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 text-center">
-            <Clock className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-blue-600">
-              {workers.reduce((sum, w) => sum + w.hours_today, 0).toFixed(1)}
+      {/* Verification alerts at top */}
+      {issues.length > 0 && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Location Verification Issues ({issues.length})</AlertTitle>
+          <AlertDescription>
+            <div className="mt-2 space-y-1.5 max-h-48 overflow-y-auto">
+              {issues.slice(0, 10).map(i => (
+                <div key={i.id} className="flex items-center justify-between text-xs bg-background/50 rounded p-2">
+                  <div className="flex items-center gap-2">
+                    <MapPinOff className="w-3 h-3" />
+                    <span className="font-medium">{i.worker_name}</span>
+                    <Badge variant="outline" className="text-[10px]">{i.status}</Badge>
+                  </div>
+                  <span className="text-muted-foreground">
+                    {format(new Date(i.triggered_at), 'HH:mm')}
+                    {i.distance_from_target != null && ` · ${Math.round(i.distance_from_target)}m off`}
+                  </span>
+                </div>
+              ))}
             </div>
-            <div className="text-sm text-muted-foreground">Hours Today</div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Summary tiles */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Activity className="w-7 h-7 text-green-600 mx-auto mb-1" />
+            <div className="text-2xl font-bold text-green-600">{activeWorkers.length}</div>
+            <div className="text-xs text-muted-foreground">Active Now</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <LogIn className="w-7 h-7 text-blue-600 mx-auto mb-1" />
+            <div className="text-2xl font-bold text-blue-600">{clockedIn.length}</div>
+            <div className="text-xs text-muted-foreground">Clocked In</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <LogOut className="w-7 h-7 text-slate-600 mx-auto mb-1" />
+            <div className="text-2xl font-bold text-slate-600">{clockedOut.length}</div>
+            <div className="text-xs text-muted-foreground">Clocked Out</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Clock className="w-7 h-7 text-primary mx-auto mb-1" />
+            <div className="text-2xl font-bold text-primary">{totalHours.toFixed(1)}</div>
+            <div className="text-xs text-muted-foreground">Hours Today</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Active Workers */}
-      {activeWorkers.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5 text-green-600" />
-              Currently Active Workers
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4">
-              {activeWorkers.map((worker) => (
-                <div key={worker.user_id} className="p-4 border rounded-lg bg-green-50 border-green-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarFallback>
-                          {worker.full_name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h4 className="font-medium">{worker.full_name}</h4>
-                        <p className="text-sm text-muted-foreground capitalize">
-                          {worker.role.replace('_', ' ')}
+      {/* Workers today */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="w-5 h-5" />
+            Workforce Today
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {workers.length === 0 ? (
+            <div className="text-center text-sm text-muted-foreground py-6">No workers found.</div>
+          ) : (
+            <div className="grid gap-2">
+              {workers.map(w => (
+                <div
+                  key={w.user_id}
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Avatar className="h-9 w-9">
+                      <AvatarFallback className="text-xs">
+                        {w.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <h4 className="font-medium text-sm truncate">{w.full_name}</h4>
+                      {w.current_task_title ? (
+                        <p className="text-xs text-muted-foreground truncate">
+                          On: {w.current_task_title}
                         </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground capitalize">
+                          {w.role.replace('_', ' ')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="text-right hidden sm:block">
+                      <div className="text-[10px] text-muted-foreground">In / Out</div>
+                      <div className="text-xs font-mono">
+                        {w.clock_in ? format(new Date(w.clock_in), 'HH:mm') : '—'}
+                        {' / '}
+                        {w.clock_out ? format(new Date(w.clock_out), 'HH:mm') : '—'}
                       </div>
                     </div>
                     <div className="text-right">
-                      <Badge variant="outline" className="bg-green-100 text-green-800">
-                        <Activity className="w-3 h-3 mr-1" />
-                        Active
-                      </Badge>
+                      <div className="text-sm font-semibold">{w.hours_today.toFixed(1)}h</div>
+                      <div className="text-[10px] text-muted-foreground">today</div>
                     </div>
-                  </div>
-                  
-                  {worker.current_task && (
-                    <div className="mt-3 p-3 bg-white rounded border">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h5 className="font-medium text-sm">Current Task</h5>
-                          <p className="text-sm text-muted-foreground">
-                            {worker.current_task.title}
-                          </p>
-                        </div>
-                        <div className="text-right text-sm">
-                          <div className="font-medium">
-                            {format(new Date(worker.current_task.start_time), 'HH:mm')}
-                          </div>
-                          <div className="text-muted-foreground">
-                            {differenceInHours(new Date(), new Date(worker.current_task.start_time))}h ago
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="mt-3 flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Hours today:</span>
-                    <span className="font-medium">{worker.hours_today.toFixed(1)}h</span>
+                    <Badge variant={w.is_active ? 'default' : 'secondary'} className="text-[10px]">
+                      {w.is_active ? 'Active' : w.clock_out ? 'Out' : 'Idle'}
+                    </Badge>
                   </div>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* All Workers Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle>All Workers Status</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3">
-            {workers.map((worker) => (
-              <div key={worker.user_id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarFallback>
-                      {worker.full_name.split(' ').map(n => n[0]).join('')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h4 className="font-medium">{worker.full_name}</h4>
-                    <p className="text-sm text-muted-foreground capitalize">
-                      {worker.role.replace('_', ' ')}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-4">
-                  <div className="text-center">
-                    <div className="text-sm font-medium">{worker.hours_today.toFixed(1)}h</div>
-                    <div className="text-xs text-muted-foreground">Today</div>
-                  </div>
-                  
-                  <Badge variant={worker.is_active ? "default" : "secondary"}>
-                    {worker.is_active ? (
-                      <>
-                        <Activity className="w-3 h-3 mr-1" />
-                        Active
-                      </>
-                    ) : (
-                      <>
-                        <Clock className="w-3 h-3 mr-1" />
-                        Inactive
-                      </>
-                    )}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>
