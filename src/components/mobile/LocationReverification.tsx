@@ -199,9 +199,12 @@ export function LocationReverification({
       return;
     }
 
-    // Pick a random delay from now for the next popup. Each of the 3 popups
-    // fires once at its own random time — only while the task is in progress.
-    const delay = Math.floor(Math.random() * (RANDOM_MAX_MS - RANDOM_MIN_MS)) + RANDOM_MIN_MS;
+    // Two popups total: the first appears shortly after the task starts,
+    // the second appears later randomly during the task.
+    const isFirst = verificationsCompleted === 0;
+    const minMs = isFirst ? FIRST_MIN_MS : SECOND_MIN_MS;
+    const maxMs = isFirst ? FIRST_MAX_MS : SECOND_MAX_MS;
+    const delay = Math.floor(Math.random() * (maxMs - minMs)) + minMs;
     const fireAt = Date.now() + delay;
 
     setNextCheckAt(fireAt);
