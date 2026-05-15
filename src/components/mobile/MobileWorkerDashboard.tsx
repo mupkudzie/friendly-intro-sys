@@ -9,7 +9,6 @@ import { MobileTaskDetail } from './MobileTaskDetail';
 import { LocationReverification } from './LocationReverification';
 import { RequestTask } from '../tasks/RequestTask';
 import { WorkerProfile } from './WorkerProfile';
-import { FarmZonesMap } from './FarmZonesMap';
 import { AutoCheckInOut } from './AutoCheckInOut';
 import { OfflineSyncIndicator } from './OfflineSyncIndicator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -74,7 +73,7 @@ const PRIORITY_LABEL: Record<string, string> = {
   low: 'Low',
 };
 
-type Screen = 'home' | 'tasks' | 'completed' | 'zones' | 'profile';
+type Screen = 'home' | 'tasks' | 'completed' | 'profile';
 
 export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboardProps) {
   const navigate = useNavigate();
@@ -329,16 +328,6 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
           <p className="text-xs text-muted-foreground">{doneTasks.length} approved tasks</p>
         </button>
         <button
-          onClick={() => setActiveScreen('zones')}
-          className="rounded-2xl border bg-card p-4 text-left hover:shadow-md active:scale-[0.98] transition-all"
-        >
-          <div className="rounded-xl bg-blue-100 w-10 h-10 flex items-center justify-center mb-3">
-            <MapPin className="w-5 h-5 text-blue-700" />
-          </div>
-          <p className="font-semibold">Farm Zones</p>
-          <p className="text-xs text-muted-foreground">View work areas</p>
-        </button>
-        <button
           onClick={() => setShowRequestTask(true)}
           className="rounded-2xl border bg-card p-4 text-left hover:shadow-md active:scale-[0.98] transition-all"
         >
@@ -473,13 +462,12 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
       { id: 'home', label: 'Home', icon: Home },
       { id: 'tasks', label: 'Tasks', icon: ClipboardList, badge: pendingTasks.length + reviewTasks.length },
       { id: 'completed', label: 'Done', icon: Archive, badge: doneTasks.length },
-      { id: 'zones', label: 'Zones', icon: MapPin },
       { id: 'profile', label: 'Profile', icon: User },
     ];
 
     return (
       <nav className="fixed bottom-0 left-0 right-0 z-30 border-t bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-        <div className="max-w-2xl mx-auto grid grid-cols-5">
+        <div className="max-w-2xl mx-auto grid grid-cols-4">
           {navItems.map(item => {
             const Icon = item.icon;
             const active = activeScreen === item.id;
@@ -544,15 +532,6 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
         {activeScreen === 'home' && <HomeScreen />}
         {activeScreen === 'tasks' && <TasksScreen />}
         {activeScreen === 'completed' && <CompletedScreen />}
-        {activeScreen === 'zones' && (
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-2xl font-bold">Farm Zones</h2>
-              <p className="text-sm text-muted-foreground">Work areas and locations</p>
-            </div>
-            <FarmZonesMap />
-          </div>
-        )}
         {activeScreen === 'profile' && (
           <div className="space-y-4">
             <div>
