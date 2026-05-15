@@ -30,17 +30,15 @@ interface MenuItemCount {
   redo: number;
 }
 
-const menuItems = [
+const baseMenuItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'activity', label: 'Activity', icon: Activity },
   { id: 'ai-analytics', label: 'AI Analytics', icon: Sparkles },
   { id: 'ai-priority', label: 'AI Priority', icon: ListOrdered },
   { id: 'requests', label: 'Requests', icon: ClipboardList, countKey: 'requests' as const },
   { id: 'approval', label: 'Review', icon: CheckSquare, countKey: 'approval' as const },
   { id: 'redo', label: 'Redo Requests', icon: RotateCcw, countKey: 'redo' as const },
   { id: 'assign', label: 'Assign', icon: UserPlus },
-  { id: 'performance', label: 'Performance', icon: TrendingUp },
-  { id: 'activity', label: 'Activity', icon: Activity },
-  { id: 'clockinout', label: 'Clock In/Out', icon: Clock },
   { id: 'timesheet', label: 'Timesheet', icon: CheckCircle },
   { id: 'notifications', label: 'Notifications', icon: Bell, countKey: 'notifications' as const },
   { id: 'usermanagement', label: 'User Management', icon: Users },
@@ -109,6 +107,21 @@ export function SupervisorDashboard() {
     });
   };
 
+  // Auto-prioritize: keep Overview at top, then sort items with notifications/alerts by count desc, rest preserve order
+  const menuItems = (() => {
+    const [overview, ...rest] = baseMenuItems;
+    const withCounts = rest.map(item => ({
+      item,
+      count: item.countKey ? menuCounts[item.countKey] : 0,
+    }));
+    const urgent = withCounts
+      .filter(x => x.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .map(x => x.item);
+    const others = withCounts.filter(x => x.count === 0).map(x => x.item);
+    return [overview, ...urgent, ...others];
+  })();
+
   const renderContent = () => {
     switch (activeView) {
       case 'overview':
@@ -125,14 +138,10 @@ export function SupervisorDashboard() {
         return <RedoRequests onRefresh={fetchMenuCounts} />;
       case 'assign':
         return <TaskAssignment />;
-      case 'performance':
-        return <PerformanceEvaluation userRole="supervisor" />;
       case 'activity':
         return <WorkerActivityTracker userRole="supervisor" />;
       case 'photos':
         return <PhotoGallery />;
-      case 'clockinout':
-        return <ClockInOutView />;
       case 'timesheet':
         return <TimesheetReports />;
       case 'notifications':
