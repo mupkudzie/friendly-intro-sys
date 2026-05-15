@@ -30,10 +30,14 @@ interface LocationReverificationProps {
   onVerificationFailed?: () => void;
 }
 
-const MAX_VERIFICATIONS = 3;
+const MAX_VERIFICATIONS = 2;
 const TIMEOUT_DURATION = 2 * 60 * 1000; // 2 minutes
-const RANDOM_MIN_MS = 3 * 60 * 1000;  // earliest: 3 minutes after previous
-const RANDOM_MAX_MS = 12 * 60 * 1000; // latest: 12 minutes after previous
+// First popup fires shortly after the task starts (1–3 min in).
+const FIRST_MIN_MS = 1 * 60 * 1000;
+const FIRST_MAX_MS = 3 * 60 * 1000;
+// Second popup fires later, randomly during the task (8–20 min after the first).
+const SECOND_MIN_MS = 8 * 60 * 1000;
+const SECOND_MAX_MS = 20 * 60 * 1000;
 
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371e3;
