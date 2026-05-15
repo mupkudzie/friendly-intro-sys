@@ -79,6 +79,52 @@ export function TaskOverview({ userRole }: TaskOverviewProps) {
     setLoading(false);
   };
 
+  const handleDeleteTask = async (taskId: string, taskTitle: string) => {
+    const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+    if (error) {
+      toast({
+        title: 'Failed to delete task',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+    toast({ title: 'Task deleted', description: `"${taskTitle}" was removed.` });
+    setAllTasks((prev) => prev.filter((t) => t.id !== taskId));
+    setUnassignedTasks((prev) => prev.filter((t) => t.id !== taskId));
+  };
+
+  const renderDeleteButton = (task: TaskOverview) => (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 px-2"
+        >
+          <Trash2 className="w-4 h-4" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this task?</AlertDialogTitle>
+          <AlertDialogDescription>
+            "{task.title}" will be permanently removed. This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => handleDeleteTask(task.id, task.title)}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
   const getStatusBadge = (status: string) => {
     const statusStyles = {
       pending: 'bg-yellow-100 text-yellow-800',
