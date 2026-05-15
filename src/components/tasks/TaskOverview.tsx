@@ -4,7 +4,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Plus, Clock, User, MapPin, Target } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { toast } from '@/hooks/use-toast';
+import { Plus, Clock, User, MapPin, Target, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface TaskOverview {
@@ -66,6 +78,52 @@ export function TaskOverview({ userRole }: TaskOverviewProps) {
     
     setLoading(false);
   };
+
+  const handleDeleteTask = async (taskId: string, taskTitle: string) => {
+    const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+    if (error) {
+      toast({
+        title: 'Failed to delete task',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+    toast({ title: 'Task deleted', description: `"${taskTitle}" was removed.` });
+    setAllTasks((prev) => prev.filter((t) => t.id !== taskId));
+    setUnassignedTasks((prev) => prev.filter((t) => t.id !== taskId));
+  };
+
+  const renderDeleteButton = (task: TaskOverview) => (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 px-2"
+        >
+          <Trash2 className="w-4 h-4" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this task?</AlertDialogTitle>
+          <AlertDialogDescription>
+            "{task.title}" will be permanently removed. This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => handleDeleteTask(task.id, task.title)}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 
   const getStatusBadge = (status: string) => {
     const statusStyles = {
@@ -176,11 +234,12 @@ export function TaskOverview({ userRole }: TaskOverviewProps) {
             <div className="grid gap-4">
               {unassignedTasks.map((task) => (
                 <div key={task.id} className="p-4 border rounded-lg bg-yellow-50 border-yellow-200">
-                  <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-start justify-between mb-2 gap-2">
                     <h4 className="font-medium">{task.title}</h4>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
                       {getPriorityBadge(task.priority)}
                       {getStatusBadge(task.status)}
+                      {renderDeleteButton(task)}
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground mb-3">
@@ -222,14 +281,15 @@ export function TaskOverview({ userRole }: TaskOverviewProps) {
           <div className="grid gap-4">
             {allTasks.map((task) => (
               <div key={task.id} className="p-4 border rounded-lg hover:shadow-sm transition-shadow">
-                <div className="flex items-start justify-between mb-2">
+                <div className="flex items-start justify-between mb-2 gap-2">
                   <div>
                     <h4 className="font-medium">{task.title}</h4>
                     <p className="text-sm text-muted-foreground">{task.description}</p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 items-center shrink-0">
                     {getPriorityBadge(task.priority)}
                     {getStatusBadge(task.status)}
+                    {renderDeleteButton(task)}
                   </div>
                 </div>
                 
