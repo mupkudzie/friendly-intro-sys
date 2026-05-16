@@ -137,9 +137,13 @@ export function MobileTaskEnd({ task, userId, timeLogId, isOpen, onClose, onTask
       setUploadingMessage('Done!');
 
       toast({
-        title: "Task completed!",
-        description: "Your work has been submitted for supervisor approval.",
+        title: "Task submitted!",
+        description: "Attendance set to Unchecked. Awaiting supervisor review.",
       });
+
+      // Flip attendance to Unchecked and send the worker home
+      refreshCheckInStatus();
+      window.dispatchEvent(new CustomEvent('goto-home'));
 
       onTaskEnded();
       onClose();
