@@ -95,6 +95,13 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
     fetchStats();
   }, [userId]);
 
+  // Allow child workflows (start/end task) to send the worker home.
+  useEffect(() => {
+    const handler = () => setActiveScreen('home');
+    window.addEventListener('goto-home', handler);
+    return () => window.removeEventListener('goto-home', handler);
+  }, []);
+
   // Look up the open time_log start_time for any in-progress task so the
   // re-verification scheduler knows when the worker actually clocked in.
   useEffect(() => {
