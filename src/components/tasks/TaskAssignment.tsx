@@ -612,26 +612,32 @@ export function TaskAssignment() {
                   <div className="space-y-2 pt-2 border-t">
                     <Label className="text-sm font-medium">GPS Re-verification Schedule</Label>
                     <p className="text-xs text-muted-foreground">
-                      Pick the exact date &amp; time each verification pop-up should appear on the worker's screen. Leave both blank to trigger them randomly during the task.
+                      Set how many minutes after the worker starts the task each pop-up should appear. Leave blank to trigger them randomly.
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <Label htmlFor="verify_time_1_at" className="text-xs">Verification 1 — exact time</Label>
+                        <Label htmlFor="verify_time_1_min" className="text-xs">Verification 1 — minutes after start</Label>
                         <Input
-                          id="verify_time_1_at"
-                          type="datetime-local"
-                          value={formData.verify_time_1_at}
-                          onChange={(e) => handleInputChange('verify_time_1_at', e.target.value)}
+                          id="verify_time_1_min"
+                          type="number"
+                          min="1"
+                          step="1"
+                          placeholder="e.g. 30"
+                          value={formData.verify_time_1_min}
+                          onChange={(e) => handleInputChange('verify_time_1_min', e.target.value)}
                           disabled={aiLoading}
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label htmlFor="verify_time_2_at" className="text-xs">Verification 2 — exact time</Label>
+                        <Label htmlFor="verify_time_2_min" className="text-xs">Verification 2 — minutes after start</Label>
                         <Input
-                          id="verify_time_2_at"
-                          type="datetime-local"
-                          value={formData.verify_time_2_at}
-                          onChange={(e) => handleInputChange('verify_time_2_at', e.target.value)}
+                          id="verify_time_2_min"
+                          type="number"
+                          min="1"
+                          step="1"
+                          placeholder="e.g. 120"
+                          value={formData.verify_time_2_min}
+                          onChange={(e) => handleInputChange('verify_time_2_min', e.target.value)}
                           disabled={aiLoading}
                         />
                       </div>
