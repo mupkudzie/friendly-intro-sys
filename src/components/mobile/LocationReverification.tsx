@@ -199,13 +199,21 @@ export function LocationReverification({
       return;
     }
 
-    // Two popups total: the first appears shortly after the task starts,
-    // the second appears later randomly during the task.
+    // Two popups total. If supervisor configured minute offsets
+    // (verify_time_1_min / verify_time_2_min relative to task start), use them.
+    // Otherwise fall back to random ranges.
     const isFirst = verificationsCompleted === 0;
-    const minMs = isFirst ? FIRST_MIN_MS : SECOND_MIN_MS;
-    const maxMs = isFirst ? FIRST_MAX_MS : SECOND_MAX_MS;
-    const delay = Math.floor(Math.random() * (maxMs - minMs)) + minMs;
-    const fireAt = Date.now() + delay;
+    const configuredMin = isFirst ? verifyTime1Min : verifyTime2Min;
+    let fireAt: number;
+    if (configuredMin != null && configuredMin > 0 && taskStartTime) {
+      fireAt = new Date(taskStartTime).getTime() + configuredMin * 60 * 1000;
+      // If that moment already passed, fire in 10s rather than immediately
+      if (fireAt <= Date.now()) fireAt = Date.now() + 10_000;
+    } else {
+      const minMs = isFirst ? FIRST_MIN_MS : SECOND_MIN_MS;
+      const maxMs = isFirst ? FIRST_MAX_MS : SECOND_MAX_MS;
+      fireAt = Date.now() + Math.floor(Math.random() * (maxMs - minMs)) + minMs;
+    }
 
     setNextCheckAt(fireAt);
     setSecondsToNext(Math.ceil(delay / 1000));
