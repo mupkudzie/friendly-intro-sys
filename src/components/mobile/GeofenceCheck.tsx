@@ -41,7 +41,10 @@ export function GeofenceCheck({ taskLocation, onLocationVerified }: GeofenceChec
         taskLocation.longitude
       );
 
-      const isWithinGeofence = distance <= taskLocation.radius;
+      // Add GPS accuracy as tolerance — mobile GPS naturally drifts 10-50m
+      const accuracy = position.coords.accuracy ?? 0;
+      const tolerance = Math.max(taskLocation.radius, 50) + Math.min(accuracy, 100);
+      const isWithinGeofence = distance <= tolerance;
       setVerified(isWithinGeofence);
 
       if (isWithinGeofence) {
