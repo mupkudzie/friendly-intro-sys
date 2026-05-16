@@ -25,9 +25,22 @@ export function NotificationCenter() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (userProfile) {
-      fetchNotifications();
-    }
+    if (!userProfile) return;
+    fetchNotifications();
+
+    // Realtime: refresh whenever this user's notifications change
+    const channel = supabase
+      .channel(`notifications-${userProfile.user_id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications', filter: `recipient_id=eq.${userProfile.user_id}` },
+        () => fetchNotifications()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [userProfile]);
 
   const fetchNotifications = async () => {
@@ -41,7 +54,6 @@ export function NotificationCenter() {
       .limit(20);
 
     if (!error && data) {
-      // Get sender information separately
       const notificationsWithSenders = await Promise.all(
         data.map(async (notification) => {
           if (notification.sender_id) {
@@ -50,16 +62,20 @@ export function NotificationCenter() {
               .select('full_name')
               .eq('user_id', notification.sender_id)
               .single();
-            
-            return {
-              ...notification,
-              sender: senderData
-            };
+            return { ...notification, sender: senderData };
           }
           return notification;
         })
       );
       setNotifications(notificationsWithSenders);
+
+      // Auto-mark every visible notification as read so the badge clears
+      const unreadIds = data.filter((n) => !n.read).map((n) => n.id);
+      if (unreadIds.length > 0) {
+        await supabase.from('notifications').update({ read: true }).in('id', unreadIds);
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+        window.dispatchEvent(new CustomEvent('notifications-updated'));
+      }
     }
     setLoading(false);
   };
@@ -71,9 +87,10 @@ export function NotificationCenter() {
       .eq('id', notificationId);
 
     if (!error) {
-      setNotifications(prev => 
+      setNotifications(prev =>
         prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
       );
+      window.dispatchEvent(new CustomEvent('notifications-updated'));
     }
   };
 

@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Card } from '@/components/ui/card';
 import { Clock, CheckCircle2, Loader2, Upload } from 'lucide-react';
+import { refreshCheckInStatus } from './AutoCheckInOut';
 
 interface MobileTaskEndProps {
   task: {
@@ -136,9 +137,13 @@ export function MobileTaskEnd({ task, userId, timeLogId, isOpen, onClose, onTask
       setUploadingMessage('Done!');
 
       toast({
-        title: "Task completed!",
-        description: "Your work has been submitted for supervisor approval.",
+        title: "Task submitted!",
+        description: "Attendance set to Unchecked. Awaiting supervisor review.",
       });
+
+      // Flip attendance to Unchecked and send the worker home
+      refreshCheckInStatus();
+      window.dispatchEvent(new CustomEvent('goto-home'));
 
       onTaskEnded();
       onClose();

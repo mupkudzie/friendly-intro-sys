@@ -150,6 +150,7 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
     setActiveTimeLogId(logId);
     setShowStartWorkflow(false);
     onTaskUpdate();
+    onClose();
   };
 
   const handleEndTask = () => {

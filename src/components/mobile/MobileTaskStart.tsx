@@ -136,6 +136,8 @@ export function MobileTaskStart({ task, userId, isOpen, onClose, onTaskStarted }
 
       // Refresh the check-in status display
       refreshCheckInStatus();
+      // Bounce the worker back to the Home screen
+      window.dispatchEvent(new CustomEvent('goto-home'));
 
       onTaskStarted(timeLog.id, photoUrls);
       onClose();

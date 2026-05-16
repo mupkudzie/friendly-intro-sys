@@ -199,16 +199,24 @@ export function LocationReverification({
       return;
     }
 
-    // Two popups total: the first appears shortly after the task starts,
-    // the second appears later randomly during the task.
+    // Two popups total. If supervisor configured minute offsets
+    // (verify_time_1_min / verify_time_2_min relative to task start), use them.
+    // Otherwise fall back to random ranges.
     const isFirst = verificationsCompleted === 0;
-    const minMs = isFirst ? FIRST_MIN_MS : SECOND_MIN_MS;
-    const maxMs = isFirst ? FIRST_MAX_MS : SECOND_MAX_MS;
-    const delay = Math.floor(Math.random() * (maxMs - minMs)) + minMs;
-    const fireAt = Date.now() + delay;
+    const configuredMin = isFirst ? verifyTime1Min : verifyTime2Min;
+    let fireAt: number;
+    if (configuredMin != null && configuredMin > 0 && taskStartTime) {
+      fireAt = new Date(taskStartTime).getTime() + configuredMin * 60 * 1000;
+      // If that moment already passed, fire in 10s rather than immediately
+      if (fireAt <= Date.now()) fireAt = Date.now() + 10_000;
+    } else {
+      const minMs = isFirst ? FIRST_MIN_MS : SECOND_MIN_MS;
+      const maxMs = isFirst ? FIRST_MAX_MS : SECOND_MAX_MS;
+      fireAt = Date.now() + Math.floor(Math.random() * (maxMs - minMs)) + minMs;
+    }
 
     setNextCheckAt(fireAt);
-    setSecondsToNext(Math.ceil(delay / 1000));
+    setSecondsToNext(Math.max(0, Math.ceil((fireAt - Date.now()) / 1000)));
 
     const triggerPopup = () => {
       if (!isTaskActive) return;
@@ -256,7 +264,7 @@ export function LocationReverification({
         triggerPopup();
       }
     }, 1000);
-  }, [isTaskActive, locationTypeIsFarm, verificationsCompleted, clearAllTimers, notifySupervisor, logVerification]);
+  }, [isTaskActive, locationTypeIsFarm, verificationsCompleted, clearAllTimers, notifySupervisor, logVerification, verifyTime1Min, verifyTime2Min, taskStartTime]);
 
   useEffect(() => {
     if (isTaskActive && locationTypeIsFarm && verificationsCompleted < MAX_VERIFICATIONS) {
@@ -278,7 +286,7 @@ export function LocationReverification({
         taskLocation.longitude
       );
 
-      const isWithin = distance <= taskLocation.radius;
+      const isWithin = distance <= Math.max(taskLocation.radius, 50) + Math.min(position.coords.accuracy ?? 0, 100);
       const coords = {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
