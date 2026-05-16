@@ -64,6 +64,25 @@ export function SupervisorDashboard() {
   useEffect(() => {
     fetchStats();
     fetchMenuCounts();
+
+    if (!userProfile) return;
+
+    // Refresh counts when the notification center marks things as read
+    const handler = () => fetchMenuCounts();
+    window.addEventListener('notifications-updated', handler);
+
+    // Realtime updates for the supervisor's badge counts
+    const channel = supabase
+      .channel(`supervisor-counts-${userProfile.user_id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `recipient_id=eq.${userProfile.user_id}` }, () => fetchMenuCounts())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => fetchMenuCounts())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_requests' }, () => fetchMenuCounts())
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('notifications-updated', handler);
+      supabase.removeChannel(channel);
+    };
   }, [userProfile]);
 
   const fetchMenuCounts = async () => {
