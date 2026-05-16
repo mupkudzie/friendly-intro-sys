@@ -216,7 +216,7 @@ export function LocationReverification({
     }
 
     setNextCheckAt(fireAt);
-    setSecondsToNext(Math.ceil(delay / 1000));
+    setSecondsToNext(Math.max(0, Math.ceil((fireAt - Date.now()) / 1000)));
 
     const triggerPopup = () => {
       if (!isTaskActive) return;
