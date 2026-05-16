@@ -278,7 +278,7 @@ export function LocationReverification({
         taskLocation.longitude
       );
 
-      const isWithin = distance <= taskLocation.radius;
+      const isWithin = distance <= Math.max(taskLocation.radius, 50) + Math.min(position.coords.accuracy ?? 0, 100);
       const coords = {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
