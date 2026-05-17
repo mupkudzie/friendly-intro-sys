@@ -365,27 +365,7 @@ export function LocationReverification({
 
   return (
     <>
-      {/* Always-visible countdown indicator (non-disruptive) */}
-      {!showDialog && verificationsCompleted < MAX_VERIFICATIONS && secondsToNext !== null && (
-        <Card className="p-3 border-primary/30 bg-primary/5">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="p-1.5 rounded-full bg-primary/10 shrink-0">
-                <Clock className="h-4 w-4 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">Next location check</p>
-                <p className="text-sm font-semibold truncate">
-                  in {formatNextCheck(secondsToNext)}
-                </p>
-              </div>
-            </div>
-            <span className="text-xs text-muted-foreground whitespace-nowrap">
-              {verificationsCompleted}/{MAX_VERIFICATIONS} done
-            </span>
-          </div>
-        </Card>
-      )}
+      {/* Countdown indicator removed — workers no longer see a pre-popup timer. */}
 
       <Dialog open={showDialog} onOpenChange={() => {}}>
         <DialogContent className="max-w-sm" onPointerDownOutside={(e) => e.preventDefault()}>
