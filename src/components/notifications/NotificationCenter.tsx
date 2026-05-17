@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bell, Check, X } from 'lucide-react';
+import { Bell, Check, X, Trash2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
 interface Notification {
