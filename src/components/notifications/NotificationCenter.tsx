@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bell, Check, X } from 'lucide-react';
+import { Bell, Check, X, Trash2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
 interface Notification {
@@ -94,6 +95,31 @@ export function NotificationCenter() {
     }
   };
 
+  const deleteOne = async (notificationId: string) => {
+    const { error } = await supabase.from('notifications').delete().eq('id', notificationId);
+    if (error) {
+      toast({ title: 'Failed to delete', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    window.dispatchEvent(new CustomEvent('notifications-updated'));
+  };
+
+  const clearAll = async () => {
+    if (!userProfile || notifications.length === 0) return;
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('recipient_id', userProfile.user_id);
+    if (error) {
+      toast({ title: 'Failed to clear', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setNotifications([]);
+    window.dispatchEvent(new CustomEvent('notifications-updated'));
+    toast({ title: 'Notifications cleared' });
+  };
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'task_review':
@@ -122,13 +148,21 @@ export function NotificationCenter() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Bell className="w-5 h-5" />
-          Notifications
-          {unreadCount > 0 && (
-            <Badge variant="destructive">{unreadCount}</Badge>
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="w-5 h-5" />
+            Notifications
+            {unreadCount > 0 && (
+              <Badge variant="destructive">{unreadCount}</Badge>
+            )}
+          </CardTitle>
+          {notifications.length > 0 && (
+            <Button size="sm" variant="outline" onClick={clearAll}>
+              <Trash2 className="w-4 h-4 mr-1" />
+              Clear all
+            </Button>
           )}
-        </CardTitle>
+        </div>
       </CardHeader>
       <CardContent>
         {notifications.length === 0 ? (
@@ -167,16 +201,25 @@ export function NotificationCenter() {
                       </div>
                     </div>
                   </div>
-                  {!notification.read && (
+                  <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                    {!notification.read && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => markAsRead(notification.id)}
+                      >
+                        <Check className="w-4 h-4" />
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => markAsRead(notification.id)}
-                      className="flex-shrink-0 ml-2"
+                      onClick={() => deleteOne(notification.id)}
+                      title="Delete notification"
                     >
-                      <Check className="w-4 h-4" />
+                      <X className="w-4 h-4" />
                     </Button>
-                  )}
+                  </div>
                 </div>
               </div>
             ))}
