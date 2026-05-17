@@ -229,11 +229,3 @@ export function NotificationCenter() {
     </Card>
   );
 }
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
