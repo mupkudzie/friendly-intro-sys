@@ -95,6 +95,31 @@ export function NotificationCenter() {
     }
   };
 
+  const deleteOne = async (notificationId: string) => {
+    const { error } = await supabase.from('notifications').delete().eq('id', notificationId);
+    if (error) {
+      toast({ title: 'Failed to delete', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    window.dispatchEvent(new CustomEvent('notifications-updated'));
+  };
+
+  const clearAll = async () => {
+    if (!userProfile || notifications.length === 0) return;
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('recipient_id', userProfile.user_id);
+    if (error) {
+      toast({ title: 'Failed to clear', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setNotifications([]);
+    window.dispatchEvent(new CustomEvent('notifications-updated'));
+    toast({ title: 'Notifications cleared' });
+  };
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'task_review':
