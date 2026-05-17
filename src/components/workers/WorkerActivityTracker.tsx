@@ -286,7 +286,8 @@ export function WorkerActivityTracker({ userRole }: WorkerActivityTrackerProps) 
                     </Badge>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
