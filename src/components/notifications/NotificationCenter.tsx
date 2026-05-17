@@ -148,13 +148,21 @@ export function NotificationCenter() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Bell className="w-5 h-5" />
-          Notifications
-          {unreadCount > 0 && (
-            <Badge variant="destructive">{unreadCount}</Badge>
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="w-5 h-5" />
+            Notifications
+            {unreadCount > 0 && (
+              <Badge variant="destructive">{unreadCount}</Badge>
+            )}
+          </CardTitle>
+          {notifications.length > 0 && (
+            <Button size="sm" variant="outline" onClick={clearAll}>
+              <Trash2 className="w-4 h-4 mr-1" />
+              Clear all
+            </Button>
           )}
-        </CardTitle>
+        </div>
       </CardHeader>
       <CardContent>
         {notifications.length === 0 ? (
