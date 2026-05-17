@@ -226,10 +226,14 @@ export function WorkerActivityTracker({ userRole }: WorkerActivityTrackerProps) 
             <div className="text-center text-sm text-muted-foreground py-6">No workers found.</div>
           ) : (
             <div className="grid gap-2">
-              {workers.map(w => (
+              {workers.map(w => {
+                const workerIssues = issues.filter(i => i.user_id === w.user_id);
+                return (
                 <div
                   key={w.user_id}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors"
+                  className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${
+                    workerIssues.length > 0 ? 'border-destructive/40 bg-destructive/5' : 'hover:bg-muted/30'
+                  }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Avatar className="h-9 w-9">
@@ -238,7 +242,15 @@ export function WorkerActivityTracker({ userRole }: WorkerActivityTrackerProps) 
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
-                      <h4 className="font-medium text-sm truncate">{w.full_name}</h4>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-medium text-sm truncate">{w.full_name}</h4>
+                        {workerIssues.length > 0 && (
+                          <Badge variant="destructive" className="text-[10px] gap-1">
+                            <MapPinOff className="w-3 h-3" />
+                            {workerIssues.length} missed
+                          </Badge>
+                        )}
+                      </div>
                       {w.current_task_title ? (
                         <p className="text-xs text-muted-foreground truncate">
                           On: {w.current_task_title}
@@ -246,6 +258,12 @@ export function WorkerActivityTracker({ userRole }: WorkerActivityTrackerProps) 
                       ) : (
                         <p className="text-xs text-muted-foreground capitalize">
                           {w.role.replace('_', ' ')}
+                        </p>
+                      )}
+                      {workerIssues.length > 0 && (
+                        <p className="text-[11px] text-destructive mt-1">
+                          Last: {workerIssues[0].status} at {format(new Date(workerIssues[0].triggered_at), 'HH:mm')}
+                          {workerIssues[0].distance_from_target != null && ` · ${Math.round(workerIssues[0].distance_from_target)}m off`}
                         </p>
                       )}
                     </div>
