@@ -201,17 +201,34 @@ export function NotificationCenter() {
                       </div>
                     </div>
                   </div>
-                  {!notification.read && (
+                  <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                    {!notification.read && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => markAsRead(notification.id)}
+                      >
+                        <Check className="w-4 h-4" />
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => markAsRead(notification.id)}
-                      className="flex-shrink-0 ml-2"
+                      onClick={() => deleteOne(notification.id)}
+                      title="Delete notification"
                     >
-                      <Check className="w-4 h-4" />
+                      <X className="w-4 h-4" />
                     </Button>
-                  )}
+                  </div>
                 </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
               </div>
             ))}
           </div>
