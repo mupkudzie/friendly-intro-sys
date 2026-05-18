@@ -23,6 +23,30 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <script>
+      // Force-clear stale service workers + caches before app boots so users
+      // never see an outdated page when opening the preview in a new tab.
+      (function () {
+        try {
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function (regs) {
+              var hadSW = regs.length > 0;
+              regs.forEach(function (r) { r.unregister(); });
+              if ('caches' in window) {
+                caches.keys().then(function (keys) {
+                  Promise.all(keys.map(function (k) { return caches.delete(k); })).then(function () {
+                    if (hadSW && !sessionStorage.getItem('__sw_purged__')) {
+                      sessionStorage.setItem('__sw_purged__', '1');
+                      location.reload();
+                    }
+                  });
+                });
+              }
+            });
+          }
+        } catch (e) { /* ignore */ }
+      })();
+    </script>
   </head>
 
   <body>
