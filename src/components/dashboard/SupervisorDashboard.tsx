@@ -23,7 +23,11 @@ import {
   ClipboardCheck, 
   Activity, 
   Menu, 
-  User 
+  User,
+  MessageSquare,
+  KeyRound,
+  FileText,
+  BarChart3
 } from 'lucide-react';
 import { ManageAssignedTasks } from '@/components/tasks/ManageAssignedTasks';
 import { TaskAssignment } from '@/components/tasks/TaskAssignment';
@@ -39,6 +43,14 @@ import { PhotoGallery } from '@/components/gallery/PhotoGallery';
 import { cn } from '@/lib/utils';
 import { UserManagementDashboard } from '@/components/admin/UserManagementDashboard';
 import { RedoRequests } from '@/components/tasks/RedoRequests';
+import { AdminAnalytics } from '@/components/analytics/AdminAnalytics';
+import { UserApproval } from '@/components/admin/UserApproval';
+import { CommentsManagement } from '@/components/admin/CommentsManagement';
+import { FarmZones } from '@/components/admin/FarmZones';
+import { WeeklyTimesheetView } from '@/components/time/WeeklyTimesheetView';
+import { Reports } from '@/components/reports/Reports';
+import { AuditLogs } from '@/components/admin/AuditLogs';
+import { AccessCodeManager } from '@/components/admin/AccessCodeManager';
 
 interface MenuItemCount {
   requests: number;
@@ -47,19 +59,57 @@ interface MenuItemCount {
   redo: number;
 }
 
-const baseMenuItems = [
-  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { id: 'activity', label: 'Activity', icon: Activity },
-  { id: 'ai-analytics', label: 'AI Analytics', icon: Sparkles },
-  { id: 'ai-priority', label: 'AI Priority', icon: ListOrdered },
-  { id: 'requests', label: 'Requests', icon: ClipboardList, countKey: 'requests' as const },
-  { id: 'approval', label: 'Review', icon: CheckSquare, countKey: 'approval' as const },
-  { id: 'redo', label: 'Redo Requests', icon: RotateCcw, countKey: 'redo' as const },
-  { id: 'manage-tasks', label: 'Manage Tasks', icon: ClipboardCheck },
-  { id: 'assign', label: 'Assign', icon: UserPlus },
-  { id: 'timesheet', label: 'Timesheet', icon: CheckCircle },
-  { id: 'notifications', label: 'Notifications', icon: Bell, countKey: 'notifications' as const },
-  { id: 'usermanagement', label: 'User Management', icon: Users },
+const menuGroups = [
+  {
+    title: 'Core Operations',
+    items: [
+      { id: 'overview', label: 'Executive Overview', icon: LayoutDashboard },
+      { id: 'tasks-overview', label: 'Tasks Board', icon: ClipboardList },
+      { id: 'activity', label: 'Worker Activity', icon: Activity },
+      { id: 'assign', label: 'Assign Tasks', icon: UserPlus },
+      { id: 'manage-tasks', label: 'Manage Tasks', icon: ClipboardCheck },
+    ]
+  },
+  {
+    title: 'Reviews & Approvals',
+    items: [
+      { id: 'user-approvals', label: 'Registration Approvals', icon: Users },
+      { id: 'requests', label: 'Task Requests', icon: ClipboardList, countKey: 'requests' as const },
+      { id: 'approval', label: 'Task Reviews', icon: CheckSquare, countKey: 'approval' as const },
+      { id: 'redo', label: 'Redo Requests', icon: RotateCcw, countKey: 'redo' as const },
+    ]
+  },
+  {
+    title: 'Time & Attendance',
+    items: [
+      { id: 'weekly-timesheet', label: 'Weekly Timesheet', icon: BarChart3 },
+      { id: 'timesheet-reports', label: 'Timesheet Reports', icon: CheckCircle },
+    ]
+  },
+  {
+    title: 'System Administration',
+    items: [
+      { id: 'usermanagement', label: 'User Management', icon: Users },
+      { id: 'zones', label: 'Farm Zones', icon: Activity },
+      { id: 'access-codes', label: 'Access Codes', icon: KeyRound },
+      { id: 'audit', label: 'Audit Logs', icon: FileText },
+    ]
+  },
+  {
+    title: 'AI & Analytics',
+    items: [
+      { id: 'ai-analytics', label: 'AI Analytics', icon: Sparkles },
+      { id: 'ai-priority', label: 'AI Priority Routing', icon: ListOrdered },
+      { id: 'reports', label: 'System Reports', icon: FileText },
+    ]
+  },
+  {
+    title: 'Communications',
+    items: [
+      { id: 'comments', label: 'Comments & Messages', icon: MessageSquare },
+      { id: 'notifications', label: 'Notifications', icon: Bell, countKey: 'notifications' as const },
+    ]
+  }
 ];
 
 export function SupervisorDashboard() {
@@ -143,50 +193,50 @@ export function SupervisorDashboard() {
     });
   };
 
-  const menuItems = (() => {
-    const [overview, ...rest] = baseMenuItems;
-    const withCounts = rest.map(item => ({
-      item,
-      count: item.countKey ? menuCounts[item.countKey] : 0,
-    }));
-    const urgent = withCounts
-      .filter(x => x.count > 0)
-      .sort((a, b) => b.count - a.count)
-      .map(x => x.item);
-    const others = withCounts.filter(x => x.count === 0).map(x => x.item);
-    return [overview, ...urgent, ...others];
-  })();
-
   const renderContent = () => {
     switch (activeView) {
       case 'overview':
+        return <AdminAnalytics />;
+      case 'tasks-overview':
         return <TaskOverview userRole="supervisor" />;
-      case 'ai-analytics':
-        return <AIPerformanceDashboard />;
-      case 'ai-priority':
-        return <AITaskPrioritization />;
+      case 'activity':
+        return <WorkerActivityTracker userRole="supervisor" />;
+      case 'assign':
+        return <TaskAssignment />;
+      case 'manage-tasks':
+        return <ManageAssignedTasks />;
+      case 'user-approvals':
+        return <UserApproval />;
       case 'requests':
         return <TaskRequests />;
       case 'approval':
         return <TaskApproval />;
       case 'redo':
         return <RedoRequests onRefresh={fetchMenuCounts} />;
-      case 'assign':
-        return <TaskAssignment />;
-      case 'manage-tasks':
-        return <ManageAssignedTasks />;
-      case 'activity':
-        return <WorkerActivityTracker userRole="supervisor" />;
-      case 'photos':
-        return <PhotoGallery />;
-      case 'timesheet':
+      case 'weekly-timesheet':
+        return <WeeklyTimesheetView />;
+      case 'timesheet-reports':
         return <TimesheetReports />;
-      case 'notifications':
-        return <NotificationCenter />;
       case 'usermanagement':
         return <UserManagementDashboard />;
+      case 'zones':
+        return <FarmZones />;
+      case 'access-codes':
+        return <AccessCodeManager />;
+      case 'audit':
+        return <AuditLogs />;
+      case 'ai-analytics':
+        return <AIPerformanceDashboard />;
+      case 'ai-priority':
+        return <AITaskPrioritization />;
+      case 'reports':
+        return <Reports userRole="supervisor" />;
+      case 'comments':
+        return <CommentsManagement />;
+      case 'notifications':
+        return <NotificationCenter />;
       default:
-        return <TaskOverview userRole="supervisor" />;
+        return <AdminAnalytics />;
     }
   };
 
@@ -213,7 +263,7 @@ export function SupervisorDashboard() {
               <h1 className="text-md sm:text-base font-extrabold tracking-tight text-slate-800 leading-tight font-heading">
                 Farm<span className="text-primary">Flow</span>
               </h1>
-              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold hidden sm:block">Operations Console</p>
+              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold hidden sm:block">Supervisor Console</p>
             </div>
           </div>
         </div>
@@ -225,7 +275,7 @@ export function SupervisorDashboard() {
             </div>
             <div className="text-left leading-tight">
               <p className="text-xs font-bold text-slate-700 font-heading">{userProfile?.full_name}</p>
-              <p className="text-[10px] text-slate-400">Supervisor Mode</p>
+              <p className="text-[10px] text-slate-400">Supervisor Console</p>
             </div>
           </div>
           <Badge variant="secondary" className="bg-emerald-50 text-emerald-800 hover:bg-emerald-50 border-emerald-100 text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
@@ -252,35 +302,44 @@ export function SupervisorDashboard() {
           "w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between transition-all duration-300 absolute md:static z-20 top-0 bottom-0 left-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:-translate-x-full md:w-0 overflow-hidden border-r-0"
         )}>
-          <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const count = item.countKey ? menuCounts[item.countKey] : 0;
-              const active = activeView === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveView(item.id)}
-                  className={cn(
-                    "w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl text-xs font-semibold tracking-wide uppercase transition-all duration-200 active-shrink",
-                    active
-                      ? "bg-emerald-500/10 text-emerald-400 border-l-3 border-emerald-500 bg-gradient-to-r from-emerald-500/5 to-transparent"
-                      : "text-slate-400 hover:bg-slate-800/40 hover:text-slate-200"
-                  )}
-                >
-                  <Icon className={cn("w-4.5 h-4.5 shrink-0", active ? "text-emerald-400" : "text-slate-500")} />
-                  <span className="flex-1 text-left font-heading truncate">{item.label}</span>
-                  {count > 0 && (
-                    <Badge 
-                      variant="secondary" 
-                      className="ml-auto bg-rose-500 text-white border-0 text-[10px] font-bold min-w-[18px] h-[18px] px-1 justify-center rounded-full shadow-sm animate-pulse"
-                    >
-                      {count}
-                    </Badge>
-                  )}
-                </button>
-              );
-            })}
+          <div className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
+            {menuGroups.map((group) => (
+              <div key={group.title} className="space-y-1.5">
+                <p className="px-4 text-[10px] font-bold uppercase tracking-widest text-slate-500 font-heading">
+                  {group.title}
+                </p>
+                <div className="space-y-0.5">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const count = item.countKey ? menuCounts[item.countKey] : 0;
+                    const active = activeView === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setActiveView(item.id)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-4 py-2 rounded-xl text-xs font-semibold tracking-wide uppercase transition-all duration-200 active-shrink",
+                          active
+                            ? "bg-emerald-500/10 text-emerald-400 border-l-3 border-emerald-500 bg-gradient-to-r from-emerald-500/5 to-transparent"
+                            : "text-slate-400 hover:bg-slate-800/40 hover:text-slate-200"
+                        )}
+                      >
+                        <Icon className={cn("w-4.5 h-4.5 shrink-0", active ? "text-emerald-400" : "text-slate-500")} />
+                        <span className="flex-1 text-left font-heading truncate">{item.label}</span>
+                        {count > 0 && (
+                          <Badge 
+                            variant="secondary" 
+                            className="ml-auto bg-rose-500 text-white border-0 text-[10px] font-bold min-w-[18px] h-[18px] px-1 justify-center rounded-full shadow-sm animate-pulse"
+                          >
+                            {count}
+                          </Badge>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
           <div className="p-4 border-t border-slate-800 text-[10px] text-slate-500 font-sans tracking-wide">
             SYSTEM PORTAL v2.4.0

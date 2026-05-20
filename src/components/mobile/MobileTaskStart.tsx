@@ -142,29 +142,23 @@ export function MobileTaskStart({ task, userId, isOpen, onClose, onTaskStarted }
       let verify_time_1_at: string | null = null;
       let verify_time_2_at: string | null = null;
 
-      let t1Offset = 0;
       if (v1Min != null && v1Min > 0) {
-        t1Offset = v1Min * 60 * 1000;
-        console.log(`MobileTaskStart: Verification 1 set by supervisor at ${v1Min} minutes.`);
+        const t1Offset = v1Min * 60 * 1000;
+        verify_time_1_at = new Date(new Date(startTime).getTime() + t1Offset).toISOString();
+        console.log(`MobileTaskStart: Verification 1 scheduled in ${v1Min} minutes:`, verify_time_1_at);
       } else {
-        // Trigger randomly between 1 and 3 minutes after task start
-        t1Offset = Math.floor(Math.random() * (3 * 60 * 1000 - 1 * 60 * 1000 + 1)) + 1 * 60 * 1000;
-        console.log(`MobileTaskStart: Verification 1 will trigger randomly in ${Math.round(t1Offset / 60000 * 10) / 10} minutes.`);
+        console.log('MobileTaskStart: Verification 1 not set by supervisor.');
       }
-      verify_time_1_at = new Date(new Date(startTime).getTime() + t1Offset).toISOString();
 
-      let t2Offset = 0;
       if (v2Min != null && v2Min > 0) {
-        t2Offset = v2Min * 60 * 1000;
-        console.log(`MobileTaskStart: Verification 2 set by supervisor at ${v2Min} minutes.`);
+        const t2Offset = v2Min * 60 * 1000;
+        verify_time_2_at = new Date(new Date(startTime).getTime() + t2Offset).toISOString();
+        console.log(`MobileTaskStart: Verification 2 scheduled in ${v2Min} minutes:`, verify_time_2_at);
       } else {
-        // Trigger randomly between 8 and 20 minutes after the first verification
-        t2Offset = t1Offset + Math.floor(Math.random() * (20 * 60 * 1000 - 8 * 60 * 1000 + 1)) + 8 * 60 * 1000;
-        console.log(`MobileTaskStart: Verification 2 will trigger randomly in ${Math.round((t2Offset - t1Offset) / 60000 * 10) / 10} minutes after first verification.`);
+        console.log('MobileTaskStart: Verification 2 not set by supervisor.');
       }
-      verify_time_2_at = new Date(new Date(startTime).getTime() + t2Offset).toISOString();
 
-      console.log('MobileTaskStart: Generated target timestamps:', { verify_time_1_at, verify_time_2_at });
+      console.log('MobileTaskStart: Verification target timestamps:', { verify_time_1_at, verify_time_2_at });
 
       // Update task status and verification trigger times
       const { error: taskError } = await supabase

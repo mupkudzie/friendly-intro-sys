@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, MapPin } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // Export refresh function for other components to use
 export const refreshCheckInStatus = () => {
@@ -229,39 +230,74 @@ export function AutoCheckInOut({ userId }: AutoCheckInOutProps) {
   };
 
   return (
-    <Card className={`mb-4 ${isCheckedIn ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : ''}`}>
-      <CardContent className="pt-6">
-        <div className="flex items-center justify-between">
+    <div className={cn(
+      "relative overflow-hidden rounded-3xl border p-5 transition-all duration-300 shadow-sm",
+      isCheckedIn 
+        ? "border-emerald-500/25 bg-emerald-500/5 text-emerald-950 dark:text-emerald-50 shadow-emerald-500/5" 
+        : "border-slate-200 bg-white/70 backdrop-blur-md text-slate-800"
+    )}>
+      {isCheckedIn && (
+        <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -translate-y-4 translate-x-4 blur-2xl" />
+      )}
+      <div className="flex flex-col gap-4 relative z-10">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-3">
-            <Clock className={`w-5 h-5 ${isCheckedIn ? 'text-green-600' : 'text-muted-foreground'}`} />
+            <div className={cn(
+              "p-2.5 rounded-2xl shrink-0 transition-transform duration-200 hover:scale-105",
+              isCheckedIn 
+                ? "bg-emerald-500/10 text-emerald-600" 
+                : "bg-slate-100 text-slate-500"
+            )}>
+              <Clock className="w-5 h-5 animate-pulse" />
+            </div>
             <div>
-              <p className={`text-sm font-medium ${isCheckedIn ? 'text-green-700 dark:text-green-400' : ''}`}>
-                Attendance Status
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {isCheckedIn
-                  ? `Checked in at ${checkInTime ? new Date(checkInTime).toLocaleTimeString() : ''}`
-                  : 'Not checked in'}
-              </p>
+              <p className="text-xs uppercase tracking-widest text-slate-400 font-bold">Shift Attendance</p>
+              <h4 className={cn("text-[14px] font-black font-heading mt-0.5", isCheckedIn ? "text-emerald-900" : "text-slate-800")}>
+                {isCheckedIn ? "Checked In & Active" : "Currently Offline / Checked Out"}
+              </h4>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Badge variant={isInGeofence ? 'default' : 'secondary'}>
+          
+          <span className={cn(
+            "w-2.5 h-2.5 rounded-full",
+            isCheckedIn ? "bg-emerald-500 animate-ping" : "bg-slate-300"
+          )} />
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <p className="text-xs text-slate-500 font-medium">
+            {isCheckedIn
+              ? `Shift began at ${checkInTime ? new Date(checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}`
+              : 'Auto-checks in when you enter geofenced farm zones.'}
+          </p>
+          
+          <div className="flex gap-2 shrink-0">
+            <Badge 
+              variant={isInGeofence ? 'default' : 'secondary'}
+              className={cn(
+                "rounded-lg px-2.5 py-0.5 text-[10px] font-bold border-0",
+                isInGeofence 
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-white" 
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-100"
+              )}
+            >
               <MapPin className="w-3 h-3 mr-1" />
-              {isInGeofence ? 'In Farm Zone' : 'Outside Zone'}
+              {isInGeofence ? 'At Farm' : 'Outside Zone'}
             </Badge>
             <Badge 
-              className={isCheckedIn 
-                ? 'bg-green-600 hover:bg-green-700 text-white' 
-                : ''
-              }
-              variant={isCheckedIn ? 'default' : 'secondary'}
+              className={cn(
+                "rounded-lg px-2.5 py-0.5 text-[10px] font-extrabold border-0",
+                isCheckedIn 
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-600' 
+                  : 'bg-slate-100 text-slate-500 hover:bg-slate-100'
+              )}
+              variant="default"
             >
-              {isCheckedIn ? '✓ Checked In' : 'Checked Out'}
+              {isCheckedIn ? 'Active Shift' : 'Checked Out'}
             </Badge>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

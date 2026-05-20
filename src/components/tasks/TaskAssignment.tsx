@@ -12,7 +12,7 @@ import { useWorkerRecommendations } from '@/hooks/useWorkerRecommendations';
 import { AITextButton } from '@/components/ui/ai-text-button';
 import { SmartTextarea } from '@/components/ui/smart-textarea';
 import { WorkerRecommendations } from '@/components/tasks/WorkerRecommendations';
-import { Plus, User, MapPin, Sparkles, Loader2, FileText, Clock, Trash2 } from 'lucide-react';
+import { Plus, User, MapPin, Sparkles, Loader2, FileText, Clock, Trash2, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -72,6 +72,9 @@ export function TaskAssignment() {
   });
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState(true);
+  const [farmZones, setFarmZones] = useState<any[]>([]);
+  const [selectedZoneId, setSelectedZoneId] = useState<string>('');
+  const [zoneSearch, setZoneSearch] = useState<string>('');
 
   const { assistText: assistDescription, isLoading: descriptionLoading } = useAITextAssist({
     onSuccess: (text) => setFormData(prev => ({ ...prev, description: text })),
@@ -93,7 +96,19 @@ export function TaskAssignment() {
   useEffect(() => {
     fetchWorkers();
     fetchTemplates();
+    fetchFarmZones();
   }, []);
+
+  const fetchFarmZones = async () => {
+    const { data, error } = await supabase
+      .from('farm_zones')
+      .select('*')
+      .eq('active', true)
+      .order('name');
+    if (!error && data) {
+      setFarmZones(data);
+    }
+  };
 
   const fetchTemplates = async () => {
     const { data, error } = await supabase
@@ -350,6 +365,11 @@ export function TaskAssignment() {
     });
   };
 
+  const filteredZones = farmZones.filter(zone => 
+    zone.name.toLowerCase().includes(zoneSearch.toLowerCase()) ||
+    (zone.description && zone.description.toLowerCase().includes(zoneSearch.toLowerCase()))
+  );
+
   return (
     <div className="space-y-6">
       <Card>
@@ -507,6 +527,109 @@ export function TaskAssignment() {
                 />
                 <p className="text-xs text-muted-foreground">Defaults to 8 hours</p>
               </div>
+            </div>
+
+            {/* Quick Select Farm Zone Panel */}
+            <div className="space-y-3 rounded-lg border p-4 bg-muted/40 border-muted-foreground/10 hover:border-primary/20 transition-all duration-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-semibold flex items-center gap-2 text-primary">
+                    <MapPin className="w-4 h-4 text-primary" />
+                    Quick Select Farm Zone
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Choose a predefined zone to auto-fill location name, GPS coordinates, and enable geofencing tracking.
+                  </p>
+                </div>
+                {selectedZoneId && (
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-xs text-destructive hover:bg-destructive/10 h-7 px-2"
+                    onClick={() => {
+                      setSelectedZoneId('');
+                      setFormData(prev => ({
+                        ...prev,
+                        location: '',
+                        geofence_lat: '',
+                        geofence_lon: '',
+                        geofence_radius: '100',
+                        gps_required: false
+                      }));
+                    }}
+                  >
+                    Clear Selection
+                  </Button>
+                )}
+              </div>
+
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search active farm zones by name or description..."
+                  className="pl-9 bg-background/50 focus-visible:bg-background border-muted-foreground/20"
+                  value={zoneSearch}
+                  onChange={(e) => setZoneSearch(e.target.value)}
+                />
+              </div>
+
+              {filteredZones.length === 0 ? (
+                <div className="text-xs text-center py-4 text-muted-foreground border border-dashed rounded-md bg-background/20">
+                  {farmZones.length === 0 ? "No active farm zones found." : "No farm zones match your search query."}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                  {filteredZones.map((zone) => {
+                    const isSelected = selectedZoneId === zone.id;
+                    const lat = zone.gps_coordinates?.latitude ?? zone.gps_coordinates?.lat;
+                    const lon = zone.gps_coordinates?.longitude ?? zone.gps_coordinates?.lon;
+                    const radius = zone.gps_coordinates?.radius ?? 100;
+                    
+                    return (
+                      <button
+                        key={zone.id}
+                        type="button"
+                        className={`flex flex-col text-left p-3 rounded-lg border text-sm transition-all duration-200 ${
+                          isSelected
+                            ? 'border-primary bg-primary/10 ring-1 ring-primary'
+                            : 'hover:border-primary/30 hover:bg-background bg-background/40 border-muted-foreground/10'
+                        }`}
+                        onClick={() => {
+                          setSelectedZoneId(zone.id);
+                          setFormData(prev => ({
+                            ...prev,
+                            location: zone.name,
+                            geofence_lat: lat?.toString() || '',
+                            geofence_lon: lon?.toString() || '',
+                            geofence_radius: radius?.toString() || '100',
+                            gps_required: true,
+                          }));
+                          toast({
+                            title: "Farm Zone Selected",
+                            description: `Applied coordinates and set location to "${zone.name}".`,
+                          });
+                        }}
+                      >
+                        <div className="flex items-center justify-between w-full font-medium">
+                          <span className="truncate pr-2">{zone.name}</span>
+                          {isSelected && <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 bg-primary text-primary-foreground hover:bg-primary">Selected</Badge>}
+                        </div>
+                        {zone.description && (
+                          <span className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                            {zone.description}
+                          </span>
+                        )}
+                        <div className="flex items-center gap-2 mt-2 text-[10px] text-muted-foreground font-mono font-semibold">
+                          <span className="bg-muted px-1.5 py-0.5 rounded">Lat: {Number(lat).toFixed(4)}</span>
+                          <span className="bg-muted px-1.5 py-0.5 rounded">Lon: {Number(lon).toFixed(4)}</span>
+                          <span className="bg-muted px-1.5 py-0.5 rounded">Rad: {radius}m</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

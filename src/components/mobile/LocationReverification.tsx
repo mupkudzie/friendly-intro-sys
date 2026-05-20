@@ -124,6 +124,12 @@ export function LocationReverification({
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const nextTickRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Dynamic scheduled count based entirely on supervisor configurations
+  const scheduledCount = [
+    verifyTime1At || (verifyTime1Min != null && verifyTime1Min > 0 && taskStartTime),
+    verifyTime2At || (verifyTime2Min != null && verifyTime2Min > 0 && taskStartTime)
+  ].filter(Boolean).length;
+
   // Initialize verificationsCompleted from the database to survive navigation/refresh
   useEffect(() => {
     let active = true;
@@ -141,7 +147,6 @@ export function LocationReverification({
           .eq('user_id', user.id);
 
         if (!error && data && active) {
-          // Count only entries that are completed (success, failed, or missed)
           setVerificationsCompleted(data.length);
           console.log(`LocationReverification: Successfully loaded ${data.length} verification logs from DB.`);
         } else if (error) {
@@ -232,64 +237,69 @@ export function LocationReverification({
 
   const scheduleNextCheck = useCallback(() => {
     clearAllTimers();
-    if (!isTaskActive || !locationTypeIsFarm || verificationsCompleted >= MAX_VERIFICATIONS) {
-      console.log('LocationReverification: Scheduler bypassed/stopped.', { isTaskActive, locationTypeIsFarm, verificationsCompleted });
+    if (!isTaskActive || !locationTypeIsFarm) {
       setNextCheckAt(null);
       setSecondsToNext(null);
       return;
     }
 
-    const isFirst = verificationsCompleted === 0;
-    const configuredAtStr = isFirst ? verifyTime1At : verifyTime2At;
-    let fireAt: number;
+    // Dynamic scheduling: list only verification schedules configured by the supervisor
+    const scheduled = [];
+    if (verifyTime1At && !isNaN(new Date(verifyTime1At).getTime())) {
+      scheduled.push({ number: 1, fireAt: new Date(verifyTime1At).getTime() });
+    } else if (verifyTime1Min != null && verifyTime1Min > 0 && taskStartTime && !isNaN(new Date(taskStartTime).getTime())) {
+      scheduled.push({ number: 1, fireAt: new Date(taskStartTime).getTime() + verifyTime1Min * 60 * 1000 });
+    }
 
-    console.log('LocationReverification: scheduleNextCheck started.', {
-      verificationsCompleted,
-      verifyTime1At,
-      verifyTime2At,
-      verifyTime1Min,
-      verifyTime2Min,
-      taskStartTime
-    });
+    if (verifyTime2At && !isNaN(new Date(verifyTime2At).getTime())) {
+      scheduled.push({ number: 2, fireAt: new Date(verifyTime2At).getTime() });
+    } else if (verifyTime2Min != null && verifyTime2Min > 0 && taskStartTime && !isNaN(new Date(taskStartTime).getTime())) {
+      scheduled.push({ number: 2, fireAt: new Date(taskStartTime).getTime() + verifyTime2Min * 60 * 1000 });
+    }
 
-    if (configuredAtStr) {
-      fireAt = new Date(configuredAtStr).getTime();
-      console.log(`LocationReverification: Using configured timestamp for Verification ${isFirst ? 1 : 2}:`, configuredAtStr, 'epoch:', fireAt);
-      // If that moment already passed, trigger in 2 seconds to let UI settle
-      if (fireAt <= Date.now()) {
-        console.log('LocationReverification: Configured timestamp is in the past. Triggering in 2s.');
-        fireAt = Date.now() + 2000;
-      }
-    } else {
-      // Fallback if timestamps are missing
-      const configuredMin = isFirst ? verifyTime1Min : verifyTime2Min;
-      console.log('LocationReverification: Configured timestamp missing, checking minutes fallback:', configuredMin);
-      if (configuredMin != null && configuredMin > 0 && taskStartTime) {
-        fireAt = new Date(taskStartTime).getTime() + configuredMin * 60 * 1000;
-        console.log('LocationReverification: Calculated fire time from start time:', new Date(fireAt).toISOString());
-        if (fireAt <= Date.now()) {
-          console.log('LocationReverification: Calculated fire time is in the past. Triggering in 2s.');
-          fireAt = Date.now() + 2000;
-        }
-      } else {
-        const minMs = isFirst ? FIRST_MIN_MS : SECOND_MIN_MS;
-        const maxMs = isFirst ? FIRST_MAX_MS : SECOND_MAX_MS;
-        fireAt = Date.now() + Math.floor(Math.random() * (maxMs - minMs)) + minMs;
-        console.log('LocationReverification: Generated random fire time:', new Date(fireAt).toISOString());
-      }
+    // Sort chronologically and filter out any invalid/NaN timestamps
+    const validScheduled = scheduled.filter(item => item && !isNaN(item.fireAt));
+    validScheduled.sort((a, b) => a.fireAt - b.fireAt);
+
+    if (validScheduled.length === 0) {
+      console.log('LocationReverification: No supervisor verification set.');
+      setNextCheckAt(null);
+      setSecondsToNext(null);
+      return;
+    }
+
+    if (verificationsCompleted >= validScheduled.length) {
+      console.log('LocationReverification: All scheduled verifications completed.', {
+        verificationsCompleted,
+        count: validScheduled.length
+      });
+      setNextCheckAt(null);
+      setSecondsToNext(null);
+      return;
+    }
+
+    const nextVerification = validScheduled[verificationsCompleted];
+    let fireAt = nextVerification.fireAt;
+    const verificationNum = nextVerification.number;
+
+    try {
+      console.log(`LocationReverification: Next scheduled verification #${verificationNum} at:`, new Date(fireAt).toISOString());
+    } catch (e) {
+      console.log(`LocationReverification: Next scheduled verification #${verificationNum} at raw time:`, fireAt);
+    }
+
+    if (fireAt <= Date.now()) {
+      console.log('LocationReverification: Scheduled time passed. Firing instantly (2s settle).');
+      fireAt = Date.now() + 2000;
     }
 
     setNextCheckAt(fireAt);
     const initialSeconds = Math.max(0, Math.ceil((fireAt - Date.now()) / 1000));
     setSecondsToNext(initialSeconds);
-    console.log(`LocationReverification: Scheduled verification ${isFirst ? 1 : 2} in ${initialSeconds} seconds.`);
 
     const triggerPopup = () => {
-      if (!isTaskActive) {
-        console.log('LocationReverification: triggerPopup called but task is inactive.');
-        return;
-      }
-      console.log('LocationReverification: TRIGGERING POPUP DIALOG NOW!');
+      if (!isTaskActive) return;
+      console.log(`LocationReverification: TRIGGERING FULLSCREEN POPUP FOR VERIFICATION #${verificationNum}`);
       playNotificationSound();
       setShowDialog(true);
       setResult(null);
@@ -307,13 +317,12 @@ export function LocationReverification({
       }, 1000);
 
       timeoutRef.current = setTimeout(() => {
-        const missedNumber = verificationsCompleted + 1;
-        console.log(`LocationReverification: Timeout reached. Verification ${missedNumber} missed.`);
+        console.log(`LocationReverification: Timeout reached for verification #${verificationNum}`);
         setShowDialog(false);
         setVerificationsCompleted(prev => prev + 1);
         logVerification({
           status: 'missed',
-          verificationNumber: missedNumber,
+          verificationNumber: verificationNum,
           notes: 'Worker did not respond within 2 minutes',
         });
         notifySupervisor('did not respond to location verification within 2 minutes');
@@ -325,19 +334,11 @@ export function LocationReverification({
       }, TIMEOUT_DURATION);
     };
 
-    // Poll every second so the popup fires at the right wall-clock time even
-    // after tab throttling or device sleep.
     nextTickRef.current = setInterval(() => {
       const remaining = Math.ceil((fireAt - Date.now()) / 1000);
       setSecondsToNext(Math.max(0, remaining));
 
-      // Log countdown every 15 seconds to avoid flooding but show it's active
-      if (remaining > 0 && remaining % 15 === 0) {
-        console.log(`LocationReverification: Countdown to Verification ${isFirst ? 1 : 2}: ${remaining}s remaining.`);
-      }
-
       if (Date.now() >= fireAt) {
-        console.log('LocationReverification: Current time reached/passed target time. Firing popup.');
         if (nextTickRef.current) clearInterval(nextTickRef.current);
         triggerPopup();
       }
@@ -345,11 +346,42 @@ export function LocationReverification({
   }, [isTaskActive, locationTypeIsFarm, verificationsCompleted, clearAllTimers, notifySupervisor, logVerification, verifyTime1Min, verifyTime2Min, verifyTime1At, verifyTime2At, taskStartTime]);
 
   useEffect(() => {
-    if (!loading && isTaskActive && locationTypeIsFarm && verificationsCompleted < MAX_VERIFICATIONS) {
+    if (!loading && isTaskActive && locationTypeIsFarm && verificationsCompleted < scheduledCount) {
       scheduleNextCheck();
     }
     return () => clearAllTimers();
-  }, [loading, isTaskActive, locationTypeIsFarm, verificationsCompleted, scheduleNextCheck, clearAllTimers]);
+  }, [loading, isTaskActive, locationTypeIsFarm, verificationsCompleted, scheduledCount, scheduleNextCheck, clearAllTimers]);
+
+  // Vibrate mobile device and play alert sound every 15 seconds while popup is active
+  useEffect(() => {
+    if (!showDialog || result === 'success') return;
+
+    const runAlert = () => {
+      playNotificationSound();
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate([300, 100, 300]);
+      }
+    };
+
+    runAlert();
+    const interval = setInterval(runAlert, 15000);
+    return () => clearInterval(interval);
+  }, [showDialog, result]);
+
+  // Catch missed verification times immediately on mobile wakeup or tab visbility return
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isTaskActive && nextCheckAt && !showDialog && verificationsCompleted < scheduledCount) {
+        if (Date.now() >= nextCheckAt) {
+          console.log('LocationReverification: Catching missed timer on tab wake!');
+          scheduleNextCheck();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isTaskActive, nextCheckAt, showDialog, verificationsCompleted, scheduledCount, scheduleNextCheck]);
 
   const handleVerify = async () => {
     setChecking(true);
@@ -384,11 +416,11 @@ export function LocationReverification({
         setVerificationsCompleted(newCount);
         toast({
           title: 'Location Verified ✓',
-          description: `Verification ${newCount}/${MAX_VERIFICATIONS} complete. Keep up the good work!`,
+          description: `Verification ${newCount}/${scheduledCount} complete. Keep up the good work!`,
         });
         setTimeout(() => {
           setShowDialog(false);
-          if (newCount < MAX_VERIFICATIONS) {
+          if (newCount < scheduledCount) {
             scheduleNextCheck();
           }
         }, 2000);
@@ -426,80 +458,78 @@ export function LocationReverification({
     }
   };
 
-  if (!isTaskActive || !locationTypeIsFarm) return null;
-
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const formatNextCheck = (seconds: number) => {
-    if (seconds < 60) return `${seconds}s`;
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return s === 0 ? `${m} min` : `${m}m ${s}s`;
-  };
+  if (!isTaskActive || !locationTypeIsFarm || scheduledCount === 0) return null;
 
-  return (
-    <>
-      {/* Countdown indicator removed — workers no longer see a pre-popup timer. */}
+  if (showDialog) {
+    return (
+      <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 pointer-events-auto select-none">
+        <div className="w-full max-w-sm rounded-3xl border border-orange-500/30 bg-slate-900 text-white shadow-2xl p-6 space-y-5 animate-scale-up">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-2xl bg-orange-500/10 text-orange-400">
+              <Volume2 className="w-6 h-6 animate-pulse" />
+            </div>
+            <div>
+              <h3 className="text-base font-extrabold font-heading tracking-tight leading-none text-slate-100">
+                Location Re-verification
+              </h3>
+              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mt-1">
+                Check {verificationsCompleted + 1} of {scheduledCount}
+              </p>
+            </div>
+          </div>
 
-      <Dialog open={showDialog} onOpenChange={() => {}}>
-        <DialogContent className="max-w-sm" onPointerDownOutside={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Volume2 className="w-5 h-5 text-orange-500 animate-pulse" />
-              Location Re-verification ({verificationsCompleted + 1}/{MAX_VERIFICATIONS})
-            </DialogTitle>
-          </DialogHeader>
-
-          <Card className="p-4 border-orange-200 bg-orange-50 dark:bg-orange-950/20">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-orange-500 mt-0.5 shrink-0" />
+          <Card className="p-4 border-orange-500/20 bg-orange-500/10 rounded-2xl">
+            <div className="flex items-start gap-3 text-orange-200">
+              <AlertTriangle className="w-5 h-5 text-orange-400 mt-0.5 shrink-0" />
               <div>
-                <p className="text-sm font-medium">Confirm you are still at the farm location</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  You must verify within 2 minutes or your supervisor will be notified.
+                <p className="text-xs font-bold text-orange-300">Confirm you are still at the farm location</p>
+                <p className="text-[10px] text-orange-200/70 mt-1 leading-relaxed">
+                  You are required to verify your location within 2 minutes. You cannot exit this screen until completed.
                 </p>
               </div>
             </div>
           </Card>
 
-          <div className="flex items-center justify-center gap-2 p-3 rounded-lg bg-muted">
-            <Timer className="h-5 w-5 text-muted-foreground" />
-            <span className={`text-xl font-mono font-bold ${timeRemaining <= 30 ? 'text-destructive' : ''}`}>
+          <div className="flex items-center justify-center gap-2.5 p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/50">
+            <Timer className="h-5 w-5 text-slate-400" />
+            <span className={`text-2xl font-mono font-black ${timeRemaining <= 30 ? 'text-rose-400 animate-pulse' : 'text-slate-200'}`}>
               {formatTime(timeRemaining)}
             </span>
-            <span className="text-sm text-muted-foreground">remaining</span>
+            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">remaining</span>
           </div>
 
           {result === 'success' && (
-            <div className="flex items-center gap-2 p-3 rounded bg-green-500/10">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <span className="text-sm text-green-600 font-medium">Location verified! Continue working.</span>
+            <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 animate-slide-in">
+              <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" />
+              <span className="text-xs font-semibold">Location verified! Proceeding...</span>
             </div>
           )}
 
           {result === 'failed' && (
-            <div className="flex items-center gap-2 p-3 rounded bg-destructive/10">
-              <XCircle className="h-5 w-5 text-destructive" />
-              <span className="text-sm text-destructive font-medium">
-                Not at work site! Supervisor has been notified.
-              </span>
+            <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 animate-slide-in">
+              <XCircle className="h-5 w-5 text-rose-400 shrink-0" />
+              <span className="text-xs font-semibold">Not at work site! Supervisor notified.</span>
             </div>
           )}
 
           <Button
             onClick={handleVerify}
             disabled={checking || result === 'success'}
-            className="w-full"
+            className="w-full h-12 rounded-2xl font-bold bg-primary hover:bg-primary/95 text-white border-0 shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
           >
             <MapPin className="w-4 h-4 mr-2" />
-            {checking ? 'Checking Location...' : 'Verify My Location'}
+            {checking ? 'Checking GPS Location...' : 'Verify My Location'}
           </Button>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }

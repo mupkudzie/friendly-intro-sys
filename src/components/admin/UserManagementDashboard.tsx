@@ -89,7 +89,11 @@ export function UserManagementDashboard() {
     }
 
     if (roleFilter !== 'all') {
-      filtered = filtered.filter(user => user.role === roleFilter);
+      if (roleFilter === 'supervisor') {
+        filtered = filtered.filter(user => user.role === 'supervisor' || user.role === 'admin');
+      } else {
+        filtered = filtered.filter(user => user.role === roleFilter);
+      }
     }
 
     if (statusFilter !== 'all') {
@@ -104,7 +108,7 @@ export function UserManagementDashboard() {
     const rows = filteredUsers.map(user => [
       user.full_name,
       user.email || '',
-      user.role,
+      user.role === 'admin' ? 'supervisor' : user.role,
       user.student_id || '',
       user.department || '',
       user.approval_status,
@@ -127,7 +131,7 @@ export function UserManagementDashboard() {
 
   const getRoleBadgeVariant = (role: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-      admin: 'destructive',
+      admin: 'default',
       supervisor: 'default',
       garden_worker: 'secondary',
       student: 'outline',
@@ -185,7 +189,6 @@ export function UserManagementDashboard() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="supervisor">Supervisor</SelectItem>
                 <SelectItem value="garden_worker">Farm Worker</SelectItem>
               </SelectContent>
@@ -249,7 +252,7 @@ export function UserManagementDashboard() {
                     <TableCell className="hidden md:table-cell">{user.email || 'N/A'}</TableCell>
                     <TableCell>
                       <Badge variant={getRoleBadgeVariant(user.role)}>
-                        {user.role.replace('_', ' ')}
+                        {user.role === 'admin' ? 'supervisor' : user.role.replace('_', ' ')}
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">

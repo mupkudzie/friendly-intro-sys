@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { AdminDashboard } from '@/components/dashboard/AdminDashboard';
 import { SupervisorDashboard } from '@/components/dashboard/SupervisorDashboard';
 import { MobileWorkerDashboard } from '@/components/mobile/MobileWorkerDashboard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+
 
 export default function Dashboard() {
   const { user, userProfile, loading, profileLoading, signOut, refreshProfile } = useAuth();
@@ -112,8 +113,6 @@ export default function Dashboard() {
 
   const renderDashboard = () => {
     switch (userProfile.role) {
-      case 'admin':
-        return <AdminDashboard />;
       case 'supervisor':
         return <SupervisorDashboard />;
       case 'student':
@@ -125,7 +124,7 @@ export default function Dashboard() {
             <CardHeader>
               <CardTitle>Access Denied</CardTitle>
               <CardDescription>
-                Your role is not recognized. Please contact an administrator.
+                Your role is not recognized. Please contact a supervisor.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -134,8 +133,10 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {renderDashboard()}
-    </div>
+    <ErrorBoundary>
+      <div className="min-h-screen bg-background">
+        {renderDashboard()}
+      </div>
+    </ErrorBoundary>
   );
 }

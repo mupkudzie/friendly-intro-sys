@@ -30,7 +30,7 @@ export default function Auth() {
   const [fullName, setFullName] = useState('');
   const [contactNumber, setContactNumber] = useState('');
   const [accessCode, setAccessCode] = useState('');
-  const [role, setRole] = useState<'garden_worker' | 'supervisor' | 'admin'>('garden_worker');
+  const [role, setRole] = useState<'garden_worker' | 'supervisor'>('garden_worker');
 
   useEffect(() => {
     if (user) {
@@ -48,7 +48,7 @@ export default function Auth() {
   const [showEmailVerificationReminder, setShowEmailVerificationReminder] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
 
-  const requiresAccessCode = role === 'admin' || role === 'supervisor';
+  const requiresAccessCode = role === 'supervisor';
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,12 +134,11 @@ export default function Auth() {
 
     try {
       if (requiresAccessCode) {
-        const roleToCheck = role === 'admin' ? 'admin' : 'supervisor';
         const { data: isValid, error: codeError } = await supabase
-          .rpc('verify_access_code', { _code: accessCode, _role: roleToCheck });
+          .rpc('verify_access_code', { _code: accessCode, _role: 'supervisor' });
 
         if (codeError || !isValid) {
-          setError(`Invalid access code for ${roleToCheck} registration. Please contact an administrator.`);
+          setError(`Invalid access code for supervisor registration. Please contact an administrator.`);
           toast.error('Invalid access code');
           setLoading(false);
           return;
@@ -470,7 +469,6 @@ export default function Auth() {
                         <SelectContent className="rounded-xl border-slate-200">
                           <SelectItem value="garden_worker">Farm Worker</SelectItem>
                           <SelectItem value="supervisor">Supervisor</SelectItem>
-                          <SelectItem value="admin">Administrator</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

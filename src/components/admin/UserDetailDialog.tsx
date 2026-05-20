@@ -355,7 +355,7 @@ export function UserDetailDialog({
                   { label: 'Email', value: user.email || '—' },
                   { label: 'Contact', value: user.contact_number || '—' },
                   { label: 'Department', value: user.department || '—' },
-                  { label: 'Role', value: String(user.role).replace('_', ' ') },
+                  { label: 'Role', value: user.role === 'admin' ? 'supervisor' : String(user.role).replace('_', ' ') },
                   { label: 'Member Since', value: format(new Date(user.created_at), 'MMM d, yyyy') },
                 ], y);
 
@@ -574,7 +574,7 @@ export function UserDetailDialog({
                     <div className="w-4 h-4" />
                     <div>
                       <div className="text-sm text-muted-foreground">Role</div>
-                      <Badge>{user.role.replace('_', ' ')}</Badge>
+                      <Badge>{user.role === 'admin' ? 'supervisor' : user.role.replace('_', ' ')}</Badge>
                     </div>
                   </div>
                 </CardContent>
@@ -658,7 +658,6 @@ export function UserDetailDialog({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
                           <SelectItem value="supervisor">Supervisor</SelectItem>
                           <SelectItem value="garden_worker">Farm Worker</SelectItem>
                         </SelectContent>

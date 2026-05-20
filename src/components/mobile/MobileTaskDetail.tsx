@@ -274,7 +274,7 @@ export function MobileTaskDetail({ task, userId, isOpen, onClose, onTaskUpdate }
                 </Card>
               )}
 
-              {task.due_date && (
+              {task.due_date && !isNaN(new Date(task.due_date).getTime()) && (
                 <Card className="p-2.5 bg-slate-50/30 border-slate-100/80 rounded-xl text-center">
                   <Calendar className="h-4.5 w-4.5 text-slate-400 mx-auto mb-1" />
                   <p className="text-[8px] uppercase tracking-wider text-slate-400 font-bold">Due Date</p>

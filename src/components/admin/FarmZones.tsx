@@ -69,6 +69,8 @@ export function FarmZones() {
         gps_coordinates: {
           latitude: parseFloat(newZone.latitude),
           longitude: parseFloat(newZone.longitude),
+          lat: parseFloat(newZone.latitude),
+          lon: parseFloat(newZone.longitude),
           radius: parseFloat(newZone.radius),
         },
         created_by: user.data.user?.id,

@@ -90,6 +90,35 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
   const [activeScreen, setActiveScreen] = useState<Screen>('home');
   const [taskFilter, setTaskFilter] = useState<'pending' | 'review'>('pending');
   const [activeTaskStartTime, setActiveTaskStartTime] = useState<string | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+
+  useEffect(() => {
+    if (!activeTaskStartTime || isNaN(new Date(activeTaskStartTime).getTime())) {
+      setElapsedSeconds(0);
+      return;
+    }
+
+    const updateElapsed = () => {
+      const parsedTime = new Date(activeTaskStartTime).getTime();
+      if (isNaN(parsedTime)) {
+        setElapsedSeconds(0);
+        return;
+      }
+      const diffMs = Date.now() - parsedTime;
+      setElapsedSeconds(Math.max(0, Math.floor(diffMs / 1000)));
+    };
+
+    updateElapsed();
+    const interval = setInterval(updateElapsed, 1000);
+    return () => clearInterval(interval);
+  }, [activeTaskStartTime]);
+
+  const formatElapsed = (totalSeconds: number) => {
+    const hrs = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     fetchTasks();
@@ -238,7 +267,7 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
                 <span className={cn('w-1.5 h-1.5 rounded-full shadow-sm', priorityColor)} />
                 {PRIORITY_LABEL[task.priority] || task.priority}
               </Badge>
-              {task.due_date && (
+              {task.due_date && !isNaN(new Date(task.due_date).getTime()) && (
                 <span className="text-[10px] text-slate-400 inline-flex items-center gap-1">
                   <Calendar className="w-3 h-3" />
                   {format(new Date(task.due_date), 'MMM d')}
@@ -272,48 +301,108 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
 
   const HomeScreen = () => {
     const initials = userProfile?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'FW';
+    const activeTask = tasks.find(t => t.status === 'in_progress');
+
     return (
-      <div className="space-y-5 fade-in">
-        {/* Greeting Banner */}
-        <Card className="p-5 bg-gradient-to-br from-slate-900 to-slate-950 text-white border-0 shadow-lg relative overflow-hidden rounded-3xl">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -translate-y-6 translate-x-6 blur-[30px]" />
+      <div className="space-y-6 fade-in">
+        {/* Dynamic Greeting Banner with Ambient Glow */}
+        <Card className="p-5 bg-gradient-to-br from-slate-900 via-slate-950 to-emerald-950 text-white border border-slate-800 shadow-xl relative overflow-hidden rounded-3xl">
+          <div className="absolute top-0 right-0 w-36 h-36 bg-emerald-500/10 rounded-full -translate-y-6 translate-x-6 blur-[35px]" />
           <div className="flex items-center justify-between gap-4 relative z-10">
-            <div className="space-y-1">
-              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Welcome back</p>
-              <h2 className="text-xl font-bold leading-tight font-heading">{userProfile?.full_name || 'Farm Worker'}</h2>
-              <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-semibold text-emerald-400 mt-1">
-                <Sparkles className="w-3 h-3 animate-spin text-emerald-400" />
-                Active Shift
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Cloud Sync Active</span>
+              </div>
+              <h2 className="text-xl font-bold leading-tight font-heading tracking-tight mt-1">
+                {userProfile?.full_name || 'Farm Worker'}
+              </h2>
+              <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-bold text-emerald-400 mt-1">
+                <Sparkles className="w-3 h-3 text-emerald-400 animate-pulse" />
+                Active Operator
               </div>
             </div>
-            <div className="w-12 h-12 rounded-full gradient-green border border-white/20 flex items-center justify-center font-bold text-white shadow-inner font-heading text-sm">
+            <div className="w-14 h-14 rounded-full gradient-green border-2 border-white/20 flex items-center justify-center font-bold text-white shadow-xl font-heading text-base shrink-0">
               {initials}
             </div>
           </div>
-          <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400 font-sans">
-            <span>📅 {format(new Date(), 'EEEE, MMM d')}</span>
-            <span>📍 Zone: Central Fields</span>
+          <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400 font-medium">
+            <span className="flex items-center gap-1">📅 {format(new Date(), 'EEEE, MMM d')}</span>
+            <span className="flex items-center gap-1">📍 Zone: {activeTask?.location || 'Central Fields'}</span>
           </div>
         </Card>
 
+        {/* Live Operations Tracker (Ticking Elapsed Card) */}
+        {activeTask && (
+          <Card
+            onClick={() => setSelectedTask(activeTask)}
+            className="p-5 bg-gradient-to-br from-emerald-950 via-slate-900 to-slate-950 text-white border border-emerald-500/30 shadow-[0_4px_20px_rgba(16,185,129,0.15)] relative overflow-hidden rounded-3xl cursor-pointer hover-lift active-shrink"
+          >
+            <div className="absolute top-0 right-0 w-36 h-36 bg-emerald-500/20 rounded-full -translate-y-6 translate-x-6 blur-[35px] animate-pulse" />
+            <div className="flex flex-col gap-4 relative z-10">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                  </span>
+                  <p className="text-[10px] uppercase tracking-widest text-rose-400 font-black tracking-wider">LIVE OPERATION IN PROGRESS</p>
+                </div>
+                <div className="bg-emerald-500/10 border border-emerald-500/30 text-[9px] font-black text-emerald-400 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  ACTIVE
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-black font-heading text-slate-100 leading-snug line-clamp-1">{activeTask.title}</h3>
+                <p className="text-xs text-slate-400 line-clamp-2 mt-1 leading-relaxed">{activeTask.description}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-1 pt-4 border-t border-white/5">
+                <div>
+                  <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Elapsed Duration</p>
+                  <p className="text-xl font-mono font-bold text-white tracking-widest mt-1">{formatElapsed(elapsedSeconds)}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Assigned Farm Zone</p>
+                  <p className="text-xs font-bold text-emerald-300 truncate mt-1.5 flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 shrink-0" />
+                    {activeTask.location || 'Current Coordinates'}
+                  </p>
+                </div>
+              </div>
+
+              {activeTask.geofence_lat && activeTask.geofence_lon && (
+                <div className="text-[9px] text-slate-500 font-mono flex items-center gap-1.5 pt-1.5 border-t border-white/5 mt-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+                  <span>GPS: {activeTask.geofence_lat.toFixed(5)}, {activeTask.geofence_lon.toFixed(5)} (Radius: {activeTask.geofence_radius || 100}m)</span>
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
+
         <AutoCheckInOut userId={userId} />
 
-        {/* Stat tiles */}
+        {/* Premium Stat Tiles */}
         <div className="grid grid-cols-3 gap-3">
-          <Card className="p-3.5 text-center bg-white/70 backdrop-blur-md border-slate-100 rounded-2xl shadow-sm hover-lift cursor-pointer">
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center mx-auto mb-2"><Clock className="h-4.5 w-4.5 text-emerald-600" /></div>
-            <p className="text-lg font-extrabold leading-none text-slate-800 font-heading">{stats.totalHours.toFixed(1)}</p>
-            <p className="text-[9px] uppercase tracking-wider text-slate-400 font-bold mt-1.5">Hours</p>
+          <Card className="p-4 text-center bg-white/70 backdrop-blur-md border border-slate-100 rounded-3xl shadow-sm hover-lift cursor-pointer transition-all duration-300">
+            <div className="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-2 shadow-sm"><Clock className="h-5 w-5" /></div>
+            <p className="text-xl font-extrabold leading-none text-slate-800 font-heading">{stats.totalHours.toFixed(1)}</p>
+            <p className="text-[9px] uppercase tracking-wider text-slate-400 font-black mt-2">Hours Worked</p>
           </Card>
-          <Card className="p-3.5 text-center bg-white/70 backdrop-blur-md border-slate-100 rounded-2xl shadow-sm hover-lift cursor-pointer">
-            <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center mx-auto mb-2"><PlayCircle className="h-4.5 w-4.5 text-blue-600 animate-pulse" /></div>
-            <p className="text-lg font-extrabold leading-none text-slate-800 font-heading">{pendingTasks.length}</p>
-            <p className="text-[9px] uppercase tracking-wider text-slate-400 font-bold mt-1.5">Active</p>
+          <Card className="p-4 text-center bg-white/70 backdrop-blur-md border border-slate-100 rounded-3xl shadow-sm hover-lift cursor-pointer transition-all duration-300">
+            <div className="w-9 h-9 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-2 shadow-sm"><PlayCircle className="h-5 w-5 animate-pulse" /></div>
+            <p className="text-xl font-extrabold leading-none text-slate-800 font-heading">{pendingTasks.length}</p>
+            <p className="text-[9px] uppercase tracking-wider text-slate-400 font-black mt-2">Active Tasks</p>
           </Card>
-          <Card className="p-3.5 text-center bg-white/70 backdrop-blur-md border-slate-100 rounded-2xl shadow-sm hover-lift cursor-pointer">
-            <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center mx-auto mb-2"><HourglassIcon className="h-4.5 w-4.5 text-purple-600" /></div>
-            <p className="text-lg font-extrabold leading-none text-slate-800 font-heading">{reviewTasks.length}</p>
-            <p className="text-[9px] uppercase tracking-wider text-slate-400 font-bold mt-1.5">In Review</p>
+          <Card className="p-4 text-center bg-white/70 backdrop-blur-md border border-slate-100 rounded-3xl shadow-sm hover-lift cursor-pointer transition-all duration-300">
+            <div className="w-9 h-9 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-2 shadow-sm"><HourglassIcon className="h-5 w-5" /></div>
+            <p className="text-xl font-extrabold leading-none text-slate-800 font-heading">{reviewTasks.length}</p>
+            <p className="text-[9px] uppercase tracking-wider text-slate-400 font-black mt-2">In Review</p>
           </Card>
         </div>
 
@@ -321,35 +410,35 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => { setActiveScreen('tasks'); setTaskFilter('pending'); }}
-            className="rounded-3xl border border-slate-100 bg-white/80 backdrop-blur p-4.5 text-left hover-lift active-shrink shadow-sm hover:shadow-md transition-all"
+            className="rounded-[28px] border border-slate-100 bg-white/80 backdrop-blur p-5 text-left hover-lift active-shrink shadow-sm hover:shadow-md transition-all group"
           >
-            <div className="rounded-2xl bg-amber-50 w-11 h-11 flex items-center justify-center mb-3">
-              <ClipboardList className="w-5.5 h-5.5 text-amber-600" />
+            <div className="rounded-2xl bg-amber-50 w-12 h-12 flex items-center justify-center mb-4.5 transition-transform duration-300 group-hover:scale-110 shadow-sm">
+              <ClipboardList className="w-6 h-6 text-amber-600" />
             </div>
             <p className="font-bold text-slate-800 text-sm font-heading">My Tasks</p>
             <p className="text-[10px] text-slate-400 mt-1">{pendingTasks.length} pending · {reviewTasks.length} in review</p>
           </button>
           <button
             onClick={() => setActiveScreen('completed')}
-            className="rounded-3xl border border-slate-100 bg-white/80 backdrop-blur p-4.5 text-left hover-lift active-shrink shadow-sm hover:shadow-md transition-all"
+            className="rounded-[28px] border border-slate-100 bg-white/80 backdrop-blur p-5 text-left hover-lift active-shrink shadow-sm hover:shadow-md transition-all group"
           >
-            <div className="rounded-2xl bg-emerald-50 w-11 h-11 flex items-center justify-center mb-3">
-              <Archive className="w-5.5 h-5.5 text-emerald-600" />
+            <div className="rounded-2xl bg-emerald-50 w-12 h-12 flex items-center justify-center mb-4.5 transition-transform duration-300 group-hover:scale-110 shadow-sm">
+              <Archive className="w-6 h-6 text-emerald-600" />
             </div>
             <p className="font-bold text-slate-800 text-sm font-heading">Completed</p>
             <p className="text-[10px] text-slate-400 mt-1">{doneTasks.length} approved</p>
           </button>
           <button
             onClick={() => setShowRequestTask(true)}
-            className="rounded-3xl border border-slate-100 bg-white/80 backdrop-blur p-4.5 text-left hover-lift active-shrink shadow-sm hover:shadow-md transition-all col-span-2"
+            className="rounded-[28px] border border-slate-100 bg-white/80 backdrop-blur p-5 text-left hover-lift active-shrink shadow-sm hover:shadow-md transition-all col-span-2 group"
           >
-            <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-primary/10 w-11 h-11 flex items-center justify-center shrink-0">
-                <Plus className="w-5.5 h-5.5 text-primary" />
+            <div className="flex items-center gap-4">
+              <div className="rounded-2xl bg-primary/10 w-12 h-12 flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 shadow-sm">
+                <Plus className="w-6 h-6 text-primary" />
               </div>
               <div>
                 <p className="font-bold text-slate-800 text-sm font-heading">Request Custom Task</p>
-                <p className="text-[10px] text-slate-400">Request assignments from your supervisor</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Request assignments directly from your supervisor</p>
               </div>
             </div>
           </button>
@@ -357,17 +446,19 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
 
         {/* Up next preview */}
         {pendingTasks.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-3.5">
             <div className="flex items-center justify-between px-1">
               <h3 className="font-bold text-slate-800 text-sm font-heading">Next Assignments</h3>
               <button
                 onClick={() => { setActiveScreen('tasks'); setTaskFilter('pending'); }}
-                className="text-xs text-primary font-bold hover:underline"
+                className="text-xs text-primary font-black hover:underline"
               >
                 See all
               </button>
             </div>
-            {pendingTasks.slice(0, 2).map(t => renderTaskCard(t, 'pending'))}
+            <div className="space-y-1">
+              {pendingTasks.slice(0, 2).map(t => renderTaskCard(t, 'pending'))}
+            </div>
           </div>
         )}
       </div>
@@ -381,32 +472,32 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
         <p className="text-xs text-slate-500">Track and report active farm operations</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5 p-1 bg-slate-100 rounded-xl">
+      <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-200/50 backdrop-blur rounded-2xl border border-slate-200/20 shadow-inner">
         <button
           onClick={() => setTaskFilter('pending')}
           className={cn(
-            'flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all',
+            'flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all duration-200 active-shrink',
             taskFilter === 'pending'
               ? 'bg-white text-slate-900 shadow-sm'
-              : 'text-slate-600 hover:text-slate-900'
+              : 'text-slate-500 hover:text-slate-800'
           )}
         >
-          <Clock className="w-4 h-4 text-amber-600" />
+          <Clock className="w-4 h-4 text-amber-600 animate-pulse" />
           <span>Pending</span>
-          <Badge className="ml-1 bg-slate-200 text-slate-800 border-0 h-4 px-1.5 text-[9px] hover:bg-slate-200">{pendingTasks.length}</Badge>
+          <Badge className="ml-1 bg-slate-200 text-slate-800 border-0 h-4.5 px-1.5 text-[9px] hover:bg-slate-200 font-extrabold">{pendingTasks.length}</Badge>
         </button>
         <button
           onClick={() => setTaskFilter('review')}
           className={cn(
-            'flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all',
+            'flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all duration-200 active-shrink',
             taskFilter === 'review'
               ? 'bg-white text-slate-900 shadow-sm'
-              : 'text-slate-600 hover:text-slate-900'
+              : 'text-slate-500 hover:text-slate-800'
           )}
         >
           <HourglassIcon className="w-4 h-4 text-purple-600" />
           <span>In Review</span>
-          <Badge className="ml-1 bg-slate-200 text-slate-800 border-0 h-4 px-1.5 text-[9px] hover:bg-slate-200">{reviewTasks.length}</Badge>
+          <Badge className="ml-1 bg-slate-200 text-slate-800 border-0 h-4.5 px-1.5 text-[9px] hover:bg-slate-200 font-extrabold">{reviewTasks.length}</Badge>
         </button>
       </div>
 
@@ -445,14 +536,15 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
         <h2 className="text-2xl font-extrabold text-slate-800 font-heading">Approved Tasks</h2>
         <p className="text-xs text-slate-500">History of your completed operations</p>
       </div>
-      <Card className="p-4 bg-emerald-50/50 border-emerald-100 rounded-2xl">
-        <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-emerald-100 w-11 h-11 flex items-center justify-center">
-            <CheckCheck className="h-5.5 w-5.5 text-emerald-700" />
+      <Card className="p-5 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20 rounded-3xl relative overflow-hidden shadow-sm shadow-emerald-500/5">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -translate-y-4 translate-x-4 blur-2xl" />
+        <div className="flex items-center gap-4 relative z-10">
+          <div className="rounded-2xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 w-12 h-12 flex items-center justify-center shadow-sm">
+            <CheckCheck className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-2xl font-extrabold text-emerald-950 leading-none font-heading">{doneTasks.length}</p>
-            <p className="text-[10px] text-emerald-700 font-semibold mt-1">Total approved farm tasks</p>
+            <p className="text-3xl font-black text-emerald-900 leading-none font-heading">{doneTasks.length}</p>
+            <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mt-1.5 font-sans">Approved Tasks Logged</p>
           </div>
         </div>
       </Card>
@@ -479,8 +571,8 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
     ];
 
     return (
-      <nav className="fixed bottom-4 left-4 right-4 z-30 rounded-2xl glass-card border border-white/50 shadow-lg px-2 py-1 max-w-md mx-auto">
-        <div className="grid grid-cols-4 w-full">
+      <nav className="fixed bottom-6 left-4 right-4 z-30 rounded-2xl glass-card border border-white/30 dark:border-white/5 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] px-3 py-1.5 max-w-md mx-auto transition-all duration-300">
+        <div className="grid grid-cols-4 w-full relative">
           {navItems.map(item => {
             const Icon = item.icon;
             const active = activeScreen === item.id;
@@ -489,21 +581,21 @@ export function MobileWorkerDashboard({ userId, userRole }: MobileWorkerDashboar
                 key={item.id}
                 onClick={() => setActiveScreen(item.id)}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl transition-all relative active-shrink',
+                  'flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl transition-all duration-200 relative active-shrink outline-none',
                   active ? 'text-primary' : 'text-slate-500 hover:text-slate-800'
                 )}
               >
                 <div className="relative">
-                  <Icon className={cn('w-5 h-5 transition-transform duration-200', active && 'scale-110')} />
+                  <Icon className={cn('w-5 h-5 transition-all duration-300', active && 'scale-110 stroke-[2.5px]')} />
                   {item.badge !== undefined && item.badge > 0 && (
-                    <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center shadow-sm">
+                    <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 rounded-full bg-primary text-white text-[9px] font-extrabold flex items-center justify-center shadow-[0_2px_8px_rgba(16,185,129,0.3)]">
                       {item.badge > 9 ? '9+' : item.badge}
                     </span>
                   )}
                 </div>
-                <span className={cn('text-[9px] font-medium tracking-tight mt-0.5', active && 'font-bold')}>{item.label}</span>
+                <span className={cn('text-[9px] font-bold tracking-tight transition-all duration-200', active ? 'text-primary font-black scale-105' : 'text-slate-400')}>{item.label}</span>
                 {active && (
-                  <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-1 bg-primary rounded-full" />
+                  <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-5 h-1 bg-primary rounded-full shadow-[0_0_10px_rgba(16,185,129,0.6)]" />
                 )}
               </button>
             );
