@@ -1,72 +1,58 @@
 import { useState } from 'react';
-import { Camera, CameraResultType, CameraSource, GalleryPhotos } from '@capacitor/camera';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { ImagePlus, X, Loader2, CheckCircle2 } from 'lucide-react';
+import { Camera as CameraIcon, X, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface PhotoCaptureProps {
   minPhotos: number;
-  maxPhotos: number;
+  maxPhotos?: number; // Kept for interface compatibility but ignored for unlimited capture
   onPhotosCapture: (photos: string[]) => void;
   title: string;
-  // When true, automatically submit photos as soon as minPhotos is reached
   autoSubmit?: boolean;
 }
 
 type UploadStatus = 'idle' | 'selecting' | 'processing' | 'ready';
 
-export function PhotoCapture({ minPhotos, maxPhotos, onPhotosCapture, title, autoSubmit = true }: PhotoCaptureProps) {
+export function PhotoCapture({ minPhotos, maxPhotos = 100, onPhotosCapture, title, autoSubmit = true }: PhotoCaptureProps) {
   const [photos, setPhotos] = useState<string[]>([]);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
   const [processingProgress, setProcessingProgress] = useState(0);
 
-  const selectPhotos = async () => {
+  const takePhoto = async () => {
     try {
       setUploadStatus('selecting');
       
-      // Calculate how many more photos we can select
-      const remainingSlots = maxPhotos - photos.length;
-      
-      // Use pickImages for multi-select from gallery
-      const result = await Camera.pickImages({
+      const photo = await Camera.getPhoto({
         quality: 90,
-        limit: remainingSlots,
+        allowEditing: false,
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Camera, // Force camera only (no gallery)
       });
 
-      if (result.photos && result.photos.length > 0) {
+      if (photo.webPath) {
         setUploadStatus('processing');
         setProcessingProgress(0);
         
-        const newPhotos: string[] = [];
-        const totalPhotos = result.photos.length;
+        // Process the captured photo and convert to data URL
+        const response = await fetch(photo.webPath);
+        const blob = await response.blob();
         
-        // Process each photo and convert to data URL
-        for (let i = 0; i < result.photos.length; i++) {
-          const photo = result.photos[i];
-          
-          // Read the photo as base64
-          const response = await fetch(photo.webPath);
-          const blob = await response.blob();
-          
-          const dataUrl = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-          });
-          
-          newPhotos.push(dataUrl);
-          setProcessingProgress(Math.round(((i + 1) / totalPhotos) * 100));
-        }
-
-        const updatedPhotos = [...photos, ...newPhotos].slice(0, maxPhotos);
+        const dataUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+        
+        const updatedPhotos = [...photos, dataUrl];
         setPhotos(updatedPhotos);
         setUploadStatus('ready');
 
         toast({
-          title: "Photos selected",
-          description: `${updatedPhotos.length}/${maxPhotos} photos ready`,
+          title: "Photo captured",
+          description: `${updatedPhotos.length} photo(s) captured`,
         });
 
         // If configured, automatically submit photos when minimum reached
@@ -77,7 +63,7 @@ export function PhotoCapture({ minPhotos, maxPhotos, onPhotosCapture, title, aut
         setUploadStatus('idle');
       }
     } catch (error: any) {
-      console.error('Gallery error:', error);
+      console.error('Camera error:', error);
       setUploadStatus('idle');
       
       // Don't show error if user cancelled
@@ -86,8 +72,8 @@ export function PhotoCapture({ minPhotos, maxPhotos, onPhotosCapture, title, aut
       }
       
       toast({
-        title: "Gallery error",
-        description: "Failed to select photos. Please try again.",
+        title: "Camera error",
+        description: "Failed to capture photo. Please try again.",
         variant: "destructive",
       });
     }
@@ -104,7 +90,7 @@ export function PhotoCapture({ minPhotos, maxPhotos, onPhotosCapture, title, aut
     if (photos.length < minPhotos) {
       toast({
         title: "More photos needed",
-        description: `Please select at least ${minPhotos} photos`,
+        description: `Please capture at least ${minPhotos} photos`,
         variant: "destructive",
       });
       return;
@@ -115,15 +101,15 @@ export function PhotoCapture({ minPhotos, maxPhotos, onPhotosCapture, title, aut
   const getStatusMessage = () => {
     switch (uploadStatus) {
       case 'selecting':
-        return 'Opening gallery...';
+        return 'Opening camera...';
       case 'processing':
-        return `Processing photos... ${processingProgress}%`;
+        return `Processing photo... ${processingProgress}%`;
       case 'ready':
         return photos.length >= minPhotos 
           ? 'Photos ready! Click Continue to proceed.' 
-          : `Select ${minPhotos - photos.length} more photo(s)`;
+          : `Capture ${minPhotos - photos.length} more photo(s)`;
       default:
-        return `Select ${minPhotos}-${maxPhotos} photos from your gallery`;
+        return `Capture at least ${minPhotos} photos using your camera`;
     }
   };
 
@@ -142,7 +128,7 @@ export function PhotoCapture({ minPhotos, maxPhotos, onPhotosCapture, title, aut
             <Progress value={processingProgress} className="h-2" />
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Preparing photos...</span>
+              <span>Preparing photo...</span>
             </div>
           </div>
         )}
@@ -180,20 +166,20 @@ export function PhotoCapture({ minPhotos, maxPhotos, onPhotosCapture, title, aut
 
       <div className="flex gap-2">
         <Button
-          onClick={selectPhotos}
-          disabled={photos.length >= maxPhotos || uploadStatus === 'processing' || uploadStatus === 'selecting'}
+          onClick={takePhoto}
+          disabled={uploadStatus === 'processing' || uploadStatus === 'selecting'}
           className="flex-1"
           variant={photos.length >= minPhotos ? "outline" : "default"}
         >
           {uploadStatus === 'selecting' || uploadStatus === 'processing' ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {uploadStatus === 'selecting' ? 'Opening...' : 'Processing...'}
+              {uploadStatus === 'selecting' ? 'Opening Camera...' : 'Processing...'}
             </>
           ) : (
             <>
-              <ImagePlus className="mr-2 h-4 w-4" />
-              Select Photos ({photos.length}/{maxPhotos})
+              <CameraIcon className="mr-2 h-4 w-4" />
+              Capture Photo ({photos.length} taken)
             </>
           )}
         </Button>

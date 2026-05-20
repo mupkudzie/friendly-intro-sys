@@ -115,10 +115,51 @@ export function MobileTaskStart({ task, userId, isOpen, onClose, onTaskStarted }
       setUploadProgress(Math.round((currentStep / totalSteps) * 100));
       setUploadingMessage('Updating task...');
 
-      // Update task status
+      // Fetch supervisor verification settings
+      const { data: dbTask, error: fetchError } = await supabase
+        .from('tasks')
+        .select('verify_time_1_min, verify_time_2_min')
+        .eq('id', task.id)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching task verification config:', fetchError);
+      }
+
+      let verify_time_1_at: string | null = null;
+      let verify_time_2_at: string | null = null;
+
+      if (dbTask) {
+        const v1Min = dbTask.verify_time_1_min;
+        const v2Min = dbTask.verify_time_2_min;
+
+        let t1Offset = 0;
+        if (v1Min != null && v1Min > 0) {
+          t1Offset = v1Min * 60 * 1000;
+        } else {
+          // Trigger randomly between 1 and 3 minutes after task start
+          t1Offset = Math.floor(Math.random() * (3 * 60 * 1000 - 1 * 60 * 1000 + 1)) + 1 * 60 * 1000;
+        }
+        verify_time_1_at = new Date(new Date(startTime).getTime() + t1Offset).toISOString();
+
+        let t2Offset = 0;
+        if (v2Min != null && v2Min > 0) {
+          t2Offset = v2Min * 60 * 1000;
+        } else {
+          // Trigger randomly between 8 and 20 minutes after the first verification
+          t2Offset = t1Offset + Math.floor(Math.random() * (20 * 60 * 1000 - 8 * 60 * 1000 + 1)) + 8 * 60 * 1000;
+        }
+        verify_time_2_at = new Date(new Date(startTime).getTime() + t2Offset).toISOString();
+      }
+
+      // Update task status and verification trigger times
       const { error: taskError } = await supabase
         .from('tasks')
-        .update({ status: 'in_progress' })
+        .update({ 
+          status: 'in_progress',
+          verify_time_1_at,
+          verify_time_2_at
+        })
         .eq('id', task.id);
 
       if (taskError) {

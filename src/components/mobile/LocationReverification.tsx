@@ -123,6 +123,35 @@ export function LocationReverification({
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const nextTickRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Initialize verificationsCompleted from the database to survive navigation/refresh
+  useEffect(() => {
+    let active = true;
+    const fetchExistingVerifications = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user || !active) return;
+
+        const { data, error } = await supabase
+          .from('verification_logs')
+          .select('verification_number')
+          .eq('task_id', taskId)
+          .eq('user_id', user.id);
+
+        if (!error && data && active) {
+          // Count only entries that are completed (success, failed, or missed)
+          setVerificationsCompleted(data.length);
+        }
+      } catch (err) {
+        console.error('Error fetching existing verifications:', err);
+      }
+    };
+
+    fetchExistingVerifications();
+    return () => {
+      active = false;
+    };
+  }, [taskId]);
+
   // Persist verification event to DB
   const logVerification = useCallback(async (params: {
     status: 'success' | 'failed' | 'missed';
@@ -199,20 +228,25 @@ export function LocationReverification({
       return;
     }
 
-    // Two popups total. If supervisor configured minute offsets
-    // (verify_time_1_min / verify_time_2_min relative to task start), use them.
-    // Otherwise fall back to random ranges.
     const isFirst = verificationsCompleted === 0;
-    const configuredMin = isFirst ? verifyTime1Min : verifyTime2Min;
+    const configuredAtStr = isFirst ? verifyTime1At : verifyTime2At;
     let fireAt: number;
-    if (configuredMin != null && configuredMin > 0 && taskStartTime) {
-      fireAt = new Date(taskStartTime).getTime() + configuredMin * 60 * 1000;
-      // If that moment already passed, fire in 10s rather than immediately
-      if (fireAt <= Date.now()) fireAt = Date.now() + 10_000;
+
+    if (configuredAtStr) {
+      fireAt = new Date(configuredAtStr).getTime();
+      // If that moment already passed, trigger in 2 seconds to let UI settle
+      if (fireAt <= Date.now()) fireAt = Date.now() + 2000;
     } else {
-      const minMs = isFirst ? FIRST_MIN_MS : SECOND_MIN_MS;
-      const maxMs = isFirst ? FIRST_MAX_MS : SECOND_MAX_MS;
-      fireAt = Date.now() + Math.floor(Math.random() * (maxMs - minMs)) + minMs;
+      // Fallback if timestamps are missing
+      const configuredMin = isFirst ? verifyTime1Min : verifyTime2Min;
+      if (configuredMin != null && configuredMin > 0 && taskStartTime) {
+        fireAt = new Date(taskStartTime).getTime() + configuredMin * 60 * 1000;
+        if (fireAt <= Date.now()) fireAt = Date.now() + 2000;
+      } else {
+        const minMs = isFirst ? FIRST_MIN_MS : SECOND_MIN_MS;
+        const maxMs = isFirst ? FIRST_MAX_MS : SECOND_MAX_MS;
+        fireAt = Date.now() + Math.floor(Math.random() * (maxMs - minMs)) + minMs;
+      }
     }
 
     setNextCheckAt(fireAt);
@@ -264,7 +298,7 @@ export function LocationReverification({
         triggerPopup();
       }
     }, 1000);
-  }, [isTaskActive, locationTypeIsFarm, verificationsCompleted, clearAllTimers, notifySupervisor, logVerification, verifyTime1Min, verifyTime2Min, taskStartTime]);
+  }, [isTaskActive, locationTypeIsFarm, verificationsCompleted, clearAllTimers, notifySupervisor, logVerification, verifyTime1Min, verifyTime2Min, verifyTime1At, verifyTime2At, taskStartTime]);
 
   useEffect(() => {
     if (isTaskActive && locationTypeIsFarm && verificationsCompleted < MAX_VERIFICATIONS) {
