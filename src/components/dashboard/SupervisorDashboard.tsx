@@ -159,6 +159,8 @@ export function SupervisorDashboard() {
         return <RedoRequests onRefresh={fetchMenuCounts} />;
       case 'assign':
         return <TaskAssignment />;
+      case 'manage-tasks':
+        return <ManageAssignedTasks />;
       case 'activity':
         return <WorkerActivityTracker userRole="supervisor" />;
       case 'photos':
