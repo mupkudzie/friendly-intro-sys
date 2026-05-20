@@ -26,14 +26,17 @@ const Index = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <div>Loading...</div>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 animate-pulse">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+            <Sprout className="w-6 h-6 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+          </div>
+          <div className="text-sm font-semibold tracking-wide text-slate-600 font-heading">Loading FarmFlow...</div>
           {showTimeout && (
-            <div className="text-center text-sm text-muted-foreground">
+            <div className="text-center text-sm text-muted-foreground slide-up">
               <p>Taking longer than expected...</p>
-              <Button variant="link" onClick={() => setShowTimeout(false)} className="mt-2">
+              <Button variant="link" onClick={() => setShowTimeout(false)} className="mt-2 text-primary font-medium">
                 Try again
               </Button>
             </div>
@@ -48,56 +51,70 @@ const Index = () => {
       icon: Users,
       title: 'Team Management',
       description: 'Organize farm workers with role-based access, approvals, and real-time activity tracking.',
-      color: 'bg-blue-50 text-blue-600',
+      color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400',
     },
     {
       icon: Sprout,
       title: 'Smart Task Assignment',
       description: 'Create, assign, and monitor farm tasks with templates, priorities, and AI-powered suggestions.',
-      color: 'bg-emerald-50 text-emerald-600',
+      color: 'bg-teal-50 text-teal-600 dark:bg-teal-950/20 dark:text-teal-400',
     },
     {
       icon: Clock,
       title: 'Time & Attendance',
       description: 'Automated clock in/out with GPS verification, break tracking, and weekly timesheets.',
-      color: 'bg-amber-50 text-amber-600',
+      color: 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400',
     },
     {
       icon: BarChart3,
       title: 'Analytics & Reports',
       description: 'AI-refined reports, performance dashboards, and actionable insights for better decisions.',
-      color: 'bg-purple-50 text-purple-600',
+      color: 'bg-purple-50 text-purple-600 dark:bg-purple-950/20 dark:text-purple-400',
     },
     {
       icon: MapPin,
       title: 'GPS Verification',
       description: 'Random location checks ensure workers are on-site with real-time supervisor alerts.',
-      color: 'bg-rose-50 text-rose-600',
+      color: 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400',
     },
     {
       icon: Shield,
       title: 'Secure & Reliable',
       description: 'Role-based security, audit trails, and offline support keep your data safe and accessible.',
-      color: 'bg-slate-50 text-slate-600',
+      color: 'bg-slate-50 text-slate-600 dark:bg-slate-950/20 dark:text-slate-400',
     },
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-50 text-slate-900 relative overflow-x-hidden font-sans selection:bg-primary/20 selection:text-primary">
+      {/* Decorative Orbs */}
+      <div className="absolute top-[-20%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-emerald-400/10 blur-[120px] pointer-events-none" />
+      <div className="absolute top-[20%] right-[-10%] w-[45vw] h-[45vw] rounded-full bg-teal-300/15 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[10%] left-[5%] w-[40vw] h-[40vw] rounded-full bg-amber-200/10 blur-[100px] pointer-events-none" />
+
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-lg">
+      <nav className="sticky top-0 z-50 glass-navbar shadow-sm transition-all duration-300">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-              <Sprout className="w-5 h-5 text-primary-foreground" />
+            <div className="w-10 h-10 rounded-xl gradient-green flex items-center justify-center shadow-lg shadow-emerald-600/20">
+              <Sprout className="w-5.5 h-5.5 text-white" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-foreground">FarmFlow</span>
+            <span className="text-xl font-bold tracking-tight text-slate-900 font-heading">
+              Farm<span className="text-primary">Flow</span>
+            </span>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" onClick={() => navigate('/auth')} className="text-sm font-medium">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate('/auth')} 
+              className="text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/50 rounded-xl"
+            >
               Sign In
             </Button>
-            <Button onClick={() => navigate('/auth')} className="text-sm font-medium rounded-xl px-5">
+            <Button 
+              onClick={() => navigate('/auth')} 
+              className="text-sm font-semibold rounded-xl px-5 h-10 gradient-green text-white shadow-md shadow-emerald-600/10 hover:shadow-xl hover:shadow-emerald-600/20 active-shrink transition-all duration-300"
+            >
               Get Started
               <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
@@ -106,54 +123,65 @@ const Index = () => {
       </nav>
 
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
-        <div className="max-w-7xl mx-auto px-6 pt-20 pb-24 relative">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-8">
-              <Sprout className="w-4 h-4" />
-              Smart Farm Management
-            </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1] mb-6">
-              Manage your farm
-              <span className="block text-primary mt-1">with confidence</span>
-            </h1>
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-              Track tasks, monitor attendance, verify locations, and generate insights — all in one beautifully simple platform built for modern farm operations.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" onClick={() => navigate('/auth')} className="text-base rounded-xl px-8 h-12 shadow-lg shadow-primary/20">
-                Start for Free
-                <ChevronRight className="w-5 h-5 ml-1" />
-              </Button>
-              <Button size="lg" variant="outline" onClick={() => navigate('/auth')} className="text-base rounded-xl px-8 h-12">
-                Sign In
-              </Button>
-            </div>
+      <section className="relative pt-24 pb-20 px-6">
+        <div className="max-w-7xl mx-auto relative z-10 text-center">
+          <div className="inline-flex items-center gap-2 px-4.5 py-1.5 rounded-full bg-emerald-500/10 text-emerald-800 text-xs font-semibold mb-8 scale-in tracking-wider border border-emerald-500/20 uppercase">
+            <Sprout className="w-3.5 h-3.5" />
+            Next-Gen Farm Operations
+          </div>
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.1] mb-6 font-heading slide-up">
+            Streamline Your Farm Tasks
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 mt-2">
+              With Visual Precision
+            </span>
+          </h1>
+          <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto mb-12 leading-relaxed font-sans slide-up">
+            Track timesheets, auto-verify GPS coordinates, manage field workers, and capture live progress photos — all integrated into one beautiful, easy-to-use platform.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center slide-up">
+            <Button 
+              size="lg" 
+              onClick={() => navigate('/auth')} 
+              className="w-full sm:w-auto text-base font-semibold rounded-2xl px-10 h-13 shadow-xl gradient-green text-white active-shrink transition-all duration-300"
+            >
+              Start for Free
+              <ChevronRight className="w-5 h-5 ml-1.5" />
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              onClick={() => navigate('/auth')} 
+              className="w-full sm:w-auto text-base font-semibold rounded-2xl px-10 h-13 border-slate-200 bg-white/70 hover:bg-slate-100 text-slate-700 hover:text-slate-900 active-shrink transition-all duration-300"
+            >
+              Explore Dashboard
+            </Button>
           </div>
         </div>
       </section>
 
       {/* Features */}
-      <section className="py-20 px-6">
+      <section className="py-24 px-6 relative">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Everything you need to run your farm
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4.5xl font-bold text-slate-900 mb-4 font-heading">
+              Everything Needed to Run Your Fields
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              From task assignment to performance analytics, FarmFlow gives supervisors and farm workers the tools they need.
+            <p className="text-slate-500 text-md sm:text-lg max-w-2xl mx-auto font-sans">
+              From GPS-fenced check-ins to automated compliance checks, FarmFlow offers supervisors and workers complete synchronicity.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature) => (
-              <Card key={feature.title} className="group border-0 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-card">
+            {features.map((feature, i) => (
+              <Card 
+                key={feature.title} 
+                className="group border-0 glass-card p-1 hover-lift active-shrink transition-all duration-300"
+              >
                 <CardContent className="p-7">
-                  <div className={`w-12 h-12 rounded-2xl ${feature.color} flex items-center justify-center mb-5`}>
+                  <div className={`w-12 h-12 rounded-2xl ${feature.color} flex items-center justify-center mb-6 shadow-sm`}>
                     <feature.icon className="w-6 h-6" />
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed text-sm">{feature.description}</p>
+                  <h3 className="text-lg font-bold text-slate-900 mb-2.5 font-heading">{feature.title}</h3>
+                  <p className="text-slate-500 leading-relaxed text-sm font-sans">{feature.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -162,18 +190,24 @@ const Index = () => {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-6">
-        <div className="max-w-3xl mx-auto">
-          <Card className="border-0 shadow-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
-            <CardContent className="p-10 sm:p-14 text-center relative z-10">
-              <Sprout className="w-12 h-12 mx-auto mb-6 opacity-90" />
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4">Ready to streamline your farm?</h2>
-              <p className="text-primary-foreground/80 text-lg mb-8 max-w-lg mx-auto">
-                Join FarmFlow today and experience the easiest way to manage tasks, track time, and boost productivity.
+      <section className="py-20 px-6 relative">
+        <div className="max-w-4xl mx-auto">
+          <Card className="border-0 shadow-2xl bg-gradient-to-br from-slate-900 to-slate-950 text-white overflow-hidden relative rounded-3xl p-2">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-[80px]" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-500/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-[60px]" />
+            <CardContent className="p-10 sm:p-16 text-center relative z-10">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 flex items-center justify-center mx-auto mb-6 border border-emerald-500/30">
+                <Sprout className="w-8 h-8 text-emerald-400" />
+              </div>
+              <h2 className="text-2xl sm:text-3.5xl font-bold mb-4 font-heading tracking-tight">Ready to streamline your farm operations?</h2>
+              <p className="text-slate-400 text-md mb-10 max-w-lg mx-auto font-sans leading-relaxed">
+                Empower your workforce with automated timesheets, visual verification, and real-time updates.
               </p>
-              <Button size="lg" variant="secondary" onClick={() => navigate('/auth')} className="text-base rounded-xl px-8 h-12 font-semibold">
+              <Button 
+                size="lg" 
+                onClick={() => navigate('/auth')} 
+                className="text-base rounded-2xl px-10 h-13 font-bold bg-white text-slate-900 hover:bg-slate-100 hover:scale-105 active-shrink transition-all duration-300 shadow-lg shadow-black/30"
+              >
                 Create Your Account
                 <ChevronRight className="w-5 h-5 ml-1" />
               </Button>
@@ -183,16 +217,18 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t py-8 px-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <footer className="border-t border-slate-200/60 bg-white/50 py-10 px-6 relative">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-              <Sprout className="w-4 h-4 text-primary-foreground" />
+            <div className="w-8 h-8 rounded-lg gradient-green flex items-center justify-center shadow-md shadow-emerald-600/15">
+              <Sprout className="w-4.5 h-4.5 text-white" />
             </div>
-            <span className="font-semibold text-foreground">FarmFlow</span>
+            <span className="font-bold text-slate-900 font-heading">
+              Farm<span className="text-primary">Flow</span>
+            </span>
           </div>
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} FarmFlow. All rights reserved.
+          <p className="text-xs text-slate-400 font-sans">
+            © {new Date().getFullYear()} FarmFlow. All rights reserved. Designed for sustainable agricultural operations.
           </p>
         </div>
       </footer>

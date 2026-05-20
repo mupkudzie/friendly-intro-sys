@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Leaf, Mail, Lock, User, Phone, ArrowLeft, AlertCircle, KeyRound } from 'lucide-react';
+import { Leaf, Mail, Lock, User, Phone, ArrowLeft, AlertCircle, KeyRound, Sparkles, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Auth() {
@@ -133,7 +133,6 @@ export default function Auth() {
     setError('');
 
     try {
-      // Verify access code for admin/supervisor roles via secure RPC
       if (requiresAccessCode) {
         const roleToCheck = role === 'admin' ? 'admin' : 'supervisor';
         const { data: isValid, error: codeError } = await supabase
@@ -148,8 +147,6 @@ export default function Auth() {
       }
 
       const redirectUrl = `${window.location.origin}/`;
-      
-      // Map role: "student" DB enum is used for farm workers
       const dbRole = role;
 
       const { error } = await supabase.auth.signUp({
@@ -250,247 +247,347 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2.5 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-              <Leaf className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">FarmFlow</h1>
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row relative overflow-hidden selection:bg-primary/20 selection:text-primary">
+      {/* Desktop Visual Left Pane */}
+      <div className="hidden md:flex md:w-[45%] lg:w-[40%] bg-slate-950 p-12 flex-col justify-between relative overflow-hidden text-white border-r border-slate-800">
+        {/* Glows */}
+        <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] rounded-full bg-emerald-500/10 blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[70%] rounded-full bg-teal-500/10 blur-[100px] pointer-events-none" />
+        
+        {/* Top Header */}
+        <div className="flex items-center gap-3 relative z-10">
+          <div className="w-10 h-10 rounded-xl gradient-green flex items-center justify-center shadow-lg shadow-emerald-500/20 border border-emerald-400/20">
+            <Leaf className="w-5.5 h-5.5 text-white" />
           </div>
-          <p className="text-muted-foreground">Smart Farm Task Management</p>
+          <span className="text-xl font-bold tracking-tight font-heading">
+            Farm<span className="text-emerald-400">Flow</span>
+          </span>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Welcome</CardTitle>
-            <CardDescription>
-              Sign in to your account or create a new one
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
-              </TabsList>
+        {/* Content Body */}
+        <div className="space-y-6 relative z-10 my-auto">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-semibold tracking-wide uppercase border border-emerald-500/20">
+            <Sparkles className="w-3.5 h-3.5" />
+            Enterprise Agricultural Hub
+          </div>
+          <h2 className="text-3xl lg:text-4.5xl font-extrabold leading-tight tracking-tight font-heading">
+            Smart Management for Modern Fields.
+          </h2>
+          <p className="text-slate-400 leading-relaxed text-sm lg:text-base">
+            Join the platform designed to coordinate workers, track attendance, and log GPS check-ins with absolute precision.
+          </p>
+          <div className="pt-4 flex flex-col gap-3 text-xs text-slate-400">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded bg-emerald-500/15 flex items-center justify-center text-emerald-400 shrink-0">
+                <ShieldCheck className="w-3.5 h-3.5" />
+              </div>
+              <span>Secured with role-based access control</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded bg-emerald-500/15 flex items-center justify-center text-emerald-400 shrink-0">
+                <KeyRound className="w-3.5 h-3.5" />
+              </div>
+              <span>Authorized entry via digital access codes</span>
+            </div>
+          </div>
+        </div>
 
-              <TabsContent value="signin">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="signin-email"
-                        type="email"
-                        placeholder="Enter your email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="signin-password"
-                        type="password"
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                  </div>
+        {/* Footer */}
+        <div className="text-xs text-slate-500 relative z-10">
+          © {new Date().getFullYear()} FarmFlow. Secure system portal.
+        </div>
+      </div>
 
-                  {error && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
+      {/* Main Authentication Right Pane */}
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 lg:p-16 relative">
+        {/* Mobile decorative blobs */}
+        <div className="md:hidden absolute top-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-emerald-500/5 blur-[80px] pointer-events-none" />
+        <div className="md:hidden absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-teal-500/5 blur-[80px] pointer-events-none" />
 
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Signing in...' : 'Sign In'}
-                  </Button>
-                  
-                  <div className="text-center mt-4">
-                    <button
-                      type="button"
-                      onClick={() => setShowForgotPassword(true)}
-                      className="text-sm text-primary hover:underline"
-                    >
-                      Forgot your password?
-                    </button>
-                  </div>
-                </form>
-              </TabsContent>
+        <div className="w-full max-w-[420px] scale-in">
+          {/* Mobile logo header */}
+          <div className="md:hidden text-center mb-8">
+            <div className="flex items-center justify-center gap-2.5 mb-2.5">
+              <div className="w-10 h-10 rounded-xl gradient-green flex items-center justify-center shadow-lg shadow-emerald-500/15">
+                <Leaf className="w-5.5 h-5.5 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-heading">
+                Farm<span className="text-primary">Flow</span>
+              </h1>
+            </div>
+            <p className="text-sm text-slate-500 font-sans">Smart Farm Task Management</p>
+          </div>
 
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="signup-name"
-                        type="text"
-                        placeholder="Enter your full name"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                  </div>
+          <Card className="border-0 shadow-xl bg-white/70 backdrop-blur-md rounded-2xl relative overflow-hidden">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-bold text-slate-900 font-heading">Portal Login</CardTitle>
+              <CardDescription className="text-slate-500">Sign in to your farm workplace</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="signin" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6 p-1 bg-slate-100/80 rounded-xl">
+                  <TabsTrigger 
+                    value="signin" 
+                    className="rounded-lg text-sm font-medium text-slate-600 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm transition-all"
+                  >
+                    Sign In
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="signup" 
+                    className="rounded-lg text-sm font-medium text-slate-600 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm transition-all"
+                  >
+                    Sign Up
+                  </TabsTrigger>
+                </TabsList>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="Enter your email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-role">Role</Label>
-                    <Select value={role} onValueChange={(value: any) => setRole(value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="garden_worker">Farm Worker</SelectItem>
-                        <SelectItem value="supervisor">Supervisor</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {requiresAccessCode && (
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-access-code">Access Code</Label>
+                {/* Sign In Form */}
+                <TabsContent value="signin" className="slide-up">
+                  <form onSubmit={handleSignIn} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signin-email" className="text-xs font-semibold text-slate-700">Email Address</Label>
                       <div className="relative">
-                        <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <Input
-                          id="signup-access-code"
-                          type="password"
-                          placeholder={`Enter ${role} access code`}
-                          value={accessCode}
-                          onChange={(e) => setAccessCode(e.target.value)}
-                          className="pl-10"
+                          id="signin-email"
+                          type="email"
+                          placeholder="name@farm.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="pl-10 h-10.5 rounded-xl border-slate-200 focus-visible:ring-primary focus-visible:border-primary bg-white/50"
                           required
                         />
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Contact your administrator to get the access code for {role} registration.
-                      </p>
                     </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-contact">Contact Number</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="signup-contact"
-                        type="tel"
-                        placeholder="Enter your contact number"
-                        value={contactNumber}
-                        onChange={(e) => setContactNumber(e.target.value)}
-                        className="pl-10"
-                      />
+                    
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signin-password" className="text-xs font-semibold text-slate-700">Password</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Input
+                          id="signin-password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="pl-10 h-10.5 rounded-xl border-slate-200 focus-visible:ring-primary focus-visible:border-primary bg-white/50"
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  {error && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
+                    {error && (
+                      <Alert variant="destructive" className="rounded-xl py-2 px-3.5 border-red-200 bg-red-50 text-red-900">
+                        <AlertCircle className="w-4 h-4 mr-1 shrink-0" />
+                        <AlertDescription className="text-xs font-medium">{error}</AlertDescription>
+                      </Alert>
+                    )}
 
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Creating account...' : 'Create Account'}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+                    <Button 
+                      type="submit" 
+                      className="w-full h-11 rounded-xl text-sm font-bold gradient-green text-white shadow-md shadow-emerald-500/10 active-shrink transition-all duration-200" 
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-white" />
+                          <span>Signing in...</span>
+                        </div>
+                      ) : (
+                        'Sign In'
+                      )}
+                    </Button>
+                    
+                    <div className="text-center mt-3">
+                      <button
+                        type="button"
+                        onClick={() => { setError(''); setShowForgotPassword(true); }}
+                        className="text-xs text-primary font-semibold hover:underline"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+                  </form>
+                </TabsContent>
+
+                {/* Sign Up Form */}
+                <TabsContent value="signup" className="slide-up">
+                  <form onSubmit={handleSignUp} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signup-name" className="text-xs font-semibold text-slate-700">Full Name</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Input
+                          id="signup-name"
+                          type="text"
+                          placeholder="e.g. John Doe"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          className="pl-10 h-10.5 rounded-xl border-slate-200 focus-visible:ring-primary focus-visible:border-primary bg-white/50"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signup-email" className="text-xs font-semibold text-slate-700">Email Address</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Input
+                          id="signup-email"
+                          type="email"
+                          placeholder="john@farm.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="pl-10 h-10.5 rounded-xl border-slate-200 focus-visible:ring-primary focus-visible:border-primary bg-white/50"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signup-password" className="text-xs font-semibold text-slate-700">Password</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Input
+                          id="signup-password"
+                          type="password"
+                          placeholder="Min. 6 characters"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="pl-10 h-10.5 rounded-xl border-slate-200 focus-visible:ring-primary focus-visible:border-primary bg-white/50"
+                          required
+                          minLength={6}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signup-role" className="text-xs font-semibold text-slate-700">Select Role</Label>
+                      <Select value={role} onValueChange={(value: any) => setRole(value)}>
+                        <SelectTrigger className="h-10.5 rounded-xl border-slate-200 focus:ring-primary bg-white/50 text-slate-700">
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-slate-200">
+                          <SelectItem value="garden_worker">Farm Worker</SelectItem>
+                          <SelectItem value="supervisor">Supervisor</SelectItem>
+                          <SelectItem value="admin">Administrator</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {requiresAccessCode && (
+                      <div className="space-y-1.5 scale-in">
+                        <Label htmlFor="signup-access-code" className="text-xs font-semibold text-slate-700">Access Verification Code</Label>
+                        <div className="relative">
+                          <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                          <Input
+                            id="signup-access-code"
+                            type="password"
+                            placeholder="Enter validation code"
+                            value={accessCode}
+                            onChange={(e) => setAccessCode(e.target.value)}
+                            className="pl-10 h-10.5 rounded-xl border-slate-200 focus-visible:ring-primary bg-white/50"
+                            required
+                          />
+                        </div>
+                        <p className="text-[10px] text-slate-400 leading-normal">
+                          Requires a registration access code provided by system administrator.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signup-contact" className="text-xs font-semibold text-slate-700">Contact Number</Label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Input
+                          id="signup-contact"
+                          type="tel"
+                          placeholder="e.g. +27821234567"
+                          value={contactNumber}
+                          onChange={(e) => setContactNumber(e.target.value)}
+                          className="pl-10 h-10.5 rounded-xl border-slate-200 focus-visible:ring-primary focus-visible:border-primary bg-white/50"
+                        />
+                      </div>
+                    </div>
+
+                    {error && (
+                      <Alert variant="destructive" className="rounded-xl py-2 px-3.5 border-red-200 bg-red-50 text-red-900">
+                        <AlertCircle className="w-4 h-4 mr-1 shrink-0" />
+                        <AlertDescription className="text-xs font-medium">{error}</AlertDescription>
+                      </Alert>
+                    )}
+
+                    <Button 
+                      type="submit" 
+                      className="w-full h-11 rounded-xl text-sm font-bold gradient-green text-white shadow-md shadow-emerald-500/10 active-shrink transition-all duration-200" 
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-white" />
+                          <span>Creating account...</span>
+                        </div>
+                      ) : (
+                        'Create Account'
+                      )}
+                    </Button>
+                  </form>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Forgot Password Dialog */}
         {showForgotPassword && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <Card className="w-full max-w-md">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+            <Card className="w-full max-w-md border-0 shadow-2xl rounded-2xl bg-white scale-in">
+              <CardHeader className="relative">
+                <CardTitle className="text-lg font-bold text-slate-900 font-heading flex items-center gap-2">
                   <button
-                    onClick={() => setShowForgotPassword(false)}
-                    className="hover:bg-muted rounded p-1"
+                    onClick={() => { setError(''); setShowForgotPassword(false); }}
+                    className="hover:bg-slate-100 rounded-lg p-1 text-slate-500 transition-colors"
                   >
                     <ArrowLeft className="w-5 h-5" />
                   </button>
                   Reset Password
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-slate-500 text-sm">
                   Enter your email address and we'll send you a link to reset your password.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleForgotPassword} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="reset-email">Email</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="reset-email" className="text-xs font-semibold text-slate-700">Email Address</Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <Input
                         id="reset-email"
                         type="email"
-                        placeholder="Enter your email"
+                        placeholder="john@farm.com"
                         value={resetEmail}
                         onChange={(e) => setResetEmail(e.target.value)}
-                        className="pl-10"
+                        className="pl-10 h-10.5 rounded-xl border-slate-200"
                         required
                       />
                     </div>
                   </div>
 
                   {error && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{error}</AlertDescription>
+                    <Alert variant="destructive" className="rounded-xl py-2 px-3.5">
+                      <AlertCircle className="w-4 h-4 mr-1 shrink-0" />
+                      <AlertDescription className="text-xs font-medium">{error}</AlertDescription>
                     </Alert>
                   )}
 
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Sending...' : 'Send Reset Link'}
+                  <Button 
+                    type="submit" 
+                    className="w-full h-11 rounded-xl text-sm font-bold gradient-green text-white active-shrink shadow-md shadow-emerald-500/10" 
+                    disabled={loading}
+                  >
+                    {loading ? 'Sending link...' : 'Send Reset Link'}
                   </Button>
                 </form>
               </CardContent>
@@ -500,44 +597,44 @@ export default function Auth() {
 
         {/* Reset Password Form */}
         {showResetPassword && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <Card className="w-full max-w-md">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-md border-0 shadow-2xl rounded-2xl bg-white scale-in">
               <CardHeader>
-                <CardTitle>Set New Password</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-lg font-bold text-slate-900 font-heading">Set New Password</CardTitle>
+                <CardDescription className="text-slate-500 text-sm">
                   Enter your new password below.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleResetPassword} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="new-password">New Password</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new-password" className="text-xs font-semibold text-slate-700">New Password</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <Input
                         id="new-password"
                         type="password"
-                        placeholder="Enter new password"
+                        placeholder="At least 6 characters"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="pl-10"
+                        className="pl-10 h-10.5 rounded-xl border-slate-200"
                         required
                         minLength={6}
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="confirm-password" className="text-xs font-semibold text-slate-700">Confirm Password</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <Input
                         id="confirm-password"
                         type="password"
-                        placeholder="Confirm new password"
+                        placeholder="Re-type password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="pl-10"
+                        className="pl-10 h-10.5 rounded-xl border-slate-200"
                         required
                         minLength={6}
                       />
@@ -545,12 +642,17 @@ export default function Auth() {
                   </div>
 
                   {error && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{error}</AlertDescription>
+                    <Alert variant="destructive" className="rounded-xl py-2 px-3.5">
+                      <AlertCircle className="w-4 h-4 mr-1 shrink-0" />
+                      <AlertDescription className="text-xs font-medium">{error}</AlertDescription>
                     </Alert>
                   )}
 
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button 
+                    type="submit" 
+                    className="w-full h-11 rounded-xl text-sm font-bold gradient-green text-white active-shrink shadow-md shadow-emerald-500/10" 
+                    disabled={loading}
+                  >
                     {loading ? 'Updating...' : 'Update Password'}
                   </Button>
                 </form>
@@ -561,47 +663,47 @@ export default function Auth() {
 
         {/* Email Verification Reminder */}
         {showEmailVerificationReminder && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <Card className="w-full max-w-md">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-md border-0 shadow-2xl rounded-2xl bg-white scale-in">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="text-lg font-bold text-slate-900 font-heading flex items-center gap-2">
                   <AlertCircle className="w-5 h-5 text-amber-500" />
                   Email Not Verified
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-slate-500 text-sm">
                   Please verify your email address before signing in.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
-                  <Mail className="h-4 w-4 text-amber-600" />
-                  <AlertDescription className="text-amber-800 dark:text-amber-200">
+                <Alert className="border-amber-200 bg-amber-50 rounded-xl">
+                  <Mail className="h-4 w-4 text-amber-600 shrink-0" />
+                  <AlertDescription className="text-xs text-amber-800 font-medium">
                     We sent a verification email to <strong>{unverifiedEmail}</strong>. 
                     Please check your inbox and click the verification link to activate your account.
                   </AlertDescription>
                 </Alert>
                 
-                <div className="text-sm text-muted-foreground">
-                  <p>Didn't receive the email?</p>
-                  <ul className="list-disc list-inside mt-2 space-y-1">
+                <div className="text-xs text-slate-500 space-y-2">
+                  <p className="font-semibold text-slate-600">Didn't receive the email?</p>
+                  <ul className="list-disc list-inside space-y-1">
                     <li>Check your spam or junk folder</li>
                     <li>Make sure you entered the correct email address</li>
                     <li>Wait a few minutes and try again</li>
                   </ul>
                 </div>
 
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 pt-2">
                   <Button 
                     onClick={handleResendVerificationEmail} 
                     disabled={loading}
-                    className="w-full"
+                    className="w-full h-10.5 rounded-xl font-bold gradient-green text-white shadow-md"
                   >
                     {loading ? 'Sending...' : 'Resend Verification Email'}
                   </Button>
                   <Button 
                     variant="outline" 
                     onClick={() => setShowEmailVerificationReminder(false)}
-                    className="w-full"
+                    className="w-full h-10.5 rounded-xl text-slate-600 font-semibold border-slate-200"
                   >
                     Back to Sign In
                   </Button>

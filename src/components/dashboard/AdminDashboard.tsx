@@ -5,14 +5,27 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, CheckCircle, Clock, BarChart3, Leaf, LogOut, LayoutDashboard, Activity, FileText, Bell, Sparkles, ListOrdered } from 'lucide-react';
+import { 
+  Users, 
+  CheckCircle, 
+  Clock, 
+  BarChart3, 
+  Leaf, 
+  LogOut, 
+  LayoutDashboard, 
+  Activity, 
+  FileText, 
+  Bell, 
+  Sparkles, 
+  ListOrdered,
+  Menu
+} from 'lucide-react';
 import { UserManagementDashboard } from '@/components/admin/UserManagementDashboard';
 import { Reports } from '@/components/reports/Reports';
 import { AdminAnalytics } from '@/components/analytics/AdminAnalytics';
 import { AIPerformanceDashboard } from '@/components/analytics/AIPerformanceDashboard';
 import { TaskOverview } from '@/components/tasks/TaskOverview';
 import { AITaskPrioritization } from '@/components/tasks/AITaskPrioritization';
-import { WorkerActivityTracker } from '@/components/workers/WorkerActivityTracker';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { ClockInOutView } from '@/components/time/ClockInOutView';
 import { WeeklyTimesheetView } from '@/components/time/WeeklyTimesheetView';
@@ -44,6 +57,7 @@ export function AdminDashboard() {
   const navigate = useNavigate();
   const { userProfile, signOut } = useAuth();
   const [activeView, setActiveView] = useState('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalTasks: 0,
@@ -114,111 +128,193 @@ export function AdminDashboard() {
     }
   };
 
+  const initials = userProfile?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'AD';
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-card">
-        <div className="flex h-16 items-center px-6">
-          <div className="flex items-center gap-2">
-            <Leaf className="w-6 h-6 text-green-600" />
-            <h1 className="text-xl font-semibold">FarmFlow — Admin</h1>
-          </div>
-          <div className="ml-auto flex items-center gap-4">
-            <div className="text-sm text-muted-foreground">
-              Welcome, {userProfile?.full_name}
+    <div className="min-h-screen bg-slate-50/60 flex flex-col font-sans">
+      {/* Top Header */}
+      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/80 backdrop-blur-md px-6 h-16 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="text-slate-500 hover:bg-slate-100/50 rounded-xl"
+          >
+            <Menu className="w-5 h-5" />
+          </Button>
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl gradient-green flex items-center justify-center shadow-lg shadow-emerald-500/10 border border-emerald-400/15">
+              <Leaf className="w-5 h-5 text-white" />
             </div>
-            <Badge variant="secondary" className="bg-red-100 text-red-800">
-              Administrator
-            </Badge>
-            <Button variant="outline" size="sm" onClick={async () => {
-              await signOut();
-              navigate('/auth');
-            }}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </Button>
+            <div>
+              <h1 className="text-md sm:text-base font-extrabold tracking-tight text-slate-800 leading-tight font-heading">
+                Farm<span className="text-primary">Flow</span>
+              </h1>
+              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold hidden sm:block">Administrator Console</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="flex min-h-[calc(100vh-64px)]">
-        {/* Sidebar */}
-        <aside className="w-64 border-r bg-card">
-          <nav className="p-4 space-y-1">
+        <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-2.5">
+            <div className="w-8.5 h-8.5 rounded-full bg-rose-50 text-rose-700 flex items-center justify-center font-bold text-xs border border-rose-100 font-heading">
+              {initials}
+            </div>
+            <div className="text-left leading-tight">
+              <p className="text-xs font-bold text-slate-700 font-heading">{userProfile?.full_name}</p>
+              <p className="text-[10px] text-slate-400">Admin Mode</p>
+            </div>
+          </div>
+          <Badge variant="secondary" className="bg-rose-50 text-rose-800 hover:bg-rose-50 border-rose-100 text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
+            Admin
+          </Badge>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={async () => {
+              await signOut();
+              navigate('/auth');
+            }}
+            className="rounded-xl h-9 text-xs font-semibold border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+          >
+            <LogOut className="w-3.5 h-3.5 mr-1.5 text-slate-400" />
+            Sign Out
+          </Button>
+        </div>
+      </header>
+
+      <div className="flex-1 flex min-h-[calc(100vh-64px)] relative">
+        {/* Sidebar Container */}
+        <aside className={cn(
+          "w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between transition-all duration-300 absolute md:static z-20 top-0 bottom-0 left-0",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full md:-translate-x-full md:w-0 overflow-hidden border-r-0"
+        )}>
+          <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
+              const active = activeView === item.id;
               return (
                 <button
                   key={item.id}
                   onClick={() => setActiveView(item.id)}
                   className={cn(
-                    "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
-                    activeView === item.id
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    "w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl text-xs font-semibold tracking-wide uppercase transition-all duration-200 active-shrink",
+                    active
+                      ? "bg-emerald-500/10 text-emerald-400 border-l-3 border-emerald-500 bg-gradient-to-r from-emerald-500/5 to-transparent"
+                      : "text-slate-400 hover:bg-slate-800/40 hover:text-slate-200"
                   )}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span>{item.label}</span>
+                  <Icon className={cn("w-4.5 h-4.5 shrink-0", active ? "text-emerald-400" : "text-slate-500")} />
+                  <span className="flex-1 text-left font-heading truncate">{item.label}</span>
                 </button>
               );
             })}
-          </nav>
+          </div>
+          <div className="p-4 border-t border-slate-800 text-[10px] text-slate-500 font-sans tracking-wide">
+            SYSTEM PORTAL v2.4.0
+          </div>
         </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 p-6 overflow-auto">
-          {/* Stats Cards */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mb-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalUsers}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalTasks}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Completed</CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">{stats.completedTasks}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending</CardTitle>
-                <Clock className="h-4 w-4 text-orange-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-orange-600">{stats.pendingTasks}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Hours</CardTitle>
-                <Clock className="h-4 w-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">{stats.totalHours.toFixed(1)}</div>
-              </CardContent>
-            </Card>
-          </div>
+        {/* Backdrop for mobile menu */}
+        {sidebarOpen && (
+          <div 
+            onClick={() => setSidebarOpen(false)} 
+            className="fixed inset-0 z-10 bg-slate-900/20 backdrop-blur-xs md:hidden"
+          />
+        )}
 
-          {/* Dynamic Content */}
-          {renderContent()}
+        {/* Main Content Area */}
+        <main className="flex-1 p-6 overflow-auto relative">
+          <div className="max-w-7xl mx-auto">
+            {/* Stats Metrics Cards */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-6">
+              <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-md rounded-2xl p-0.5 hover-lift transition-all duration-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2.5">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Accounts</p>
+                    <CardTitle className="text-sm font-bold text-slate-800 mt-0.5 font-heading">Total Users</CardTitle>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 text-slate-600">
+                    <Users className="h-4.5 w-4.5" />
+                  </div>
+                </CardHeader>
+                <CardContent className="pb-4">
+                  <div className="text-2xl font-extrabold text-slate-800 font-heading">{stats.totalUsers}</div>
+                  <p className="text-[10px] text-slate-400 mt-1 font-sans">Active account registrations</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-md rounded-2xl p-0.5 hover-lift transition-all duration-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2.5">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Allocated Tasks</p>
+                    <CardTitle className="text-sm font-bold text-slate-800 mt-0.5 font-heading">Total Tasks</CardTitle>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 text-slate-600">
+                    <BarChart3 className="h-4.5 w-4.5 animate-pulse" />
+                  </div>
+                </CardHeader>
+                <CardContent className="pb-4">
+                  <div className="text-2xl font-extrabold text-slate-800 font-heading">{stats.totalTasks}</div>
+                  <p className="text-[10px] text-slate-400 mt-1 font-sans">Cumulative tasks registered</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-md rounded-2xl p-0.5 hover-lift transition-all duration-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2.5">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Work Done</p>
+                    <CardTitle className="text-sm font-bold text-slate-800 mt-0.5 font-heading">Completed Tasks</CardTitle>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
+                    <CheckCircle className="h-4.5 w-4.5" />
+                  </div>
+                </CardHeader>
+                <CardContent className="pb-4">
+                  <div className="text-2xl font-extrabold text-emerald-600 font-heading">{stats.completedTasks}</div>
+                  <p className="text-[10px] text-slate-400 mt-1 font-sans">Successfully approved jobs</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-md rounded-2xl p-0.5 hover-lift transition-all duration-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2.5">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Operations</p>
+                    <CardTitle className="text-sm font-bold text-slate-800 mt-0.5 font-heading">Pending Tasks</CardTitle>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600">
+                    <Clock className="h-4.5 w-4.5" />
+                  </div>
+                </CardHeader>
+                <CardContent className="pb-4">
+                  <div className="text-2xl font-extrabold text-amber-600 font-heading">{stats.pendingTasks}</div>
+                  <p className="text-[10px] text-slate-400 mt-1 font-sans">Active pending tasks</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-sm bg-white/70 backdrop-blur-md rounded-2xl p-0.5 hover-lift transition-all duration-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2.5">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Shift Work</p>
+                    <CardTitle className="text-sm font-bold text-slate-800 mt-0.5 font-heading">Total Hours</CardTitle>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600">
+                    <Clock className="h-4.5 w-4.5" />
+                  </div>
+                </CardHeader>
+                <CardContent className="pb-4">
+                  <div className="text-2xl font-extrabold text-blue-600 font-heading">{stats.totalHours.toFixed(1)}</div>
+                  <p className="text-[10px] text-slate-400 mt-1 font-sans">Cumulative logged hours</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Dynamic Dashboard View */}
+            <div className="bg-white/70 backdrop-blur-md border border-slate-100/80 rounded-3xl p-6 shadow-sm min-h-[500px]">
+              {renderContent()}
+            </div>
+          </div>
         </main>
       </div>
     </div>
