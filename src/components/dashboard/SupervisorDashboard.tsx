@@ -5,7 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, Users, Leaf, LogOut, Plus, LayoutDashboard, ClipboardList, CheckSquare, UserPlus, FileText, TrendingUp, Activity, Bell, Images, Sparkles, ListOrdered, RotateCcw } from 'lucide-react';
+import { CheckCircle, Clock, Users, Leaf, LogOut, Plus, LayoutDashboard, ClipboardList, CheckSquare, UserPlus, FileText, TrendingUp, Activity, Bell, Images, Sparkles, ListOrdered, RotateCcw, ClipboardCheck } from 'lucide-react';
+import { ManageAssignedTasks } from '@/components/tasks/ManageAssignedTasks';
 import { TaskAssignment } from '@/components/tasks/TaskAssignment';
 import { TaskRequests } from '@/components/tasks/TaskRequests';
 import { TaskApproval } from '@/components/tasks/TaskApproval';
@@ -38,6 +39,7 @@ const baseMenuItems = [
   { id: 'requests', label: 'Requests', icon: ClipboardList, countKey: 'requests' as const },
   { id: 'approval', label: 'Review', icon: CheckSquare, countKey: 'approval' as const },
   { id: 'redo', label: 'Redo Requests', icon: RotateCcw, countKey: 'redo' as const },
+  { id: 'manage-tasks', label: 'Manage Tasks', icon: ClipboardCheck },
   { id: 'assign', label: 'Assign', icon: UserPlus },
   { id: 'timesheet', label: 'Timesheet', icon: CheckCircle },
   { id: 'notifications', label: 'Notifications', icon: Bell, countKey: 'notifications' as const },
@@ -157,6 +159,8 @@ export function SupervisorDashboard() {
         return <RedoRequests onRefresh={fetchMenuCounts} />;
       case 'assign':
         return <TaskAssignment />;
+      case 'manage-tasks':
+        return <ManageAssignedTasks />;
       case 'activity':
         return <WorkerActivityTracker userRole="supervisor" />;
       case 'photos':
