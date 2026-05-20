@@ -114,6 +114,7 @@ export function LocationReverification({
   const [checking, setChecking] = useState(false);
   const [result, setResult] = useState<'success' | 'failed' | null>(null);
   const [verificationsCompleted, setVerificationsCompleted] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [timeRemaining, setTimeRemaining] = useState(120);
   const [nextCheckAt, setNextCheckAt] = useState<number | null>(null); // epoch ms
   const [secondsToNext, setSecondsToNext] = useState<number | null>(null);
@@ -126,11 +127,13 @@ export function LocationReverification({
   // Initialize verificationsCompleted from the database to survive navigation/refresh
   useEffect(() => {
     let active = true;
+    setLoading(true);
     const fetchExistingVerifications = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user || !active) return;
 
+        console.log(`LocationReverification: Fetching verification logs for taskId=${taskId}, userId=${user.id}`);
         const { data, error } = await supabase
           .from('verification_logs')
           .select('verification_number')
@@ -140,9 +143,16 @@ export function LocationReverification({
         if (!error && data && active) {
           // Count only entries that are completed (success, failed, or missed)
           setVerificationsCompleted(data.length);
+          console.log(`LocationReverification: Successfully loaded ${data.length} verification logs from DB.`);
+        } else if (error) {
+          console.error('LocationReverification: Error loading logs:', error);
         }
       } catch (err) {
-        console.error('Error fetching existing verifications:', err);
+        console.error('LocationReverification: Exception fetching existing verifications:', err);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
     };
 
@@ -223,6 +233,7 @@ export function LocationReverification({
   const scheduleNextCheck = useCallback(() => {
     clearAllTimers();
     if (!isTaskActive || !locationTypeIsFarm || verificationsCompleted >= MAX_VERIFICATIONS) {
+      console.log('LocationReverification: Scheduler bypassed/stopped.', { isTaskActive, locationTypeIsFarm, verificationsCompleted });
       setNextCheckAt(null);
       setSecondsToNext(null);
       return;
@@ -232,28 +243,53 @@ export function LocationReverification({
     const configuredAtStr = isFirst ? verifyTime1At : verifyTime2At;
     let fireAt: number;
 
+    console.log('LocationReverification: scheduleNextCheck started.', {
+      verificationsCompleted,
+      verifyTime1At,
+      verifyTime2At,
+      verifyTime1Min,
+      verifyTime2Min,
+      taskStartTime
+    });
+
     if (configuredAtStr) {
       fireAt = new Date(configuredAtStr).getTime();
+      console.log(`LocationReverification: Using configured timestamp for Verification ${isFirst ? 1 : 2}:`, configuredAtStr, 'epoch:', fireAt);
       // If that moment already passed, trigger in 2 seconds to let UI settle
-      if (fireAt <= Date.now()) fireAt = Date.now() + 2000;
+      if (fireAt <= Date.now()) {
+        console.log('LocationReverification: Configured timestamp is in the past. Triggering in 2s.');
+        fireAt = Date.now() + 2000;
+      }
     } else {
       // Fallback if timestamps are missing
       const configuredMin = isFirst ? verifyTime1Min : verifyTime2Min;
+      console.log('LocationReverification: Configured timestamp missing, checking minutes fallback:', configuredMin);
       if (configuredMin != null && configuredMin > 0 && taskStartTime) {
         fireAt = new Date(taskStartTime).getTime() + configuredMin * 60 * 1000;
-        if (fireAt <= Date.now()) fireAt = Date.now() + 2000;
+        console.log('LocationReverification: Calculated fire time from start time:', new Date(fireAt).toISOString());
+        if (fireAt <= Date.now()) {
+          console.log('LocationReverification: Calculated fire time is in the past. Triggering in 2s.');
+          fireAt = Date.now() + 2000;
+        }
       } else {
         const minMs = isFirst ? FIRST_MIN_MS : SECOND_MIN_MS;
         const maxMs = isFirst ? FIRST_MAX_MS : SECOND_MAX_MS;
         fireAt = Date.now() + Math.floor(Math.random() * (maxMs - minMs)) + minMs;
+        console.log('LocationReverification: Generated random fire time:', new Date(fireAt).toISOString());
       }
     }
 
     setNextCheckAt(fireAt);
-    setSecondsToNext(Math.max(0, Math.ceil((fireAt - Date.now()) / 1000)));
+    const initialSeconds = Math.max(0, Math.ceil((fireAt - Date.now()) / 1000));
+    setSecondsToNext(initialSeconds);
+    console.log(`LocationReverification: Scheduled verification ${isFirst ? 1 : 2} in ${initialSeconds} seconds.`);
 
     const triggerPopup = () => {
-      if (!isTaskActive) return;
+      if (!isTaskActive) {
+        console.log('LocationReverification: triggerPopup called but task is inactive.');
+        return;
+      }
+      console.log('LocationReverification: TRIGGERING POPUP DIALOG NOW!');
       playNotificationSound();
       setShowDialog(true);
       setResult(null);
@@ -272,6 +308,7 @@ export function LocationReverification({
 
       timeoutRef.current = setTimeout(() => {
         const missedNumber = verificationsCompleted + 1;
+        console.log(`LocationReverification: Timeout reached. Verification ${missedNumber} missed.`);
         setShowDialog(false);
         setVerificationsCompleted(prev => prev + 1);
         logVerification({
@@ -293,7 +330,14 @@ export function LocationReverification({
     nextTickRef.current = setInterval(() => {
       const remaining = Math.ceil((fireAt - Date.now()) / 1000);
       setSecondsToNext(Math.max(0, remaining));
+
+      // Log countdown every 15 seconds to avoid flooding but show it's active
+      if (remaining > 0 && remaining % 15 === 0) {
+        console.log(`LocationReverification: Countdown to Verification ${isFirst ? 1 : 2}: ${remaining}s remaining.`);
+      }
+
       if (Date.now() >= fireAt) {
+        console.log('LocationReverification: Current time reached/passed target time. Firing popup.');
         if (nextTickRef.current) clearInterval(nextTickRef.current);
         triggerPopup();
       }
@@ -301,11 +345,11 @@ export function LocationReverification({
   }, [isTaskActive, locationTypeIsFarm, verificationsCompleted, clearAllTimers, notifySupervisor, logVerification, verifyTime1Min, verifyTime2Min, verifyTime1At, verifyTime2At, taskStartTime]);
 
   useEffect(() => {
-    if (isTaskActive && locationTypeIsFarm && verificationsCompleted < MAX_VERIFICATIONS) {
+    if (!loading && isTaskActive && locationTypeIsFarm && verificationsCompleted < MAX_VERIFICATIONS) {
       scheduleNextCheck();
     }
     return () => clearAllTimers();
-  }, [isTaskActive, locationTypeIsFarm, verificationsCompleted, scheduleNextCheck, clearAllTimers]);
+  }, [loading, isTaskActive, locationTypeIsFarm, verificationsCompleted, scheduleNextCheck, clearAllTimers]);
 
   const handleVerify = async () => {
     setChecking(true);
