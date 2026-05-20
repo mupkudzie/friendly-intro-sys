@@ -39,6 +39,7 @@ const baseMenuItems = [
   { id: 'requests', label: 'Requests', icon: ClipboardList, countKey: 'requests' as const },
   { id: 'approval', label: 'Review', icon: CheckSquare, countKey: 'approval' as const },
   { id: 'redo', label: 'Redo Requests', icon: RotateCcw, countKey: 'redo' as const },
+  { id: 'manage-tasks', label: 'Manage Tasks', icon: ClipboardCheck },
   { id: 'assign', label: 'Assign', icon: UserPlus },
   { id: 'timesheet', label: 'Timesheet', icon: CheckCircle },
   { id: 'notifications', label: 'Notifications', icon: Bell, countKey: 'notifications' as const },
