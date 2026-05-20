@@ -7,20 +7,16 @@ from dotenv import load_dotenv
 from supabase import create_client, Client
 
 def test_supabase_connection():
-    # Add cv_service to Python path
-    cv_service_dir = os.path.join(os.path.dirname(__file__), 'cv_service')
-    sys.path.append(cv_service_dir)
-    
-    # Load environment variables
-    env_path = os.path.join(cv_service_dir, '.env')
+    # Load environment variables from the root directory
+    env_path = os.path.join(os.path.dirname(__file__), '.env')
     load_dotenv(env_path)
     
     # Get Supabase credentials
-    url = os.getenv('https://aczdwxhjdaljeflbsmwo.supabase.co')
-    key = os.getenv('yJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjemR3eGhqZGFsamVmbGJzbXdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1ODQyNjksImV4cCI6MjA3MzE2MDI2OX0.Yz4Y2MiMypPj5dc7gnVbQ1SKHhwHPC4t0AzZZsRHGLI')
+    url = os.getenv('VITE_SUPABASE_URL')
+    key = os.getenv('VITE_SUPABASE_PUBLISHABLE_KEY')
     
     if not url or not key:
-        print("Error: SUPABASE_URL and SUPABASE_KEY must be set in .env file")
+        print("Error: VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY must be set in .env file")
         sys.exit(1)
     
     try:
