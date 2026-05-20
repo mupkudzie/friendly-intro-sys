@@ -90,6 +90,17 @@ export default defineConfig(({ mode }) => ({
     },
     dedupe: ["react", "react-dom"],
   },
+  build: {
+    // Cache-busting: hashed filenames for every built asset so browsers
+    // never serve stale JS/CSS after a deploy.
+    rollupOptions: {
+      output: {
+        entryFileNames: "assets/[name]-[hash].js",
+        chunkFileNames: "assets/[name]-[hash].js",
+        assetFileNames: "assets/[name]-[hash][extname]",
+      },
+    },
+  },
   optimizeDeps: {
     include: ["react", "react-dom", "@tanstack/react-query"],
   },
